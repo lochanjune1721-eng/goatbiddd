@@ -3,19 +3,102 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>GOAT.lol — Who's the greatest?</title>
+<title>GOAT.lol — Who is the Greatest of All Time?</title>
 <meta name="description" content="Fans buy credit, then spend it backing whoever they believe in. The money is the ranking.">
 <link rel="preconnect" href="https://iuvmzlrnbwptgrbkdbbn.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* === Filter + Featured extensions === */
+.duel{border:2px solid #3A2E14;overflow:hidden;background:linear-gradient(180deg, #1e1a14 0%, var(--surface) 100%);position:relative}
+.duel-head{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(212,162,76,.06)}
+.duel-head strong{font-size:13px;color:var(--gold);letter-spacing:.06em;text-transform:uppercase}
+.duel-body{position:relative;display:flex;align-items:center;justify-content:space-between;gap:0;padding:22px 18px 42px;min-height:260px}
+.duel-body.crazy{padding:28px 20px 48px;min-height:300px}
+.duel-side{flex:1;text-align:center;min-width:0;position:relative;z-index:1}
+.duel-side .photo{width:176px;height:176px;border-radius:24px;margin:0 auto;overflow:hidden;border:2px solid var(--border);box-shadow:var(--shadow)}
+.duel-body.crazy .duel-side .photo{width:200px;height:200px;border-radius:28px}
+@media(max-width:640px){.duel-side .photo{width:132px;height:132px}.duel-body.crazy .duel-side .photo{width:148px;height:148px}}
+@media(max-width:420px){.duel-side .photo{width:112px;height:112px}.duel-body.crazy .duel-side .photo{width:124px;height:124px}}
+.duel-side .name{font-family:'Anton',sans-serif;font-size:20px;line-height:.95;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
+.duel-body.crazy .duel-side .name{font-size:24px}
+@media(max-width:640px){.duel-side .name{font-size:16px}.duel-body.crazy .duel-side .name{font-size:18px}}
+.duel-side .total{font-family:'Anton',sans-serif;font-size:16px;color:var(--gold);margin-top:4px;letter-spacing:.02em}
+.duel-side .total span{font-size:11px!important}
+.duel-side.leader .photo{box-shadow:0 0 0 3px var(--gold), 0 12px 32px rgba(212,162,76,.45);border-color:var(--gold)}
+.duel-side.leader .name{color:var(--gold)}
+.duel-vs{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) rotate(-6deg);width:68px;height:68px;border-radius:50%;background:var(--gold);color:var(--bg);display:grid;place-items:center;font-weight:900;font-family:'Anton',sans-serif;font-size:18px;letter-spacing:.06em;border:4px solid var(--bg);box-shadow:0 0 0 3px var(--gold), 0 10px 28px rgba(0,0,0,.5);z-index:2;line-height:1}
+.duel-body.crazy .duel-vs{width:76px;height:76px;font-size:20px;top:44%;border-width:5px;transform:translate(-50%,-50%) rotate(-8deg)}
+@media(max-width:640px){.duel-vs{width:56px;height:56px;font-size:15px}.duel-body.crazy .duel-vs{width:62px;height:62px;font-size:16px}}
+.duel-gap{position:absolute;left:50%;top:74%;transform:translateX(-50%);text-align:center;font-size:12px;color:var(--ink);background:var(--bg);border:1px solid #3A2E14;border-radius:999px;padding:6px 14px;white-space:nowrap;z-index:2;box-shadow:0 4px 14px rgba(0,0,0,.35);max-width:88%;overflow:hidden;text-overflow:ellipsis}
+.duel-gap b{color:var(--gold)}
+.duel-body.crazy .duel-gap{font-size:13px;padding:7px 16px;top:76%;font-weight:700}
+@media(max-width:640px){.duel-gap{font-size:11px;padding:5px 10px;top:78%}}
+.vote-bar-wrap{position:absolute;left:18px;right:18px;bottom:10px;display:flex;flex-direction:column;gap:4px}
+.vote-bar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
+.duel-body.crazy .vote-bar{height:12px;border-width:1.5px}
+.vote-bar-fill{height:100%;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.vote-bar-fill.p1{background:linear-gradient(90deg, var(--gold), #f59e0b)}
+.vote-bar-fill.p2{background:linear-gradient(90deg, #3a2e14, var(--surface-2));border-left:1px solid var(--border)}
+.vote-bar-label{text-align:center;font-size:10px;color:var(--muted);letter-spacing:.06em;font-weight:600}
+.duel-foot{padding:10px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);background:rgba(0,0,0,.18)}
+.duel-foot span:last-child{color:var(--gold);font-weight:700}
+.filter-bar{position:sticky;top:53px;z-index:30;background:rgba(15,14,12,.92);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:18px;margin:10px 0 14px;padding:12px;box-shadow:var(--shadow)}
+.filter-bar-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.filter-search{flex:1;min-width:220px;position:relative;display:flex;align-items:center}
+.filter-search input{width:100%;height:44px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 16px 0 38px;font-size:14px;outline:none;transition:border-color .15s}
+.filter-search input:focus{border-color:var(--gold)}
+.filter-search i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);font-style:normal;font-size:14px;pointer-events:none}
+.filter-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-actions select{height:44px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-clear{height:44px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:0 16px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-clear:hover{border-color:var(--gold);color:var(--gold)}
+.count-pill{font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 10px;white-space:nowrap}
+.count-pill b{color:var(--ink)}
+.chips{display:flex;gap:8px;overflow:auto;padding:10px 0 2px;scrollbar-width:none;align-items:center}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;height:32px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:0 13px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;letter-spacing:.01em}
+.chip:hover{border-color:#3A2E14;color:var(--ink)}
+.chip.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.featured-wrap{margin:18px 0 10px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:14px 0 10px;flex-wrap:wrap}
+.section-head h2{font-family:'Anton',sans-serif;font-size:22px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.section-head h2 .fire{font-size:18px}
+.section-head p{font-size:12px;color:var(--muted);max-width:520px}
+.section-head .view-all{font-size:12px;color:var(--gold);font-weight:700}
+.featured-grid{display:grid;grid-template-columns:1fr;gap:22px;max-width:760px;margin:0 auto}
+.featured-grid .cat-tile{border-color:#3A2E14}
+.featured-grid .cat-tile-head strong{font-size:13px;color:var(--gold)}
+.badge-featured{font-size:10px;font-weight:800;letter-spacing:.08em;background:var(--gold);color:var(--bg);padding:3px 7px;border-radius:999px}
+.cat-tile-head .slug{font-size:11px;color:var(--muted);text-transform:lowercase}
+.search-results{margin:16px 0}
+.search-results-head{display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px}
+.search-results-head h3{font-family:'Anton',sans-serif;font-size:18px}
+.search-results-head span{font-size:12px;color:var(--muted)}
+.people-hits{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:10px 0}
+.person-hit{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px;transition:border-color .15s, transform .15s}
+.person-hit:hover{border-color:#3A2E14;transform:translateY(-1px)}
+.person-hit .hit-photo{width:56px;height:56px;border-radius:12px;overflow:hidden;flex:0 0 auto;background:var(--surface-2);border:1px solid var(--border)}
+.person-hit .hit-meta{flex:1;min-width:0}
+.person-hit .hit-name{font-weight:800;font-size:13px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person-hit .hit-cat{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person-hit .hit-total{font-family:'Anton',sans-serif;font-size:13px;color:var(--gold)}
+.no-hits{padding:22px;text-align:center;border:1px dashed var(--border);border-radius:16px;color:var(--muted);background:var(--surface);margin:10px 0}
+.kill-featured{display:none !important}
+@media (max-width:640px){
+  .filter-bar{top:52px;padding:10px}
+  .featured-grid{grid-template-columns:1fr}
+  .section-head h2{font-size:18px}
+}
+</style>
 </head>
 <body>
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand"><a href="index.html">GOAT<span>.lol</span></a></div>
-    <div class="search"><i>⌕</i><input id="search" placeholder="Search people, categories"></div>
+    <div class="search" style="display:none"><i>⌕</i><input id="search-legacy" placeholder="Search people, categories"></div>
     <nav class="topnav">
       <a href="index.html" class="active">Categories</a>
       <a href="fans.html">Fans</a>
@@ -26,13 +109,50 @@
 </header>
 
 <div class="container">
-  <div class="live-pill"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">$0 backed today</span></div>
+  <div class="live-pill"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">0 votes today</span></div>
 
   <div class="hero">
-    <h1 class="display">Who's the greatest?</h1>
-    <p>Every argument is free. This one isn't. Load $5, back who you believe in — the board is the money, nothing else.</p>
+    <h1 class="display">Who is the Greatest of All Time?</h1>
+    <p>Anyone can argue. Can you put your money where your mouth is? Every <b>$1 = 1 vote</b> — the board is the votes, nothing else. The greatest is who we back the most.</p>
   </div>
 
+  <!-- FILTER BAR -->
+  <div class="filter-bar" id="filter-bar">
+    <div class="filter-bar-top">
+      <label class="filter-search" aria-label="Search categories and people">
+        <i>⌕</i>
+        <input id="q" placeholder="Search categories or people — try 'Ronaldo', 'Directors', 'President'" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="filter-actions">
+        <select id="sort" aria-label="Sort boards"><option value="hype">🔥 Hype</option><option value="az">A → Z</option><option value="money">Most votes</option><option value="newest">Newest</option></select>
+        <button id="clear" class="btn-clear" type="button">Clear</button>
+        <span class="count-pill"><b id="cat-count">—</b> boards · <b id="person-count">—</b> people</span>
+      </div>
+    </div>
+    <div class="chips" id="chips" role="tablist" aria-label="Filter by group"></div>
+  </div>
+
+  <!-- FEATURED 30 -->
+  <div class="featured-wrap" id="featured-wrap">
+    <div class="section-head">
+      <h2><span class="fire">🔥</span> TOP 30 FIGHTS — live head-to-head</h2>
+      <p>Most debated boards on GOAT.lol • #1 vs #2, gap is real votes</p>
+    </div>
+    <div id="featured" class="featured-grid"></div>
+  </div>
+
+  <!-- SEARCH RESULTS (people + categories) — shown only when typing -->
+  <div id="search-results" class="search-results" style="display:none">
+    <div class="search-results-head">
+      <h3 id="sr-title">Search results</h3>
+      <span id="sr-meta"></span>
+    </div>
+    <div id="sr-cats" class="cat-grid"></div>
+    <div id="sr-people-head" style="margin:14px 0 6px;display:none"><strong style="font-size:13px">People</strong> <span id="sr-people-meta" class="mono" style="font-size:11px;color:var(--muted)"></span></div>
+    <div id="sr-people" class="people-hits"></div>
+  </div>
+
+  <!-- ALL BOARDS -->
   <div id="groups"></div>
 
   <div id="unclaimed" class="unclaimed" style="display:none"></div>
@@ -51,21 +171,118 @@
 <script>
 (async function(){
   const sb=window.supabaseClient;
+  const qEl=document.getElementById('q'), sortEl=document.getElementById('sort'), clearEl=document.getElementById('clear'), chipsEl=document.getElementById('chips');
+  const featuredWrap=document.getElementById('featured-wrap'), featuredEl=document.getElementById('featured');
   const groupsEl=document.getElementById('groups'), unclaimedEl=document.getElementById('unclaimed'), activityEl=document.getElementById('activity');
-  const search=document.getElementById('search');
-  if(search){
-    search.addEventListener('keydown', e=>{ if(e.key==='Enter'){ const q=e.target.value.trim(); if(q) location.href='category.html?slug='+encodeURIComponent(q); }});
-  }
+  const srWrap=document.getElementById('search-results'), srCats=document.getElementById('sr-cats'), srPeople=document.getElementById('sr-people'), srPeopleHead=document.getElementById('sr-people-head');
+  const srTitle=document.getElementById('sr-title'), srMeta=document.getElementById('sr-meta'), srPeopleMeta=document.getElementById('sr-people-meta');
+  const catCountEl=document.getElementById('cat-count'), personCountEl=document.getElementById('person-count');
 
   // Clear old stale cache
-  try {
-    localStorage.removeItem('goat_home_cache');
-    localStorage.removeItem('goat_home_cache_v2');
-  } catch(e) {}
+  try { localStorage.removeItem('goat_home_cache'); localStorage.removeItem('goat_home_cache_v2'); } catch(e) {}
+
+  // Curated TOP 30 — ONE duel per board, correct Top 1 vs Top 2 per general statistics (goat_master.csv)
+  const FEATURED_SLUGS = [
+    'footballers',        // Lionel Messi vs Cristiano Ronaldo
+    'tennis-men',         // Novak Djokovic vs Roger Federer
+    'directors',          // Steven Spielberg vs Martin Scorsese
+    'hollywood-actors',   // Marlon Brando vs Robert De Niro
+    'basketball-players', // Michael Jordan vs LeBron James
+    'singers',            // Michael Jackson vs Freddie Mercury
+    'us-presidents',      // Abraham Lincoln vs George Washington
+    'scientists',         // Albert Einstein vs Isaac Newton
+    'founders',           // Steve Jobs vs Bill Gates
+    'rappers',            // Tupac Shakur vs The Notorious B.I.G.
+    'boxers',             // Muhammad Ali vs Sugar Ray Robinson
+    'f1-drivers',         // Lewis Hamilton vs Michael Schumacher
+    'bollywood-actors',   // Amitabh Bachchan vs Shah Rukh Khan
+    'batsmen',            // Don Bradman vs Sachin Tendulkar
+    'painters',           // Leonardo da Vinci vs Vincent van Gogh
+    'emperors',           // Augustus vs Qin Shi Huang
+    'philosophers',       // Aristotle vs Plato
+    'inventors',          // Thomas Edison vs Nikola Tesla
+    'novelists',          // Leo Tolstoy vs Fyodor Dostoevsky
+    'ceos',               // Steve Jobs vs Satya Nadella
+    'youtubers',          // MrBeast vs PewDiePie
+    'bands',              // The Beatles vs Pink Floyd
+    'tennis-women',       // Serena Williams vs Steffi Graf
+    'chess-players',      // Magnus Carlsen vs Garry Kasparov
+    'mma-fighters',       // Jon Jones vs Georges St-Pierre
+    'physicists',         // Isaac Newton vs Albert Einstein
+    'indian-pms',         // Jawaharlal Nehru vs Narendra Modi
+    'comedians',          // George Carlin vs Richard Pryor
+    'generals',           // Alexander the Great vs Napoleon Bonaparte
+    'hollywood-actresses' // Meryl Streep vs Katharine Hepburn
+  ];
+  // Canonical Top 2 per general statistics — used when money is tied/empty so Messi is always 1, Ronaldo 2, etc.
+  const CANONICAL_TOP2 = {
+    'footballers': ['Lionel Messi','Cristiano Ronaldo'],
+    'tennis-men': ['Novak Djokovic','Roger Federer'],
+    'directors': ['Steven Spielberg','Martin Scorsese'],
+    'hollywood-actors': ['Marlon Brando','Robert De Niro'],
+    'basketball-players': ['Michael Jordan','LeBron James'],
+    'singers': ['Michael Jackson','Freddie Mercury'],
+    'us-presidents': ['Abraham Lincoln','George Washington'],
+    'scientists': ['Albert Einstein','Isaac Newton'],
+    'founders': ['Steve Jobs','Bill Gates'],
+    'rappers': ['Tupac Shakur','The Notorious B.I.G.'],
+    'boxers': ['Muhammad Ali','Sugar Ray Robinson'],
+    'f1-drivers': ['Lewis Hamilton','Michael Schumacher'],
+    'bollywood-actors': ['Amitabh Bachchan','Shah Rukh Khan'],
+    'batsmen': ['Don Bradman','Sachin Tendulkar'],
+    'painters': ['Leonardo da Vinci','Vincent van Gogh'],
+    'emperors': ['Augustus','Qin Shi Huang'],
+    'philosophers': ['Aristotle','Plato'],
+    'inventors': ['Thomas Edison','Nikola Tesla'],
+    'novelists': ['Leo Tolstoy','Fyodor Dostoevsky'],
+    'ceos': ['Steve Jobs','Satya Nadella'],
+    'youtubers': ['MrBeast','PewDiePie'],
+    'bands': ['The Beatles','Pink Floyd'],
+    'tennis-women': ['Serena Williams','Steffi Graf'],
+    'chess-players': ['Magnus Carlsen','Garry Kasparov'],
+    'mma-fighters': ['Jon Jones','Georges St-Pierre'],
+    'physicists': ['Isaac Newton','Albert Einstein'],
+    'indian-pms': ['Jawaharlal Nehru','Narendra Modi'],
+    'comedians': ['George Carlin','Richard Pryor'],
+    'generals': ['Alexander the Great','Napoleon Bonaparte'],
+    'hollywood-actresses': ['Meryl Streep','Katharine Hepburn']
+  };
+  function canonicalDuo(cat){
+    const names = CANONICAL_TOP2[cat.slug] || null;
+    if(!names) return null;
+    // synthesize person-like objects so tile always shows correct 1 vs 2 even on empty boards
+    return names.map((nm,i)=>({ id: 'canon-'+cat.slug+'-'+i, slug: nm.toLowerCase().replace(/[^a-z0-9]+/g,'-'), name: nm, photo_path: null, total_cents: 0, category_id: cat.id, first_backed_at: null }));
+  }
+  function duoForCat(cat){
+    const list = peopleByCat[cat.id] || [];
+    const hasMoney = list.some(p=> (p.total_cents||0) > 0);
+    if(hasMoney){
+      // real money leaders — sorted already by total_cents
+      return list.slice(0,2);
+    }
+    // no money yet — use canonical 1 vs 2; if board already has matching names, prefer real rows
+    const canon = canonicalDuo(cat);
+    if(!canon) return list.slice(0,2);
+    if(!list.length) return canon;
+    // try to match by name if DB has those people
+    const byNameLower = {}; list.forEach(p=> byNameLower[p.name.toLowerCase()] = p);
+    const a = byNameLower[canon[0].name.toLowerCase()] || canon[0];
+    const b = byNameLower[canon[1].name.toLowerCase()] || canon[1];
+    // if neither canonical name exists in DB, just use canon so order is correct
+    if(!byNameLower[canon[0].name.toLowerCase()] && !byNameLower[canon[1].name.toLowerCase()]) return canon;
+    return [a,b];
+  }
 
   let cats = [];
   let people = [];
+  let peopleByCat = {};
+  let groupMap = {};
+  let activeGroup = 'All';
+  let lastQ = '';
 
+  function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+  // Fetch
   try {
     const [catsRes, p0, p1, p2, p3, p4, p5] = await Promise.all([
       sb.from('categories').select('*').order('sort_order'),
@@ -77,19 +294,9 @@
       sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(5000, 5999)
     ]);
     cats = catsRes?.data || [];
-    people = [
-      ...(p0?.data || []),
-      ...(p1?.data || []),
-      ...(p2?.data || []),
-      ...(p3?.data || []),
-      ...(p4?.data || []),
-      ...(p5?.data || [])
-    ];
-  } catch(e) {
-    console.warn('DB fetch error:', e);
-  }
+    people = [...(p0?.data||[]),...(p1?.data||[]),...(p2?.data||[]),...(p3?.data||[]),...(p4?.data||[]),...(p5?.data||[])];
+  } catch(e) { console.warn('DB fetch error:', e); }
 
-  // Fallback if DB empty
   if((!cats || !cats.length) || (!people || !people.length)){
     const fallback = await window.WIKI_FALLBACK?.();
     if(fallback){
@@ -101,128 +308,291 @@
     }
   }
 
-  function renderHomepage(cats, people) {
-    if(!cats || !cats.length) return;
-    
-    // Pre-index people by category_id for instant lookups
-    const peopleByCat = {};
-    for(const p of (people || [])){
-      if(!peopleByCat[p.category_id]) peopleByCat[p.category_id] = [];
-      peopleByCat[p.category_id].push(p);
+  // Fallback demo cats if still empty (offline)
+  if(!cats.length){
+    cats = FEATURED_SLUGS.map((slug,i)=>({id:'demo-'+slug, slug, name: slug.replace(/-/g,' ').replace(/\b\w/g,s=>s.toUpperCase()), group_name: ['Football','Tennis','Screen','Music','Power','Mind','Business','Culture','Sport'][i%9], sort_order:i}));
+  }
+
+  // Indices
+  function buildIndices(){
+    peopleByCat = {};
+    for(const p of people){ if(!peopleByCat[p.category_id]) peopleByCat[p.category_id]=[]; peopleByCat[p.category_id].push(p); }
+    // ensure sorted by total_cents desc
+    for(const k in peopleByCat) peopleByCat[k].sort((a,b)=> (b.total_cents||0)-(a.total_cents||0) );
+    groupMap = {};
+    cats.forEach(c=>{ const g=c.group_name||'Other'; if(!groupMap[g]) groupMap[g]=[]; groupMap[g].push(c); });
+  }
+  buildIndices();
+
+  if(catCountEl) catCountEl.textContent = cats.length;
+  if(personCountEl) personCountEl.textContent = people.length.toLocaleString();
+
+  // Chips
+  function renderChips(){
+    const groups = ['All', ...Object.keys(groupMap).sort()];
+    chipsEl.innerHTML = '';
+    groups.forEach(g=>{
+      const b=document.createElement('button');
+      b.className='chip'+(activeGroup===g?' active':'');
+      b.textContent = g==='All' ? 'All categories' : g;
+      b.setAttribute('role','tab');
+      b.setAttribute('aria-selected', activeGroup===g?'true':'false');
+      b.addEventListener('click', ()=>{ activeGroup=g; renderChips(); applyFilters(); });
+      chipsEl.appendChild(b);
+    });
+  }
+  renderChips();
+
+  function duelHtml(cat, catPeople, opts={}){
+    const p1=catPeople[0], p2=catPeople[1];
+    const c1 = p1 ? (p1.total_cents||0) : 0;
+    const c2 = p2 ? (p2.total_cents||0) : 0;
+    const v1 = Math.floor(c1/100), v2 = Math.floor(c2/100);
+    const gapVotes = Math.abs(v1 - v2);
+    let gapText = '';
+    if(!p1 && !p2) gapText = '1 vote takes it';
+    else if(!p2) gapText = '1 vote takes it';
+    else if(v1===v2) gapText = 'Tied — 1 vote takes the lead';
+    else if(v1 > v2) gapText = `${p1.name} beating ${p2.name} by ${gapVotes.toLocaleString()} votes`;
+    else gapText = `${p2.name} beating ${p1.name} by ${gapVotes.toLocaleString()} votes`;
+    const totalVotes = v1 + v2;
+    const p1Pct = totalVotes>0 ? Math.round(v1/totalVotes*100) : 50;
+    const p2Pct = 100 - p1Pct;
+    const featBadge = opts.featured ? '<span class="badge-featured">🔥 TOP</span>' : '';
+    const isCrazy = opts.featured;
+    // crazy look: gold glow on leader, vote bar, beating line
+    const p1Photo = p1 ? window.OptimizedImage.render({ photoPath: p1.photo_path, name: p1.name, size: isCrazy?160:132, priority: opts.eager?'eager':'lazy', slug: p1.slug }) : '<div class="fallback">?</div>';
+    const p2Photo = p2 ? window.OptimizedImage.render({ photoPath: p2.photo_path, name: p2.name, size: isCrazy?160:132, priority: opts.eager?'eager':'lazy', slug: p2.slug }) : '<div class="fallback">?</div>';
+    const bar = (p1 && p2 && totalVotes>0) ? `<div class="vote-bar-wrap"><div class="vote-bar" aria-hidden="true"><div class="vote-bar-fill p1" style="width:${p1Pct}%"></div><div class="vote-bar-fill p2" style="width:${p2Pct}%"></div></div><div class="vote-bar-label mono">${v1.toLocaleString()} votes · ${v2.toLocaleString()} votes · ${p1Pct}% / ${p2Pct}%</div></div>` : '';
+    return `
+      <div class="duel-head"><strong>Greatest ${cat.name} of All Time</strong> ${featBadge}</div>
+      <div class="duel-body ${isCrazy?'crazy':''}">
+        <div class="duel-side ${v1>v2?'leader':''}">
+          <div class="photo">${p1Photo}</div>
+          <div class="name display">${p1 ? p1.name : 'Empty'}</div>
+          <div class="total display">${p1 ? v1.toLocaleString()+' <span style="font-size:12px;color:var(--muted);font-family:Inter">votes</span>' : '0 votes'}</div>
+        </div>
+        <div class="duel-vs">VS</div>
+        <div class="duel-side ${v2>v1?'leader':''}">
+          <div class="photo">${p2Photo}</div>
+          <div class="name display">${p2 ? p2.name : '—'}</div>
+          <div class="total display">${p2 ? v2.toLocaleString()+' <span style="font-size:12px;color:var(--muted);font-family:Inter">votes</span>' : ''}</div>
+        </div>
+        <div class="duel-gap">${v1===v2 && p1 && p2 ? '<b>Tied — 1 vote takes the lead</b>' : gapText==='1 vote takes it' ? '<span class="mono" style="color:var(--gold)">1 vote takes it</span>' : '<b style="color:var(--gold)">'+gapText+'</b>'}</div>
+        ${bar}
+      </div>
+      <div class="duel-foot"><span>${p1 ? v1.toLocaleString()+' votes total' : 'Unclaimed — 1 vote takes it'}</span><span>View board →</span></div>`;
+  }
+  function tileHtml(cat, catPeople, opts={}){
+    // featured duels use equal 1v1; browse grid keeps equal duel as well for consistency
+    return duelHtml(cat, catPeople, opts);
+  }
+
+  function renderFeatured(){
+    featuredEl.innerHTML='';
+    let idx=0;
+    for(const slug of FEATURED_SLUGS){
+      const cat = cats.find(c=> c.slug===slug);
+      if(!cat) continue;
+      if(activeGroup!=='All' && cat.group_name!==activeGroup) continue;
+      const catPeople = duoForCat(cat);
+      const a=document.createElement('a');
+      a.href=`category.html?slug=${cat.slug}`;
+      a.className='cat-tile duel';
+      a.innerHTML = duelHtml(cat, catPeople, {featured:true, eager: idx<6});
+      featuredEl.appendChild(a);
+      idx++;
+    }
+    if(!featuredEl.children.length){
+      featuredEl.innerHTML='<div class="no-hits">No featured boards in this group — try “All categories”.</div>';
+    }
+  }
+
+  function renderGroups(filteredCats){
+    // filteredCats: null => all, else array
+    const list = filteredCats || cats;
+    const visible = activeGroup==='All' ? list : list.filter(c=> c.group_name===activeGroup);
+
+    // Apply sort
+    const sort = sortEl.value;
+    if(sort==='az') visible.sort((a,b)=> a.name.localeCompare(b.name));
+    else if(sort==='money'){
+      visible.sort((a,b)=>{
+        const sa=(peopleByCat[a.id]||[]).reduce((s,p)=>s+(p.total_cents||0),0);
+        const sb=(peopleByCat[b.id]||[]).reduce((s,p)=>s+(p.total_cents||0),0);
+        return sb-sa;
+      });
+    } else if(sort==='newest') visible.sort((a,b)=> (b.sort_order||0)-(a.sort_order||0));
+    // hype: keep FEATURED first then rest by money
+    else if(sort==='hype'){
+      const order={}; FEATURED_SLUGS.forEach((s,i)=> order[s]=i);
+      visible.sort((a,b)=>{
+        const ai=order[a.slug]!==undefined?order[a.slug]:999, bi=order[b.slug]!==undefined?order[b.slug]:999;
+        if(ai!==bi) return ai-bi;
+        const sa=(peopleByCat[a.id]||[]).reduce((s,p)=>s+(p.total_cents||0),0);
+        const sb=(peopleByCat[b.id]||[]).reduce((s,p)=>s+(p.total_cents||0),0);
+        return sb-sa;
+      });
     }
 
-    // Group categories
-    const groupMap = {};
-    cats.forEach(c => {
-      const grp = c.group_name || 'Other';
-      if(!groupMap[grp]) groupMap[grp] = [];
-      groupMap[grp].push(c);
+    // Group
+    const gm={};
+    visible.forEach(c=>{ const g=c.group_name||'Other'; if(!gm[g]) gm[g]=[]; gm[g].push(c); });
+    const totals={};
+    Object.keys(gm).forEach(g=>{
+      totals[g]= gm[g].reduce((sum,c)=> sum + (peopleByCat[c.id]||[]).reduce((s,p)=>s+(p.total_cents||0),0), 0);
     });
+    const sortedGroups = Object.keys(gm).sort((a,b)=> totals[b]-totals[a]);
 
-    // Sort groups by total money
-    const groupTotals = {};
-    Object.keys(groupMap).forEach(g => {
-      const ids = groupMap[g].map(c => c.id);
-      groupTotals[g] = ids.reduce((sum, cid) => {
-        const pList = peopleByCat[cid] || [];
-        return sum + pList.reduce((s, p) => s + (p.total_cents || 0), 0);
-      }, 0);
-    });
-    const sortedGroups = Object.keys(groupMap).sort((a,b) => groupTotals[b] - groupTotals[a]);
-
-    groupsEl.innerHTML = '';
-    let tileIndex = 0;
-
+    groupsEl.innerHTML='';
+    let tileIndex=0;
     for(const g of sortedGroups){
-      const groupCats = groupMap[g];
-      const section = document.createElement('div');
-      section.className = 'group';
-      section.innerHTML = `<div class="group-head"><h2>${g}</h2><span class="mono" style="font-size:11px;color:var(--muted)">${groupCats.length} boards</span></div><div class="cat-grid"></div>`;
-      const grid = section.querySelector('.cat-grid');
-
+      const groupCats=gm[g];
+      const section=document.createElement('div');
+      section.className='group';
+      section.innerHTML=`<div class="group-head"><h2>${g}</h2><span class="mono" style="font-size:11px;color:var(--muted)">${groupCats.length} boards</span></div><div class="cat-grid"></div>`;
+      const grid=section.querySelector('.cat-grid');
       for(const cat of groupCats){
-        const catPeople = peopleByCat[cat.id] || [];
-        const p1 = catPeople[0], p2 = catPeople[1];
-        const tile = document.createElement('a');
-        tile.href = `category.html?slug=${cat.slug}`;
-        tile.className = 'cat-tile';
-
-        const priority = tileIndex < 6 ? 'eager' : 'lazy';
+        const catPeople = duoForCat(cat);
+        const a=document.createElement('a');
+        a.href=`category.html?slug=${cat.slug}`;
+        a.className='cat-tile duel';
+        a.dataset.slug=cat.slug;
+        a.dataset.name=cat.name.toLowerCase();
+        a.innerHTML = tileHtml(cat, catPeople, {eager: tileIndex<6});
         tileIndex++;
-
-        const p1Photo = p1 ? window.OptimizedImage.render({ photoPath: p1.photo_path, name: p1.name, size: 120, priority, slug: p1.slug }) : '<div class="fallback">?</div>';
-        const p2Photo = p2 ? window.OptimizedImage.render({ photoPath: p2.photo_path, name: p2.name, size: 80, priority, slug: p2.slug }) : '<div class="fallback" style="font-size:16px">?</div>';
-        const gap = p1 && p2 ? `$${(((p1.total_cents||0) - (p2.total_cents||0))/100).toFixed(0)} ahead` : p1 ? '—' : '$1 takes it';
-
-        tile.innerHTML = `
-          <div class="cat-tile-head"><strong>${cat.name}</strong><span>${catPeople.length} people</span></div>
-          <div class="cat-tile-body">
-            <div class="p1">
-              <div class="photo">${p1Photo}</div>
-              <div class="meta">
-                <div class="name display">${p1 ? p1.name : 'Empty'}</div>
-                <div class="total display">${p1 ? window.GOAT.cents(p1.total_cents||0) : '$0'}</div>
-                <div class="gap">${gap}</div>
-              </div>
-            </div>
-            <div class="p2">
-              <div class="photo" style="border-radius:12px">${p2Photo}</div>
-              <div class="meta">
-                <div class="name" style="font-size:12px;font-weight:600">${p2 ? p2.name : '—'}</div>
-                <div class="total" style="font-size:13px">${p2 ? window.GOAT.cents(p2.total_cents||0) : ''}</div>
-              </div>
-            </div>
-          </div>
-          <div class="cat-tile-foot"><span>${p1 ? window.GOAT.cents(p1.total_cents||0)+' total' : 'Unclaimed'}</span><span>View board →</span></div>`;
-        grid.appendChild(tile);
+        grid.appendChild(a);
       }
       groupsEl.appendChild(section);
     }
+    if(!visible.length){
+      groupsEl.innerHTML='<div class="no-hits">No boards match your filters — try clearing search or switching group.</div>';
+    }
   }
 
-  // Initial render with fresh data
-  renderHomepage(cats, people);
+  function renderSearchPeople(q){
+    const low=q.toLowerCase();
+    const hits = people.filter(p=> p.name.toLowerCase().includes(low)).slice(0, 24);
+    srPeople.innerHTML='';
+    if(!hits.length){
+      srPeople.innerHTML='<div class="no-hits" style="grid-column:1/-1">No people match “'+q.replace(/</g,'&lt;')+'”.</div>';
+      srPeopleMeta.textContent='';
+      srPeopleHead.style.display='none';
+      return;
+    }
+    srPeopleHead.style.display='flex';
+    srPeopleHead.style.gap='6px';
+    srPeopleHead.style.alignItems='center';
+    srPeopleMeta.textContent = '— '+hits.length+' of '+people.filter(p=> p.name.toLowerCase().includes(low)).length+' · tap to view board';
+    const catById={}; cats.forEach(c=> catById[c.id]=c);
+    hits.forEach(p=>{
+      const cat=catById[p.category_id];
+      const photo = window.OptimizedImage.render({ photoPath: p.photo_path, name: p.name, size: 56, priority:'lazy', slug: p.slug });
+      const rank = (peopleByCat[p.category_id]||[]).findIndex(x=> x.id===p.id)+1;
+      const a=document.createElement('a');
+      a.href=`person.html?slug=${p.slug}`;
+      a.className='person-hit';
+      a.title= p.name+' — '+ (cat?cat.name:'');
+      a.innerHTML=`<div class="hit-photo">${photo}</div><div class="hit-meta"><div class="hit-name">${p.name}</div><div class="hit-cat">${cat?cat.name:''}${rank? ' · #'+rank:''}</div><div class="hit-total">${Math.floor((p.total_cents||0)/100).toLocaleString()} votes</div></div><span style="color:var(--muted);font-size:12px">→</span>`;
+      srPeople.appendChild(a);
+    });
+  }
 
+  function applyFilters(){
+    const q=(qEl.value||'').trim();
+    lastQ=q;
+    if(q.length>=1){
+      // show search mode
+      const low=q.toLowerCase();
+      const catHits = cats.filter(c=> c.name.toLowerCase().includes(low) || c.slug.includes(low.replace(/\s+/g,'-')) );
+      const filteredCats = activeGroup==='All' ? catHits : catHits.filter(c=> c.group_name===activeGroup);
+      // sort cat hits by hype/money same as sortEl
+      srWrap.style.display='';
+      srTitle.textContent = `“${q}” — ${filteredCats.length} board${filteredCats.length!==1?'s':''}`;
+      srMeta.textContent = activeGroup!=='All' ? 'in '+activeGroup : '';
+      srCats.innerHTML='';
+      if(filteredCats.length){
+        const sorted=[...filteredCats].sort((a,b)=>{
+          const order={}; FEATURED_SLUGS.forEach((s,i)=> order[s]=i);
+          const ai=order[a.slug]!==undefined?order[a.slug]:999, bi=order[b.slug]!==undefined?order[b.slug]:999;
+          if(ai!==bi) return ai-bi;
+          return a.name.localeCompare(b.name);
+        });
+        sorted.slice(0,30).forEach((cat,i)=>{
+          const catPeople=duoForCat(cat);
+          const a=document.createElement('a');
+          a.href=`category.html?slug=${cat.slug}`;
+          a.className='cat-tile duel';
+          a.innerHTML=duelHtml(cat, catPeople, {eager:i<4});
+          srCats.appendChild(a);
+        });
+        if(filteredCats.length>30) srMeta.textContent += (srMeta.textContent?' · ':'') + `showing 30 of ${filteredCats.length}`;
+      } else {
+        srCats.innerHTML='<div class="no-hits">No categories match “'+q.replace(/</g,'&lt;')+'” — try a person name below.</div>';
+      }
+      renderSearchPeople(q);
+      groupsEl.style.display='none';
+      featuredWrap.style.display='none';
+      if(unclaimedEl) unclaimedEl.style.display='none';
+    } else {
+      srWrap.style.display='none';
+      groupsEl.style.display='';
+      featuredWrap.style.display='';
+      if(unclaimedEl) unclaimedEl.style.display = cats.filter(c => !(peopleByCat[c.id] && peopleByCat[c.id].length)).length ? 'block' : 'none';
+      renderFeatured();
+      renderGroups(null);
+    }
+  }
 
-  // Unclaimed banner
+  // Initial paint
+  renderFeatured();
+  renderGroups(null);
+
+  // Unclaimed banner (uses built indices)
   const emptyCats = cats.filter(c => !(peopleByCat[c.id] && peopleByCat[c.id].length));
   if(emptyCats.length && unclaimedEl){
     unclaimedEl.style.display = 'block';
-    unclaimedEl.innerHTML = `<strong>${emptyCats.length} boards where #1 is still open. $1 takes it.</strong> <span class="mono" style="font-size:12px;color:var(--muted)">Most boards will be empty at launch — that's an offer, not a graveyard.</span>`;
+    unclaimedEl.innerHTML = `<strong>${emptyCats.length} boards where #1 is still open. 1 vote takes it.</strong> <span class="mono" style="font-size:12px;color:var(--muted)">Every $1 = 1 vote — that's an offer, not a graveyard.</span>`;
   }
 
-  // Asynchronous secondary data (bids / activity)
+  // Events — live search
+  qEl.addEventListener('input', debounce(applyFilters, 160));
+  qEl.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); applyFilters(); } if(e.key==='Escape'){ qEl.value=''; applyFilters(); }});
+  sortEl.addEventListener('change', applyFilters);
+  clearEl.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; sortEl.value='hype'; renderChips(); applyFilters(); qEl.focus(); });
+
+  // Legacy search (header) -> feed main search if ever used
+  const legacy=document.getElementById('search-legacy');
+  if(legacy) legacy.addEventListener('keydown', e=>{ if(e.key==='Enter'){ qEl.value=legacy.value; applyFilters(); qEl.focus(); }});
+
+  // Deep-link ?q=
+  const urlQ=new URLSearchParams(location.search).get('q');
+  if(urlQ){ qEl.value=urlQ; applyFilters(); }
+
+  // Activity / backed today
   try {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const [todayBidsRes, activityBidsRes] = await Promise.all([
+    const today=new Date(); today.setHours(0,0,0,0);
+    const [todayBidsRes, activityBidsRes]=await Promise.all([
       sb.from('bids').select('amount_cents').gte('created_at', today.toISOString()),
       sb.from('bids').select('amount_cents,created_at,people(name,slug),users(display_name,is_anonymous)').order('created_at',{ascending:false}).limit(10)
     ]);
-    const backedToday = (todayBidsRes.data || []).reduce((s,r) => s + (r.amount_cents || 0), 0);
-    const backedEl = document.getElementById('backed-today');
-    if(backedEl) backedEl.textContent = window.GOAT.cents(backedToday) + ' backed today';
-
-    const bids = activityBidsRes.data;
+    const backedToday=(todayBidsRes.data||[]).reduce((s,r)=> s+(r.amount_cents||0),0);
+    const backedEl=document.getElementById('backed-today');
+    if(backedEl) backedEl.textContent=Math.floor(backedToday/100).toLocaleString()+' votes today';
+    const bids=activityBidsRes.data;
     if(activityEl){
       if(bids && bids.length){
-        activityEl.innerHTML = bids.map(b => {
-          const handle = b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'Someone');
-          return `<div><b>${handle}</b> put ${window.GOAT.cents(b.amount_cents)} on <a href="person.html?slug=${b.people?.slug}" style="color:var(--gold)">${b.people?.name}</a> · ${window.GOAT.fmtAgo(b.created_at)}</div>`;
+        activityEl.innerHTML=bids.map(b=>{
+          const handle=b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'Someone');
+          return `<div><b>${handle}</b> put ${Math.floor(b.amount_cents/100).toLocaleString()} votes on <a href="person.html?slug=${b.people?.slug}" style="color:var(--gold)">${b.people?.name}</a> · ${window.GOAT.fmtAgo(b.created_at)}</div>`;
         }).join('');
       } else {
-        activityEl.innerHTML = '<div class="mono" style="color:var(--muted)">No activity yet. Be the first.</div>';
+        activityEl.innerHTML='<div class="mono" style="color:var(--muted)">No activity yet. Be the first.</div>';
       }
     }
-  } catch(e) {
-    if(activityEl) activityEl.innerHTML = '<div class="mono" style="color:var(--muted)">No activity yet. Be the first.</div>';
-  }
+  } catch(e){ if(activityEl) activityEl.innerHTML='<div class="mono" style="color:var(--muted)">No activity yet. Be the first.</div>'; }
 
-  // Realtime subscription
-  try {
-    sb.channel('bids-index').on('postgres_changes', {event:'INSERT', schema:'public', table:'bids'}, async () => {
-      location.reload();
-    }).subscribe();
-  } catch(e) {}
+  try{ sb.channel('bids-index').on('postgres_changes',{event:'INSERT',schema:'public',table:'bids'}, async()=>{ location.reload(); }).subscribe(); }catch(e){}
 })();
 </script>
 </body>

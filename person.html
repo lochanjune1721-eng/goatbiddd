@@ -27,7 +27,7 @@
       <div id="crumb" class="mono" style="font-size:12px;color:var(--muted)"></div>
       <h1 id="name" class="display" style="font-size:42px;line-height:1">—</h1>
       <div id="blurb" style="color:var(--muted);margin-top:6px"></div>
-      <div style="margin-top:12px;display:flex;gap:12px;align-items:baseline"><span id="total" class="display" style="font-size:36px;color:var(--gold)">$0</span><span id="rank" class="mono" style="font-size:13px;color:var(--muted)"></span></div>
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:baseline"><span id="total" class="display" style="font-size:36px;color:var(--gold)">0 votes</span><span id="rank" class="mono" style="font-size:13px;color:var(--muted)"></span></div>
       <div class="back-row" id="back-row" style="margin-top:12px"></div>
       <div id="wiki" class="mono" style="font-size:11px;color:var(--muted);margin-top:10px"></div>
     </div>
@@ -50,7 +50,7 @@
   document.title=person.name+' — GOAT.lol';
   document.getElementById('name').textContent=person.name;
   document.getElementById('blurb').textContent=person.blurb||'';
-  document.getElementById('total').textContent=window.GOAT.cents(person.total_cents||0);
+  document.getElementById('total').textContent=window.GOAT.votes(person.total_cents||0);
   if(person.categories){
     document.getElementById('crumb').innerHTML=`<a href="category.html?slug=${person.categories.slug}" style="color:var(--gold)">${person.categories.name}</a> · ${person.categories.group_name}`;
   }
@@ -79,8 +79,8 @@
     // fans
     const fans = fansRes?.data;
     const el=document.getElementById('fans');
-    if(!fans||!fans.length) el.innerHTML='<div class="empty">No fans yet. Be the first for $1.</div>';
-    else el.innerHTML=fans.map((f,i)=> `<div class="job-card" style="display:flex;justify-content:space-between;align-items:center"><span>#${i+1} <b>${f.users?.is_anonymous?'Anonymous':f.users?.display_name||'Unknown'}</b></span><b class="display" style="color:var(--gold)">${window.GOAT.cents(f.total_cents)}</b></div>`).join('');
+    if(!fans||!fans.length) el.innerHTML='<div class="empty">No fans yet. Be the first for 1 vote.</div>';
+    else el.innerHTML=fans.map((f,i)=> `<div class="job-card" style="display:flex;justify-content:space-between;align-items:center"><span>#${i+1} <b>${f.users?.is_anonymous?'Anonymous':f.users?.display_name||'Unknown'}</b></span><b class="display" style="color:var(--gold)">${window.GOAT.votes(f.total_cents)}</b></div>`).join('');
   } catch(e) {
     console.warn('Fans load error:', e);
   }
@@ -88,8 +88,9 @@
   // back stepper
   const row=document.getElementById('back-row');
   let amt=100;
-  row.innerHTML=`<span class="stepper"><button id="dec">−</button><span id="amt">$1</span><button id="inc">+</button></span><button id="back" class="btn-back">Back</button><span class="stakes mono" id="stakes"></span>`;
-  function upd(){ document.getElementById('amt').textContent=`$${(amt/100).toFixed(0)}`; document.getElementById('stakes').textContent=`$${(amt/100).toFixed(0)} → $${((person.total_cents+amt)/100).toFixed(0)}`; }
+  row.innerHTML=`<span class="stepper"><button id="dec">−</button><span id="amt">1 vote</span><button id="inc">+</button></span><button id="back" class="btn-back">Back</button><span class="stakes mono" id="stakes"></span>`;
+  function setAmt(v){ v=Math.max(1,Math.min(100000,Math.floor(v)||1)); amt=v*100; const inp=document.getElementById('amt-input'); if(inp) inp.value=v; document.getElementById('amt').textContent=`${v} ${v===1?"vote":"votes"}`; }
+  function upd(){ const v=Math.floor(amt/100); const inp=document.getElementById('amt-input'); if(inp && document.activeElement!==inp) inp.value=v; document.getElementById('amt').textContent=`${v} ${v===1?"vote":"votes"}`; document.getElementById('stakes').textContent=`${v} votes → ${Math.floor((person.total_cents+amt)/100)} votes`; }
   document.getElementById('dec').addEventListener('click',()=>{ amt=Math.max(100, amt-100); upd(); });
   document.getElementById('inc').addEventListener('click',()=>{ amt=Math.min(100000, amt+100); upd(); });
   upd();

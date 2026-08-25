@@ -19,6 +19,9 @@ window.GOAT = {
     return `${SUPABASE_URL}/storage/v1/object/public/people/${cleanPath}`;
   },
   cents: (c)=> `$${(c/100).toLocaleString()}`,
+  votes: (c)=> `${Math.floor((c||0)/100).toLocaleString()} votes`,
+  votesShort: (c)=> `${Math.floor((c||0)/100).toLocaleString()}`,
+  votesGap: (c1,c2)=> Math.abs(Math.floor((c1||0)/100)-Math.floor((c2||0)/100)),
   fmtAgo: (iso)=>{
     if(!iso) return "—";
     const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
@@ -57,7 +60,7 @@ async function refreshBalance(){
   if(!user){ pill.innerHTML=`<a href="wallet.html">Sign in</a>`; return; }
   const {data}=await window.supabaseClient.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
   const bal=data? data.balance_cents:0;
-  pill.innerHTML=`<b>$${(bal/100).toFixed(0)} credit</b> <a href="wallet.html">Add</a>`;
+  pill.innerHTML=`<b>${Math.floor(bal/100).toLocaleString()} votes</b> <a href="wallet.html">Add</a>`;
 }
 window.refreshBalance=refreshBalance;
 document.addEventListener('DOMContentLoaded', refreshBalance);

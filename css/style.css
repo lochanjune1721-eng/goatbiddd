@@ -107,26 +107,27 @@ a{color:inherit;text-decoration:none}
 .btn-back:hover{background:var(--gold-hover)}
 .stakes{font-size:11px;color:var(--muted)}
 
-.person-card.rank-1{padding:22px;background:var(--gold-lo);border:2px solid var(--gold)}
-.person-card.rank-1 .photo{width:280px;height:280px}
-.person-card.rank-1 .name{font-size:48px}
-.person-card.rank-1 .total{font-size:42px}
-.person-card.rank-2{padding:18px;border-color:var(--silver)}
-.person-card.rank-2 .photo{width:200px;height:200px}
-.person-card.rank-2 .name{font-size:36px}
-.person-card.rank-2 .total{font-size:32px;color:var(--silver)}
-.person-card.rank-3{padding:16px;border-color:var(--bronze)}
-.person-card.rank-3 .photo{width:160px;height:160px}
-.person-card.rank-3 .name{font-size:30px}
-.person-card.rank-3 .total{font-size:26px;color:var(--bronze)}
-.person-card.rank-4-10{padding:14px}
-.person-card.rank-4-10 .photo{width:100px;height:100px}
-.person-card.rank-4-10 .name{font-size:22px}
-.person-card.rank-4-10 .total{font-size:20px}
+/* weight flattened — 1 vs 2 close, rest uniform, no 280px giant */
+.person-card.rank-1{padding:18px;background:var(--gold-lo);border:2px solid var(--gold)}
+.person-card.rank-1 .photo{width:180px;height:180px}
+.person-card.rank-1 .name{font-size:32px}
+.person-card.rank-1 .total{font-size:28px}
+.person-card.rank-2{padding:16px;border-color:var(--silver)}
+.person-card.rank-2 .photo{width:160px;height:160px}
+.person-card.rank-2 .name{font-size:28px}
+.person-card.rank-2 .total{font-size:24px;color:var(--silver)}
+.person-card.rank-3{padding:14px;border-color:var(--bronze)}
+.person-card.rank-3 .photo{width:140px;height:140px}
+.person-card.rank-3 .name{font-size:24px}
+.person-card.rank-3 .total{font-size:20px;color:var(--bronze)}
+.person-card.rank-4-10{padding:12px}
+.person-card.rank-4-10 .photo{width:96px;height:96px}
+.person-card.rank-4-10 .name{font-size:18px}
+.person-card.rank-4-10 .total{font-size:16px}
 .person-card.rank-11-plus{padding:12px}
-.person-card.rank-11-plus .photo{width:64px;height:64px}
-.person-card.rank-11-plus .name{font-size:18px}
-.person-card.rank-11-plus .total{font-size:17px}
+.person-card.rank-11-plus .photo{width:88px;height:88px}
+.person-card.rank-11-plus .name{font-size:17px}
+.person-card.rank-11-plus .total{font-size:15px}
 @media (max-width:600px){.person-card.rank-1{flex-direction:column;align-items:stretch}.person-card.rank-1 .photo{width:100%;height:320px}.cat-tile-body{flex-direction:column}.cat-tile-body .p2{width:100%}}
 
 .activity{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:8px}

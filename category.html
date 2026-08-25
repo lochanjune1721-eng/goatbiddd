@@ -25,7 +25,7 @@
 
   <div style="display:flex;gap:8px;margin:10px 0">
     <input id="add-name" placeholder="Add a person — real public figure with Wikipedia" style="flex:1;height:42px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 14px">
-    <button id="add-btn" class="btn-primary" style="width:auto">Add for $1 →</button>
+    <button id="add-btn" class="btn-primary" style="width:auto">Add 1 vote →</button>
   </div>
 
   <div id="board" class="list"></div>
@@ -43,8 +43,8 @@
   const sb=window.supabaseClient;
   const {data: cat}=await sb.from('categories').select('*').eq('slug',slug).maybeSingle();
   if(!cat){ document.getElementById('cat-title').textContent='Category not found'; return; }
-  document.getElementById('cat-title').textContent=cat.name;
-  document.title=cat.name+' — GOAT.lol';
+  document.getElementById('cat-title').textContent='Greatest ' + cat.name + ' of All Time';
+  document.title='Greatest ' + cat.name + ' of All Time — GOAT.lol';
   let people=[];
 
   async function fetchPeople(){
@@ -82,7 +82,7 @@
   async function render(){
     const board=document.getElementById('board');
     if(!people.length){
-      board.innerHTML='<div class="empty">No one on this board yet. $1 takes #1.</div>';
+      board.innerHTML='<div class="empty">No one on this board yet. 1 vote takes #1.</div>';
       return;
     }
     const fanMap=await fetchFans(people.map(p=>p.id));
@@ -94,7 +94,7 @@
       const size = rank === 1 ? 280 : (rank === 2 ? 200 : (rank === 3 ? 160 : (rank <= 10 ? 100 : 64)));
       const fans=fanMap[p.id]||[];
       const fanStr=fans.length? fans.map(f=> f.users?.is_anonymous? 'Anonymous': (f.users?.display_name||'Unknown')).join(' · ') : '—';
-      const gap = rank>1 && people[0] ? ` · $${(((people[0].total_cents||0) - (p.total_cents||0))/100).toFixed(0)} behind #1` : '';
+      const gap = rank>1 && people[0] ? ` · ${Math.floor(((people[0].total_cents||0) - (p.total_cents||0))/100).toLocaleString()} votes behind #1` : '';
       const card=document.createElement('div'); card.className=`person-card ${cls}`;
 
       const photoHtml = window.OptimizedImage.render({
@@ -111,20 +111,28 @@
         <div class="body">
           <div class="name display">${p.name}</div>
           <div class="blurb">${p.blurb||''}</div>
-          <div class="total display">${window.GOAT.cents(p.total_cents||0)}</div>
+          <div class="total display">${Math.floor((p.total_cents||0)/100).toLocaleString()} votes</div>
           <div class="fans">Top fans: <b>${fanStr}</b>${gap}</div>
           <div class="back-row">
-            <span class="stepper"><button data-dec>-</button><span data-amt>$1</span><button data-inc>+</button></span>
+            <span class="stepper"><button data-dec>-</button><span data-amt>1 vote</span><button data-inc>+</button></span>
             <button class="btn-back" data-back>Back</button>
-            <span class="stakes" data-stakes>$1 puts them at #${rank}</span>
+            <span class="stakes" data-stakes>1 vote → #${rank}</span>
           </div>
         </div>`;
 
-      // Stepper logic
+      // Stepper logic — any vote count, $1 = 1 vote
       let amt=100;
-      const amtEl=card.querySelector('[data-amt]'), stakesEl=card.querySelector('[data-stakes]');
+      const amtEl=card.querySelector('[data-amt]'), amtInput=card.querySelector('[data-amt-input]'), stakesEl=card.querySelector('[data-stakes]');
+      function setAmt(v){
+        v = Math.max(1, Math.min(100000, Math.floor(v)||1));
+        amt = v*100;
+        if(amtInput) amtInput.value = v;
+        if(amtEl) amtEl.textContent = `${v.toLocaleString()} ${v===1?"vote":"votes"}`;
+      }
       function updateStakes(){
-        amtEl.textContent=`$${(amt/100).toFixed(0)}`;
+        const v = Math.floor(amt/100);
+        if(amtEl) amtEl.textContent=`${v.toLocaleString()} ${v===1?"vote":"votes"}`;
+        if(amtInput && document.activeElement!==amtInput) amtInput.value = v;
         const newTotal=(p.total_cents||0)+amt;
         let newRank=1;
         for(let j=0;j<people.length;j++){
@@ -133,11 +141,15 @@
           else if((people[j].total_cents||0)===newTotal && people[j].first_backed_at && p.first_backed_at && new Date(people[j].first_backed_at) < new Date()) newRank++;
           else break;
         }
-        stakesEl.textContent=`$${(amt/100).toFixed(0)} puts them at #${newRank}`;
-        if(rank===1) stakesEl.textContent=`$${(amt/100).toFixed(0)} → $${(newTotal/100).toFixed(0)}`;
+        stakesEl.textContent=`${v.toLocaleString()} votes → #${newRank}`;
+        if(rank===1) stakesEl.textContent=`${v.toLocaleString()} votes → ${Math.floor(newTotal/100).toLocaleString()} votes`;
       }
-      card.querySelector('[data-dec]').addEventListener('click',()=>{ amt=Math.max(100, amt-100); updateStakes(); });
-      card.querySelector('[data-inc]').addEventListener('click',()=>{ amt=Math.min(100000, amt+100); updateStakes(); });
+      card.querySelector('[data-dec]').addEventListener('click',()=>{ setAmt(Math.max(1, Math.floor(amt/100)-1)); updateStakes(); });
+      card.querySelector('[data-inc]').addEventListener('click',()=>{ setAmt(Math.min(100000, Math.floor(amt/100)+1)); updateStakes(); });
+      if(amtInput){
+        amtInput.addEventListener('input',()=>{ setAmt(amtInput.value); updateStakes(); });
+        amtInput.addEventListener('change',()=>{ setAmt(amtInput.value); updateStakes(); });
+      }
       updateStakes();
 
       card.querySelector('[data-back]').addEventListener('click', async()=>{
