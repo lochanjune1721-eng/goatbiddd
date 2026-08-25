@@ -1,0 +1,64 @@
+// GOAT.lol — Supabase + auth + balance
+const SUPABASE_URL = "https://iuvmzlrnbwptgrbkdbbn.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1dm16bHJuYndwdGdyYmtkYmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTc3MjksImV4cCI6MjEwMzE3MzcyOX0.sF9FLOHjyEjZr9FGYJAAir_GZg7Pme92T2Kcoba1nrM";
+window.SUPABASE_URL = SUPABASE_URL;
+window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
+window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+window.GOAT = {
+  SUPABASE_URL,
+  getPhotoUrl: (path) => {
+    if(!path || typeof path !== 'string') return null;
+    const trimmed = path.trim();
+    if(!trimmed) return null;
+    if(trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    // Clean leading slashes
+    const cleanPath = trimmed.replace(/^\/+/, '');
+    return `${SUPABASE_URL}/storage/v1/object/public/people/${cleanPath}`;
+  },
+  cents: (c)=> `$${(c/100).toLocaleString()}`,
+  fmtAgo: (iso)=>{
+    if(!iso) return "—";
+    const s=Math.floor((Date.now()-new Date(iso).getTime())/1000);
+    if(s<60) return `${s}s ago`;
+    const m=Math.floor(s/60); if(m<60) return `${m} min ago`;
+    const h=Math.floor(m/60); if(h<24) return `${h}h ago`;
+    const d=Math.floor(h/24); return `${d}d ago`;
+  },
+  qs: (k)=> new URLSearchParams(location.search).get(k),
+  initials: (name)=> {
+    if(!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+    return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  }
+};
+
+async function ensureUserRow(){
+  const {data:{user}}=await window.supabaseClient.auth.getUser();
+  if(!user) return null;
+  let {data}=await window.supabaseClient.from('users').select('*').eq('id', user.id).maybeSingle();
+  if(!data){
+    const display = user.user_metadata?.display_name || user.email.split('@')[0];
+    const anon = !!user.user_metadata?.is_anonymous;
+    const {data: ins}=await window.supabaseClient.from('users').insert({id:user.id, email:user.email, display_name: display, is_anonymous: anon}).select('*').maybeSingle();
+    data=ins;
+  }
+  return data;
+}
+window.ensureUserRow=ensureUserRow;
+
+async function refreshBalance(){
+  const pill=document.getElementById('balance-pill');
+  if(!pill) return;
+  const {data:{user}}=await window.supabaseClient.auth.getUser();
+  if(!user){ pill.innerHTML=`<a href="wallet.html">Sign in</a>`; return; }
+  const {data}=await window.supabaseClient.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
+  const bal=data? data.balance_cents:0;
+  pill.innerHTML=`<b>$${(bal/100).toFixed(0)} credit</b> <a href="wallet.html">Add</a>`;
+}
+window.refreshBalance=refreshBalance;
+document.addEventListener('DOMContentLoaded', refreshBalance);
+window.supabaseClient.auth.onAuthStateChange(()=> refreshBalance());

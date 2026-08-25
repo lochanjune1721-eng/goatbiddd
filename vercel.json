@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "api/checkout.js": { "includeFiles": "api/**" },
+    "api/payment-done.js": { "includeFiles": "api/**" },
+    "api/admin.js": { "includeFiles": "api/**" }
+  },
+  "rewrites": [
+    { "source": "/api/checkout", "destination": "/api/checkout.js" },
+    { "source": "/api/payment-done", "destination": "/api/payment-done.js" },
+    { "source": "/api/admin", "destination": "/api/admin.js" }
+  ]
+}
