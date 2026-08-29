@@ -40,6 +40,7 @@
 <script src="js/supabase.js"></script>
 <script src="js/optimized-image.js"></script>
 <script src="js/portrait-fallback.js"></script>
+<script src="js/canonical-order.js"></script>
 <script src="js/wiki-fallback.js"></script>
 <script>
 (async function(){
@@ -55,9 +56,19 @@
   // data/goat_lol_147_categories_top20.csv. Ranking is by votes, so a
   // contender below 20th drops off the board until enough votes carry them back.
   const BOARD_SIZE = 20;
+  const FETCH_SIZE = 200;   // over-fetch, then rank canonically and trim to 20
+
+  // Put the board in canonical order and cut it to 20. Votes still win; the
+  // canonical rank only decides contenders that are level (which, at zero
+  // votes, is all of them). Unknown categories keep the database order.
+  async function applyCanonical(list){
+    if(!window.CanonicalOrder || !list || !list.length) return (list||[]).slice(0, BOARD_SIZE);
+    try { return await window.CanonicalOrder.apply(list, cat, BOARD_SIZE); }
+    catch(e){ console.warn('canonical ordering skipped', e); return list.slice(0, BOARD_SIZE); }
+  }
 
   async function fetchPeople(){
-    const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(BOARD_SIZE);
+    const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(FETCH_SIZE);
     people=data||[];
     if(!people.length){
       const fb=await window.WIKI_FALLBACK?.();
@@ -66,6 +77,8 @@
         people=raw.map(p=>({id:p.id, slug:p.slug, name:p.name, blurb:p.blurb, wikipedia_url:p.wikipedia_url, photo_path:p.photo_path, total_cents:0, first_backed_at:null, category_id:cat.id}));
       }
     }
+    // one application point, so the offline fallback is ordered too
+    people=await applyCanonical(people);
   }
 
   async function fetchFansDetailed(personIds){
