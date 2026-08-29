@@ -52,17 +52,18 @@ const raw = parseCsv(fs.readFileSync(SRC, 'utf8'));
 const header = raw.shift().map(h => h.trim());
 const col = Object.fromEntries(header.map((h,i)=>[h,i]));
 
-const stats = { input: 0, codeFixed: 0, nameFixed: 0, dropped: 0 };
+const stats = { input: 0, codeFixed: 0, nameFixed: 0, dropped: 0, blank: 0 };
 const boards = new Map();   // boardId -> board
 
 for (const r of raw){
   if (!r || r.length < header.length) continue;
   const name = (r[col.contender_name] || '').trim();
-  if (!name) { stats.dropped++; continue; }
-  stats.input++;
-
   let code = (r[col.country_code] || '').trim();
   let id   = (r[col.board_id] || '').trim();
+  // The full export carries a block of entirely blank rows; drop them rather
+  // than materialising a country with no code.
+  if (!name || !code || !id) { stats.blank++; continue; }
+  stats.input++;
   if (CODE_FIX[code]){ id = id.replace(new RegExp('^'+code+'-'), CODE_FIX[code]+'-'); code = CODE_FIX[code]; stats.codeFixed++; }
 
   const rawBoard = (r[col.board_name] || '').trim();
@@ -78,11 +79,15 @@ for (const r of raw){
   }
   const b = boards.get(id);
   const key = norm(name);
-  const rank = parseInt(r[col.rank_seed], 10) || 9999;
+  // Source batches disagree on the column name, and one writes floats ("1.0"),
+  // so take whichever of the two is populated.
+  const rankRaw = (col.seed_rank !== undefined ? r[col.seed_rank] : '')
+               || (col.rank_seed !== undefined ? r[col.rank_seed] : '');
+  const rank = Math.round(parseFloat(rankRaw)) || 9999;
   // Same contender listed twice (merged source batches): keep the best rank.
   const prev = b.seen.get(key);
   if (prev){ if (rank < prev.rank) prev.rank = rank; stats.dropped++; continue; }
-  const entry = { rank, name, type: (r[col.contender_type] || 'person').trim() };
+  const entry = { rank, name, type: ((r[col.contender_type] || '').trim() || 'person') };
   b.seen.set(key, entry);
   b.contenders.push(entry);
 }
@@ -171,6 +176,7 @@ where not exists (
 `);
 
 console.log(`input rows      ${stats.input}`);
+console.log(`blank rows      ${stats.blank}`);
 console.log(`dropped (dupes) ${stats.dropped}`);
 console.log(`country codes fixed ${stats.codeFixed}   board names fixed ${stats.nameFixed}`);
 console.log(`countries ${index.length}  boards ${catRows.length}  contenders ${personRows.length}`);

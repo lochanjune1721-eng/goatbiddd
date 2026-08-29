@@ -10,17 +10,23 @@
    "code": "AR",
    "country": "Argentina",
    "boards": 50,
-   "contenders": 500
+   "contenders": 844
   },
   {
    "code": "AU",
    "country": "Australia",
    "boards": 50,
-   "contenders": 500
+   "contenders": 859
   },
   {
    "code": "AT",
    "country": "Austria",
+   "boards": 50,
+   "contenders": 500
+  },
+  {
+   "code": "BD",
+   "country": "Bangladesh",
    "boards": 50,
    "contenders": 500
   },
@@ -58,7 +64,7 @@
    "code": "CA",
    "country": "Canada",
    "boards": 50,
-   "contenders": 500
+   "contenders": 816
   },
   {
    "code": "CL",
@@ -70,7 +76,7 @@
    "code": "CN",
    "country": "China",
    "boards": 50,
-   "contenders": 500
+   "contenders": 811
   },
   {
    "code": "CO",
@@ -142,13 +148,13 @@
    "code": "FR",
    "country": "France",
    "boards": 50,
-   "contenders": 500
+   "contenders": 852
   },
   {
    "code": "DE",
    "country": "Germany",
    "boards": 50,
-   "contenders": 500
+   "contenders": 959
   },
   {
    "code": "GH",
@@ -196,7 +202,13 @@
    "code": "IN",
    "country": "India",
    "boards": 150,
-   "contenders": 6407
+   "contenders": 10218
+  },
+  {
+   "code": "ID",
+   "country": "Indonesia",
+   "boards": 50,
+   "contenders": 500
   },
   {
    "code": "IR",
@@ -226,7 +238,7 @@
    "code": "IT",
    "country": "Italy",
    "boards": 50,
-   "contenders": 500
+   "contenders": 850
   },
   {
    "code": "JM",
@@ -262,7 +274,7 @@
    "code": "MX",
    "country": "Mexico",
    "boards": 50,
-   "contenders": 500
+   "contenders": 873
   },
   {
    "code": "MA",
@@ -286,7 +298,7 @@
    "code": "NL",
    "country": "Netherlands",
    "boards": 50,
-   "contenders": 500
+   "contenders": 820
   },
   {
    "code": "NZ",
@@ -297,6 +309,18 @@
   {
    "code": "NG",
    "country": "Nigeria",
+   "boards": 50,
+   "contenders": 776
+  },
+  {
+   "code": "NO",
+   "country": "Norway",
+   "boards": 50,
+   "contenders": 500
+  },
+  {
+   "code": "PK",
+   "country": "Pakistan",
    "boards": 50,
    "contenders": 500
   },
@@ -315,6 +339,12 @@
   {
    "code": "PE",
    "country": "Peru",
+   "boards": 50,
+   "contenders": 500
+  },
+  {
+   "code": "PH",
+   "country": "Philippines",
    "boards": 50,
    "contenders": 500
   },
@@ -376,19 +406,19 @@
    "code": "ZA",
    "country": "South Africa",
    "boards": 50,
-   "contenders": 500
+   "contenders": 746
   },
   {
    "code": "KR",
    "country": "South Korea",
    "boards": 50,
-   "contenders": 500
+   "contenders": 865
   },
   {
    "code": "ES",
    "country": "Spain",
    "boards": 50,
-   "contenders": 500
+   "contenders": 846
   },
   {
    "code": "LK",
@@ -400,7 +430,7 @@
    "code": "SE",
    "country": "Sweden",
    "boards": 50,
-   "contenders": 500
+   "contenders": 761
   },
   {
    "code": "CH",
@@ -439,6 +469,12 @@
    "contenders": 500
   },
   {
+   "code": "TR",
+   "country": "Turkey",
+   "boards": 50,
+   "contenders": 500
+  },
+  {
    "code": "UA",
    "country": "Ukraine",
    "boards": 50,
@@ -460,7 +496,7 @@
    "code": "US",
    "country": "United States",
    "boards": 150,
-   "contenders": 6427
+   "contenders": 10313
   },
   {
    "code": "UY",

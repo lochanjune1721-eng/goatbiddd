@@ -154,6 +154,12 @@
 .cat-nav-item.active .ico{background:rgba(13,12,11,.15);border-color:rgba(13,12,11,.22)}
 .cat-nav-item.active .n{color:rgba(13,12,11,.72)}
 
+.country-select{width:100%;height:38px;border-radius:11px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:0 10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.country-select:hover{border-color:var(--border-2)}
+.country-select:focus{border-color:var(--gold);outline:none}
+.country-select-sm{display:none;height:44px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
+@media(max-width:1180px){.country-select-sm{display:block}}
+
 /* --- RIGHT: leading fans --- */
 .fans-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm)}
 .fans-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 13px;border-bottom:1px solid var(--border);background:var(--surface-2)}
@@ -226,7 +232,9 @@
   <!-- LEFT SIDEBAR — CATEGORIES -->
   <aside class="side-col side-left" id="side-left" aria-label="Categories">
     <div class="side-inner">
-      <div class="side-title"><span>Select category</span></div>
+      <div class="side-title"><span>Country</span></div>
+      <select class="country-select" id="country-select" aria-label="Choose a country"></select>
+      <div class="side-title" style="margin-top:16px"><span id="cat-nav-title">Select category</span></div>
       <nav class="cat-nav" id="cat-nav" role="tablist"></nav>
     </div>
   </aside>
@@ -253,6 +261,7 @@
         <input id="q" placeholder="Search categories or people — try 'Ronaldo', 'Directors', 'President'" autocomplete="off" spellcheck="false">
       </label>
       <div class="filter-actions">
+        <select id="country-select-sm" class="country-select-sm" aria-label="Choose a country"></select>
         <select id="sort" aria-label="Sort boards"><option value="hype">Hype</option><option value="az">A → Z</option><option value="money">Most votes</option><option value="newest">Newest</option></select>
         <button id="clear" class="btn-clear" type="button">Clear</button>
         <span class="count-pill"><b id="cat-count">—</b> boards · <b id="person-count">—</b> people</span>
@@ -314,6 +323,7 @@
 <script src="js/supabase.js"></script>
 <script src="js/optimized-image.js"></script>
 <script src="js/portrait-fallback.js"></script>
+<script src="js/country-boards.js"></script>
 <script src="js/wiki-fallback.js"></script>
 <script>
 (async function(){
@@ -426,6 +436,8 @@
   let groupMap = {};
   let activeGroup = 'All';
   let lastQ = '';
+  let activeCountry = (window.CountryBoards ? window.CountryBoards.remembered() : 'GLOBAL');
+  let countryData = null;   // loaded boards for activeCountry, null when Global
   const liveFacts = { votesToday:0, recent:[], topFan:null };
 
   function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
@@ -525,6 +537,22 @@
   function renderCatNav(){
     const nav=document.getElementById('cat-nav');
     if(!nav) return;
+    const title=document.getElementById('cat-nav-title');
+    if(countryData){
+      // Inside a country the sidebar lists that country's boards.
+      if(title) title.textContent=`${countryData.country} boards`;
+      nav.innerHTML='';
+      (countryData.boards||[]).forEach(b=>{
+        const a=document.createElement('a');
+        a.className='cat-nav-item';
+        a.href=`category.html?slug=${encodeURIComponent(b.slug)}`;
+        a.title=b.name;
+        a.innerHTML=`<span class="ico" aria-hidden="true">${catIcon(b.name)}</span><span class="lbl">${esc(b.name.replace(/^Greatest\s+/i,''))}</span><span class="n">${b.contenders.length}</span>`;
+        nav.appendChild(a);
+      });
+      return;
+    }
+    if(title) title.textContent='Select category';
     const groups=Object.keys(groupMap).sort();
     nav.innerHTML='';
     const mk=(label, key, icon, count)=>{
@@ -550,6 +578,7 @@
 
   renderChips();
   renderCatNav();
+  populateCountryPickers().then(()=>{ if(activeCountry!=='GLOBAL') setCountry(activeCountry); });
 
   // A contender with no stored photo_path renders initials now and gets a real
   // portrait once PortraitFallback resolves it from Wikipedia.
@@ -608,6 +637,66 @@
   function tileHtml(cat, catPeople, opts={}){
     // featured duels use equal 1v1; browse grid keeps equal duel as well for consistency
     return duelHtml(cat, catPeople, opts);
+  }
+
+  // === COUNTRY BOARDS ===
+  // A country's boards replace the global view entirely: the sidebar lists that
+  // country's boards, and the centre column shows their top-two duels.
+  async function populateCountryPickers(){
+    if(!window.CountryBoards) return;
+    const list = await window.CountryBoards.countries();
+    const opts = ['<option value="GLOBAL">🌍 Global boards</option>']
+      .concat(list.map(c=> `<option value="${esc(c.code)}">${esc(c.country)} · ${c.boards}</option>`)).join('');
+    for(const id of ['country-select','country-select-sm']){
+      const el=document.getElementById(id);
+      if(!el) continue;
+      el.innerHTML=opts;
+      el.value=activeCountry;
+      el.addEventListener('change', ()=> setCountry(el.value));
+    }
+  }
+
+  async function setCountry(code){
+    activeCountry = code || 'GLOBAL';
+    if(window.CountryBoards) window.CountryBoards.remember(activeCountry);
+    for(const id of ['country-select','country-select-sm']){
+      const el=document.getElementById(id); if(el && el.value!==activeCountry) el.value=activeCountry;
+    }
+    countryData = activeCountry==='GLOBAL' ? null : await window.CountryBoards.load(activeCountry);
+    activeGroup='All';
+    renderChips();
+    renderCatNav();
+    applyFilters();
+  }
+
+  // Board -> the same duel tile the global boards use.
+  function countryTile(board, eager){
+    const people = window.CountryBoards.asPeople(board, activeCountry);
+    const a=document.createElement('a');
+    a.href=`category.html?slug=${encodeURIComponent(board.slug)}`;
+    a.className='cat-tile duel';
+    a.dataset.slug=board.slug;
+    a.innerHTML=duelHtml({name:board.name, slug:board.slug}, people.slice(0,2), {featured:true, eager});
+    return a;
+  }
+
+  function renderCountry(){
+    const boards=(countryData && countryData.boards) || [];
+    const q=(qEl.value||'').trim().toLowerCase();
+    const visible=boards.filter(b=> !q || b.name.toLowerCase().includes(q));
+    featuredEl.innerHTML='';
+    const head=featuredWrap.querySelector('.section-head');
+    if(head){
+      head.querySelector('h2').innerHTML=`${esc(countryData?countryData.country:'')} <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">${visible.length} BOARDS</span>`;
+      const p=head.querySelector('p'); if(p) p.textContent=`Every board inside ${countryData?countryData.country:''} — #1 vs #2, gap is real votes`;
+    }
+    visible.forEach((b,i)=> featuredEl.appendChild(countryTile(b, i<4)));
+    if(!visible.length) featuredEl.innerHTML='<div class="no-hits">No boards match that search in this country.</div>';
+    featuredWrap.style.display='';
+    groupsEl.style.display='none';
+    srWrap.style.display='none';
+    if(unclaimedEl) unclaimedEl.style.display='none';
+    schedulePortraits();
   }
 
   function renderFeatured(){
@@ -723,6 +812,7 @@
   function applyFilters(){
     const q=(qEl.value||'').trim();
     lastQ=q;
+    if(countryData){ renderCountry(); return; }
     if(q.length>=1){
       // show search mode
       const low=q.toLowerCase();
