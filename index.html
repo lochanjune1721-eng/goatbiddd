@@ -436,7 +436,14 @@
   let groupMap = {};
   let activeGroup = 'All';
   let lastQ = '';
-  let activeCountry = (window.CountryBoards ? window.CountryBoards.remembered() : 'GLOBAL');
+  // Country boards are OFF until the source data is fixed. Every one of the 86
+  // countries fills its boards from a shared name pool — 96% of entries are
+  // people who appear on more than five boards in their own country, and rank
+  // carries no signal (a #1 appears on 42 boards on average, same as a #10).
+  // Shipping that would put Sania Mirza top of Greatest Cricketer. The data and
+  // tooling stay in the repo; flip this to true once the source is regenerated.
+  const COUNTRY_BOARDS_ENABLED = false;
+  let activeCountry = (COUNTRY_BOARDS_ENABLED && window.CountryBoards ? window.CountryBoards.remembered() : 'GLOBAL');
   let countryData = null;   // loaded boards for activeCountry, null when Global
   const liveFacts = { votesToday:0, recent:[], topFan:null };
 
@@ -643,6 +650,13 @@
   // A country's boards replace the global view entirely: the sidebar lists that
   // country's boards, and the centre column shows their top-two duels.
   async function populateCountryPickers(){
+    if(!COUNTRY_BOARDS_ENABLED){
+      for(const id of ['country-select','country-select-sm']){
+        const el=document.getElementById(id); if(el) el.closest('.side-inner') ? el.remove() : el.remove();
+      }
+      const t=document.querySelector('#side-left .side-title'); if(t) t.remove();
+      return;
+    }
     if(!window.CountryBoards) return;
     const list = await window.CountryBoards.countries();
     const opts = ['<option value="GLOBAL">🌍 Global boards</option>']
