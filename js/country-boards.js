@@ -15,14 +15,23 @@
   let indexPromise = null;
   const countryCache = new Map();
 
-  async function countries(){
+  // The index carries verified:true only after scripts/fix_country_boards.mjs
+  // has assigned every contender to a board matching their actual occupation.
+  // Without that stamp the raw export is unusable as rankings, so the picker
+  // stays hidden rather than showing a tennis player atop Greatest Cricketer.
+  async function meta(){
     if(!indexPromise){
       indexPromise = fetch('data/boards/index.json')
         .then(r=>{ if(!r.ok) throw new Error('country index ' + r.status); return r.json(); })
-        .then(j=> (j.countries || []).slice().sort((a,b)=> a.country.localeCompare(b.country)))
-        .catch(e=>{ console.warn('country index unavailable', e); return []; });
+        .catch(e=>{ console.warn('country index unavailable', e); return { countries: [] }; });
     }
     return indexPromise;
+  }
+  async function verified(){ return !!(await meta()).verified; }
+  async function countries(){
+    const j = await meta();
+    if(!j.verified) return [];
+    return (j.countries || []).slice().sort((a,b)=> a.country.localeCompare(b.country));
   }
 
   async function load(code){
@@ -73,5 +82,5 @@
     }));
   }
 
-  window.CountryBoards = { GLOBAL, countries, load, board, boardBySlug, remembered, remember, asPeople };
+  window.CountryBoards = { GLOBAL, countries, verified, load, board, boardBySlug, remembered, remember, asPeople };
 })();

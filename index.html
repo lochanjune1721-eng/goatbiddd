@@ -436,14 +436,11 @@
   let groupMap = {};
   let activeGroup = 'All';
   let lastQ = '';
-  // Country boards are OFF until the source data is fixed. Every one of the 86
-  // countries fills its boards from a shared name pool — 96% of entries are
-  // people who appear on more than five boards in their own country, and rank
-  // carries no signal (a #1 appears on 42 boards on average, same as a #10).
-  // Shipping that would put Sania Mirza top of Greatest Cricketer. The data and
-  // tooling stay in the repo; flip this to true once the source is regenerated.
-  const COUNTRY_BOARDS_ENABLED = false;
-  let activeCountry = (COUNTRY_BOARDS_ENABLED && window.CountryBoards ? window.CountryBoards.remembered() : 'GLOBAL');
+  // Country boards show as soon as data/boards/index.json carries verified:true,
+  // which scripts/fix_country_boards.mjs stamps once every contender sits on a
+  // board matching their occupation. The raw export placed them at random, so
+  // until that runs the picker stays hidden rather than shipping nonsense.
+  let activeCountry = 'GLOBAL';
   let countryData = null;   // loaded boards for activeCountry, null when Global
   const liveFacts = { votesToday:0, recent:[], topFan:null };
 
@@ -585,7 +582,7 @@
 
   renderChips();
   renderCatNav();
-  populateCountryPickers().then(()=>{ if(activeCountry!=='GLOBAL') setCountry(activeCountry); });
+  populateCountryPickers().then(()=>{ if(activeCountry && activeCountry!=='GLOBAL') setCountry(activeCountry); });
 
   // A contender with no stored photo_path renders initials now and gets a real
   // portrait once PortraitFallback resolves it from Wikipedia.
@@ -649,16 +646,18 @@
   // === COUNTRY BOARDS ===
   // A country's boards replace the global view entirely: the sidebar lists that
   // country's boards, and the centre column shows their top-two duels.
-  async function populateCountryPickers(){
-    if(!COUNTRY_BOARDS_ENABLED){
-      for(const id of ['country-select','country-select-sm']){
-        const el=document.getElementById(id); if(el) el.closest('.side-inner') ? el.remove() : el.remove();
-      }
-      const t=document.querySelector('#side-left .side-title'); if(t) t.remove();
-      return;
+  function hideCountryUi(){
+    for(const id of ['country-select','country-select-sm']){
+      const el=document.getElementById(id); if(el) el.remove();
     }
-    if(!window.CountryBoards) return;
+    const t=document.querySelector('#side-left .side-title'); if(t) t.remove();
+  }
+
+  async function populateCountryPickers(){
+    if(!window.CountryBoards) return hideCountryUi();
     const list = await window.CountryBoards.countries();
+    if(!list.length) return hideCountryUi();
+    activeCountry = window.CountryBoards.remembered();
     const opts = ['<option value="GLOBAL">🌍 Global boards</option>']
       .concat(list.map(c=> `<option value="${esc(c.code)}">${esc(c.country)} · ${c.boards}</option>`)).join('');
     for(const id of ['country-select','country-select-sm']){
