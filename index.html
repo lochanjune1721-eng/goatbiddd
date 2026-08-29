@@ -89,9 +89,101 @@
   .featured-grid{grid-template-columns:1fr}
   .section-head h2{font-size:18px}
 }
+
+/* ============================================================
+   THREE-COLUMN SHELL — left categories / center boards / right fans
+   Additive only: no existing rule is redefined except the two
+   sticky offsets below, which shift down to clear the new ticker.
+   ============================================================ */
+.topbar{top:32px}
+.filter-bar{top:85px}
+@media(max-width:640px){.filter-bar{top:84px}}
+
+/* --- TOP LIVE TICKER --- */
+.goat-ticker{position:sticky;top:0;z-index:50;height:32px;background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;display:flex;align-items:center}
+.goat-ticker::after{content:'';position:absolute;right:0;top:0;bottom:0;width:64px;z-index:2;pointer-events:none;background:linear-gradient(270deg,var(--bg),transparent)}
+.goat-ticker-label{position:absolute;left:0;top:0;bottom:0;z-index:3;display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--gold);color:var(--bg);font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.goat-ticker-label .dot{width:6px;height:6px;border-radius:50%;background:var(--bg);opacity:.85;animation:goat-blink 1.6s ease-in-out infinite}
+@keyframes goat-blink{0%,100%{opacity:.85}50%{opacity:.25}}
+.goat-ticker-track{display:flex;width:max-content;animation:goat-ticker-scroll 60s linear infinite;will-change:transform}
+.goat-ticker:hover .goat-ticker-track{animation-play-state:paused}
+.goat-ticker-seq{display:flex;align-items:center;flex:0 0 auto}
+.goat-ticker-item{display:inline-flex;align-items:center;gap:7px;padding:0 16px;font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--muted);white-space:nowrap}
+.goat-ticker-item b{color:var(--ink);font-weight:700}
+.goat-ticker-item .g{color:var(--gold)}
+.goat-ticker-sep{color:var(--border-2);font-size:11px;user-select:none}
+@keyframes goat-ticker-scroll{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+/* style.css kills all animation under reduced motion — make the ticker a
+   scrollable strip there so no headline becomes unreachable. */
+@media (prefers-reduced-motion:reduce){
+  .goat-ticker{overflow-x:auto;scrollbar-width:none}
+  .goat-ticker::-webkit-scrollbar{display:none}
+  .goat-ticker-track{width:auto}
+  .goat-ticker-seq+.goat-ticker-seq{display:none}
+}
+
+/* --- SHELL GRID --- */
+.goat-shell{max-width:1560px;margin:0 auto;padding:0 20px;display:grid;grid-template-columns:232px minmax(0,1fr) 304px;gap:22px;align-items:start}
+.goat-shell>.container{max-width:none;margin:0;padding:0;min-width:0}
+.side-col{position:sticky;top:98px;max-height:calc(100vh - 116px);overflow-y:auto;overscroll-behavior:contain;padding:16px 2px 10px;scrollbar-width:thin;scrollbar-color:var(--border-2) transparent}
+.side-col::-webkit-scrollbar{width:6px}
+.side-col::-webkit-scrollbar-track{background:transparent}
+.side-col::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:999px}
+.side-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--muted-2);padding:0 6px;margin:0 0 9px}
+
+/* --- LEFT: categories --- */
+.cat-nav{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px;box-shadow:var(--shadow-sm)}
+.cat-nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:11px;border:1px solid transparent;background:none;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;line-height:1.2;text-align:left;cursor:pointer;transition:background .14s,color .14s,border-color .14s}
+.cat-nav-item .ico{width:23px;height:23px;border-radius:7px;display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--border);font-size:12px;line-height:1;flex:0 0 auto}
+.cat-nav-item .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-nav-item .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2);flex:0 0 auto}
+.cat-nav-item:hover{background:var(--surface-2);color:var(--ink)}
+.cat-nav-item:hover .ico{border-color:var(--border-2)}
+.cat-nav-item.active{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:700}
+.cat-nav-item.active .ico{background:rgba(13,12,11,.15);border-color:rgba(13,12,11,.22)}
+.cat-nav-item.active .n{color:rgba(13,12,11,.72)}
+
+/* --- RIGHT: leading fans --- */
+.fans-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.fans-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 13px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.fans-head h3{font-family:'Anton',sans-serif;font-size:14px;letter-spacing:.06em;line-height:1}
+.fans-live{display:inline-flex;align-items:center;gap:5px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--live)}
+.fans-live .live-dot{width:6px;height:6px;box-shadow:0 0 0 3px rgba(46,204,113,.14)}
+.fan-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .14s}
+.fan-row:last-child{border-bottom:none}
+.fan-row:hover{background:var(--surface-2)}
+.fan-rank{width:22px;text-align:center;flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);line-height:1}
+.fan-row.podium .fan-rank{font-size:15px}
+.fan-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;flex:0 0 auto;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:'Anton',sans-serif;font-size:13px;line-height:1}
+.fan-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.fan-row.podium .fan-avatar{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.fan-meta{flex:1;min-width:0}
+.fan-name{font-size:12.5px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fan-supporting{font-size:10.5px;color:var(--muted);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fan-supporting b{color:var(--gold-2);font-weight:600}
+.fan-votes{flex:0 0 auto;text-align:right;line-height:1.15}
+.fan-votes strong{display:block;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--gold);font-variant-numeric:tabular-nums;font-weight:500}
+.fan-votes span{display:block;font-size:8.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.fans-empty{padding:20px 14px;text-align:center;font-size:12px;color:var(--muted);line-height:1.5}
+.fans-empty b{display:block;color:var(--ink);font-size:13px;margin-bottom:4px}
+.fans-foot{padding:9px 13px;border-top:1px solid var(--border);background:var(--surface-2);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.fans-foot a{color:var(--gold)}
+
+/* --- responsive: collapse to the original single column --- */
+@media(max-width:1400px){.goat-shell{grid-template-columns:206px minmax(0,1fr) 284px;gap:18px}}
+@media(max-width:1180px){.goat-shell{grid-template-columns:minmax(0,1fr) 276px;gap:18px}.side-left{display:none}}
+@media(max-width:900px){
+  .goat-shell{grid-template-columns:minmax(0,1fr);padding:0 12px;gap:0}
+  .side-right{position:static;max-height:none;overflow:visible;padding:0;margin:18px 0 4px}
+  .goat-ticker-item{font-size:11px;padding:0 13px}
+}
 </style>
 </head>
 <body>
+<div class="goat-ticker" id="goat-ticker" aria-label="Live updates">
+  <span class="goat-ticker-label"><span class="dot"></span>Live</span>
+  <div class="goat-ticker-track" id="goat-ticker-track"></div>
+</div>
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand"><a href="index.html">GOAT<span>.lol</span></a></div>
@@ -104,6 +196,14 @@
     </nav>
   </div>
 </header>
+
+<div class="goat-shell">
+
+  <!-- LEFT SIDEBAR — CATEGORIES -->
+  <aside class="side-col side-left" id="side-left" aria-label="Categories">
+    <div class="side-title"><span>Select category</span></div>
+    <nav class="cat-nav" id="cat-nav" role="tablist"></nav>
+  </aside>
 
 <div class="container">
   <div class="live-pill"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">0 votes today</span></div>
@@ -164,6 +264,21 @@
     <h2 class="display" style="font-size:18px">Live activity</h2>
     <div id="activity" class="activity"></div>
   </div>
+</div>
+
+  <!-- RIGHT SIDEBAR — LEADING FANS -->
+  <aside class="side-col side-right" id="side-right" aria-label="Leading fans">
+    <div class="side-title"><span>The board</span></div>
+    <div class="fans-panel">
+      <div class="fans-head">
+        <h3>LEADING FANS</h3>
+        <span class="fans-live"><span class="live-dot"></span>Live</span>
+      </div>
+      <div id="leading-fans"><div class="fans-empty">Loading the board…</div></div>
+      <div class="fans-foot"><span>Top backers</span><a href="fans.html">See all →</a></div>
+    </div>
+  </aside>
+
 </div>
 
 <footer class="footer">GOAT.lol — pay to rank. <a href="rules.html">Rules</a> · <a href="wallet.html">Wallet</a> · <a href="fans.html">Fans</a></footer>
@@ -282,6 +397,9 @@
   let groupMap = {};
   let activeGroup = 'All';
   let lastQ = '';
+  const liveFacts = { votesToday:0, recent:[], topFan:null };
+
+  function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
 
   function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 
@@ -343,11 +461,66 @@
       b.textContent = g==='All' ? 'All categories' : g;
       b.setAttribute('role','tab');
       b.setAttribute('aria-selected', activeGroup===g?'true':'false');
-      b.addEventListener('click', ()=>{ activeGroup=g; renderChips(); applyFilters(); });
+      b.addEventListener('click', ()=> setGroup(g));
       chipsEl.appendChild(b);
     });
   }
+
+  // === LEFT SIDEBAR — CATEGORIES ===
+  // Mirrors the group filter the chips already drive, so both stay in sync.
+  const CAT_ICONS = [
+    [/american\s?football|gridiron/i,'🏈'], [/foot\s?ball|soccer/i,'⚽'],
+    [/basket/i,'🏀'], [/cricket|batsm|bowler/i,'🏏'], [/tennis/i,'🎾'],
+    [/box|combat|martial/i,'🥊'], [/mma|fighter|wrestl/i,'🥋'],
+    [/f1|formula|motorsport|driver|racing/i,'🏎'], [/golf/i,'⛳'],
+    [/chess|mind sport/i,'♟'],
+    [/music|singer|band|rapper|hip.?hop/i,'🎵'],
+    [/anime|manga/i,'🎌'],
+    [/movie|film|director|screen|actor|actress|hollywood|bollywood|tv\b/i,'🎬'],
+    [/gam|esport/i,'🎮'], [/internet|youtub|stream|social|creator|web/i,'📱'],
+    [/business|ceo|founder|entrepre|money|finance/i,'💼'], [/brand|company|corporat/i,'🏷'],
+    [/power|president|prime minister|leader|politic|emperor|general|military|royal/i,'👑'],
+    [/scien|physic|invent|philos|math/i,'🧠'], [/mind|think/i,'🧠'],
+    [/art|paint|sculpt/i,'🎨'],
+    [/word|writ|novel|poet|literat|book|author/i,'📖'],
+    [/comedy|comedian/i,'🎤'], [/food|chef|cook/i,'🍽'],
+    [/fashion|model|design/i,'👗'], [/space|astronaut|explor/i,'🚀'],
+    [/culture|icon|legend/i,'🏛'],
+    [/olymp|athlet|sport/i,'🏅']
+  ];
+
+  function catIcon(name){
+    for(const [re,ico] of CAT_ICONS) if(re.test(name)) return ico;
+    return '\u2726';
+  }
+  function renderCatNav(){
+    const nav=document.getElementById('cat-nav');
+    if(!nav) return;
+    const groups=Object.keys(groupMap).sort();
+    nav.innerHTML='';
+    const mk=(label, key, icon, count)=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='cat-nav-item'+(activeGroup===key?' active':'');
+      b.setAttribute('role','tab');
+      b.setAttribute('aria-selected', activeGroup===key?'true':'false');
+      b.title=label;
+      b.innerHTML=`<span class="ico" aria-hidden="true">${icon}</span><span class="lbl">${esc(label)}</span><span class="n">${count}</span>`;
+      b.addEventListener('click', ()=> setGroup(key));
+      nav.appendChild(b);
+    };
+    mk('All categories','All','\u2605', cats.length);
+    groups.forEach(g=> mk(g, g, catIcon(g), (groupMap[g]||[]).length));
+  }
+  function setGroup(g){
+    activeGroup=g;
+    renderChips();
+    renderCatNav();
+    applyFilters();
+  }
+
   renderChips();
+  renderCatNav();
 
   function duelHtml(cat, catPeople, opts={}){
     const p1=catPeople[0], p2=catPeople[1];
@@ -552,6 +725,7 @@
   }
 
   // Initial paint
+  buildTicker();
   renderFeatured();
   renderGroups(null);
 
@@ -566,7 +740,7 @@
   qEl.addEventListener('input', debounce(applyFilters, 160));
   qEl.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); applyFilters(); } if(e.key==='Escape'){ qEl.value=''; applyFilters(); }});
   sortEl.addEventListener('change', applyFilters);
-  clearEl.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; sortEl.value='hype'; renderChips(); applyFilters(); qEl.focus(); });
+  clearEl.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; sortEl.value='hype'; renderChips(); renderCatNav(); applyFilters(); qEl.focus(); });
 
   // Legacy search (header) -> feed main search if ever used
   const legacy=document.getElementById('search-legacy');
@@ -584,9 +758,11 @@
       sb.from('bids').select('amount_cents,created_at,people(name,slug),users(display_name,is_anonymous)').order('created_at',{ascending:false}).limit(10)
     ]);
     const backedToday=(todayBidsRes.data||[]).reduce((s,r)=> s+(r.amount_cents||0),0);
+    liveFacts.votesToday=Math.floor(backedToday/100);
     const backedEl=document.getElementById('backed-today');
     if(backedEl) backedEl.textContent=Math.floor(backedToday/100).toLocaleString()+' votes today';
     const bids=activityBidsRes.data;
+    liveFacts.recent=bids||[];
     if(activityEl){
       if(bids && bids.length){
         activityEl.innerHTML=bids.map(b=>{
@@ -598,6 +774,100 @@
       }
     }
   } catch(e){ if(activityEl) activityEl.innerHTML='<div class="mono" style="color:var(--muted)">No activity yet. Be the first.</div>'; }
+
+
+  // === RIGHT SIDEBAR — LEADING FANS ===
+  // Real backers only. Rank + total come from users.total_spent_cents; who they
+  // are supporting is the contender they have put the most votes behind.
+  async function loadLeadingFans(){
+    const host=document.getElementById('leading-fans');
+    if(!host) return;
+    let res;
+    try{
+      res = await sb.from('users').select('id,display_name,is_anonymous,total_spent_cents,photo_path,social_handle').order('total_spent_cents',{ascending:false}).limit(20);
+      // photo_path / social_handle were added after the base schema — retry bare if absent
+      if(res.error) res = await sb.from('users').select('id,display_name,is_anonymous,total_spent_cents').order('total_spent_cents',{ascending:false}).limit(20);
+    }catch(e){ res={data:null}; }
+    const users=(res.data||[]).filter(u=> (u.total_spent_cents||0)>0).slice(0,10);
+    if(!users.length){
+      host.innerHTML='<div class="fans-empty"><b>No fans on the board yet.</b>Back a contender and the #1 spot is yours. $1 = 1 vote.</div>';
+      return;
+    }
+
+    const backing={};
+    try{
+      const {data:rows}=await sb.from('bids').select('user_id,amount_cents,people(name,slug)').order('created_at',{ascending:false}).limit(2000);
+      const tally={}, slugByName={};
+      (rows||[]).forEach(b=>{
+        const nm=b.people && b.people.name;
+        if(!b.user_id || !nm) return;
+        if(!tally[b.user_id]) tally[b.user_id]={};
+        tally[b.user_id][nm]=(tally[b.user_id][nm]||0)+(b.amount_cents||0);
+        slugByName[nm]=b.people.slug;
+      });
+      Object.keys(tally).forEach(uid=>{
+        const best=Object.keys(tally[uid]).sort((a,b)=> tally[uid][b]-tally[uid][a])[0];
+        if(best) backing[uid]={ name:best, slug:slugByName[best] };
+      });
+    }catch(e){}
+
+    const medals=['🥇','🥈','🥉'];
+    host.innerHTML=users.map((u,i)=>{
+      const name=u.is_anonymous ? 'Anonymous' : (u.display_name || 'Unknown');
+      const url=u.photo_path ? (window.GOAT.getPhotoUrl(u.photo_path) || u.photo_path) : null;
+      const avatar=url ? `<img src="${esc(url)}" alt="" loading="lazy">` : esc(window.GOAT.initials(name));
+      const back=backing[u.id];
+      const supporting=back ? `Supporting <b>${esc(back.name)}</b>`
+        : (u.social_handle ? '@'+esc(String(u.social_handle).replace(/^@/,'')) : 'Backing the board');
+      const votes=Math.floor((u.total_spent_cents||0)/100).toLocaleString();
+      const row=`<div class="fan-row${i<3?' podium':''}">`
+        + `<div class="fan-rank">${i<3?medals[i]:'#'+(i+1)}</div>`
+        + `<div class="fan-avatar">${avatar}</div>`
+        + `<div class="fan-meta"><div class="fan-name" title="${esc(name)}">${esc(name)}</div><div class="fan-supporting">${supporting}</div></div>`
+        + `<div class="fan-votes"><strong>${votes}</strong><span>votes</span></div>`
+        + `</div>`;
+      return (back && back.slug) ? `<a href="person.html?slug=${encodeURIComponent(back.slug)}" title="${esc(name)} → ${esc(back.name)}">${row}</a>` : row;
+    }).join('');
+
+    const top=users[0];
+    liveFacts.topFan={ name: top.is_anonymous?'Anonymous':(top.display_name||'Someone'), votes: Math.floor((top.total_spent_cents||0)/100), backing: backing[top.id] };
+  }
+
+  // === TOP LIVE TICKER ===
+  // Every line is a real fact about the board — never invented activity.
+  function buildTicker(){
+    const track=document.getElementById('goat-ticker-track');
+    if(!track) return;
+    const items=[];
+    if(liveFacts.votesToday>0) items.push(`🔥 <b>${liveFacts.votesToday.toLocaleString()}</b> votes cast today`);
+    if(liveFacts.topFan && liveFacts.topFan.votes>0){
+      const b=liveFacts.topFan.backing;
+      items.push(`👑 <b>${esc(liveFacts.topFan.name)}</b> is #1 Leading Fan`
+        + (b ? ` — backing <span class="g">${esc(b.name)}</span>` : ` with <span class="g">${liveFacts.topFan.votes.toLocaleString()}</span> votes`));
+    }
+    (liveFacts.recent||[]).slice(0,6).forEach(b=>{
+      const n=Math.floor((b.amount_cents||0)/100);
+      const nm=b.people && b.people.name;
+      if(!nm || n<=0) return;
+      const who=(b.users && b.users.is_anonymous) ? 'Anonymous' : ((b.users && b.users.display_name) || 'Someone');
+      items.push(`⚡ <b>${esc(who)}</b> put <span class="g">${n.toLocaleString()}</span> votes on <b>${esc(nm)}</b>`);
+    });
+    const totalVotes=Math.floor(people.reduce((s,p)=> s+(p.total_cents||0), 0)/100);
+    const openBoards=cats.filter(c=> !(peopleByCat[c.id]||[]).some(p=> (p.total_cents||0)>0)).length;
+    items.push(`🏆 <b>${cats.length}</b> boards · <b>${people.length.toLocaleString()}</b> contenders in the running`);
+    if(totalVotes>0) items.push(`📈 <span class="g">${totalVotes.toLocaleString()}</span> votes cast all time`);
+    if(openBoards>0) items.push(`👀 <b>${openBoards}</b> boards where #1 is still open — <span class="g">1 vote takes it</span>`);
+    items.push(`💰 <span class="g">$1 = 1 vote</span> · no judges, no algorithms`);
+
+    const seq=items.map(t=> `<span class="goat-ticker-item">${t}</span><span class="goat-ticker-sep">•</span>`).join('');
+    track.innerHTML=`<div class="goat-ticker-seq">${seq}</div><div class="goat-ticker-seq" aria-hidden="true">${seq}</div>`;
+    // Hold a constant scroll speed no matter how many lines there are.
+    const w=track.firstElementChild.scrollWidth;
+    track.style.animationDuration=Math.max(24, Math.round(w/55))+'s';
+  }
+
+  await loadLeadingFans();
+  buildTicker();
 
   try{ sb.channel('bids-index').on('postgres_changes',{event:'INSERT',schema:'public',table:'bids'}, async()=>{ location.reload(); }).subscribe(); }catch(e){}
 })();
