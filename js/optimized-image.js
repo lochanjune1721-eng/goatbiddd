@@ -10,18 +10,16 @@
    */
   function getThumb(sourceUrl, size = 120, name = '') {
     const clean = (sourceUrl || '').trim().split('?')[0];
+    if(!clean && !name) return null;
 
-    // In local dev, route through auto-healing caching proxy
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return `/img?name=${encodeURIComponent(name || '')}&url=${encodeURIComponent(clean || '')}`;
+    let fullUrl = clean;
+    if (clean && !clean.startsWith('http://') && !clean.startsWith('https://') && !clean.startsWith('data:')) {
+      const baseUrl = window.GOAT?.SUPABASE_URL || 'https://orzcszqpnvicreqvpncu.supabase.co';
+      fullUrl = `${baseUrl}/storage/v1/object/public/people/${clean.replace(/^\/+/, '')}`;
     }
 
-    if (clean.startsWith('http://') || clean.startsWith('https://')) {
-      return clean;
-    }
-
-    const baseUrl = window.GOAT?.SUPABASE_URL || 'https://orzcszqpnvicreqvpncu.supabase.co';
-    return `${baseUrl}/storage/v1/object/public/people/${clean.replace(/^\/+/, '')}`;
+    // Always route through caching proxy to guarantee Wikimedia User-Agent compliance & zero 403 blocks
+    return `/img?name=${encodeURIComponent(name || '')}&url=${encodeURIComponent(fullUrl || '')}`;
   }
 
   /**

@@ -1,10 +1,13 @@
 {
+  "cleanUrls": true,
   "functions": {
-    "api/checkout.js": { "includeFiles": "api/**" },
-    "api/payment-done.js": { "includeFiles": "api/**" },
-    "api/admin.js": { "includeFiles": "api/**" }
+    "api/*.js": {
+      "maxDuration": 15
+    }
   },
   "rewrites": [
+    { "source": "/img", "destination": "/api/img.js" },
+    { "source": "/image-proxy", "destination": "/api/img.js" },
     { "source": "/api/checkout", "destination": "/api/checkout.js" },
     { "source": "/api/payment-done", "destination": "/api/payment-done.js" },
     { "source": "/api/admin", "destination": "/api/admin.js" }
