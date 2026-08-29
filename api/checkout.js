@@ -1,42 +1,44 @@
 // /api/checkout.js
 // TEMPORARY: fake payment. Swap for Dodo before launch.
 import { createClient } from '@supabase/supabase-js';
+import { HttpError, readJsonBody, requireMethod, requireEnv, unwrap, withHandler } from './_lib.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://orzcszqpnvicreqvpncu.supabase.co";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Project URL is public (the service-role key below is the secret), so keep the
+// fallback: a missing SUPABASE_URL env var should not take checkout down.
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://orzcszqpnvicreqvpncu.supabase.co';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  let body = req.body;
-  if (typeof body === 'string') { try { body = JSON.parse(body); } catch {} }
-  const { userId, amountCents, amount_cents } = body || {};
+export default withHandler(async function handler(req, res){
+  requireMethod(req, 'POST');
+
+  const body = await readJsonBody(req);
+  const { userId, amountCents, amount_cents } = body;
   const cents = Number(amountCents ?? amount_cents);
-  if (!cents || cents < 500) return res.status(400).json({ error: 'Minimum is 5 votes' });
+  if (!Number.isFinite(cents) || cents < 500) throw new HttpError(400, 'Minimum is 5 votes');
 
-  // If no service key (local dev), just simulate success
   await new Promise(r => setTimeout(r, 800)); // simulate provider latency
 
-  if (!SERVICE_KEY) {
-    // In dev without service key, just return ok and let client optimistically assume credit
-    return res.json({ ok: true, fake: true, newBalance: null, message: 'Fake checkout — no service key, using optimistic balance' });
+  // Without a service key (local dev) there is nothing to credit — say so
+  // instead of half-running and failing at the first Supabase call.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return res.status(200).json({ ok: true, fake: true, newBalance: null, message: 'Fake checkout — no service key, using optimistic balance' });
   }
 
-  const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   // Use provided userId or try to get from auth header
   let uid = userId;
   if (!uid && req.headers.authorization) {
-    const token = req.headers.authorization.replace('Bearer ','');
+    const token = req.headers.authorization.replace('Bearer ', '');
     const { data } = await supabaseAdmin.auth.getUser(token);
     uid = data?.user?.id;
   }
-  if (!uid) return res.status(401).json({ error: 'Missing userId' });
+  if (!uid) throw new HttpError(401, 'Missing userId');
 
-  const paymentId = `fake_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
-  const { data, error } = await supabaseAdmin.rpc('credit_balance', {
-    p_user_id: uid,
-    p_amount_cents: cents,
-    p_payment_id: paymentId
-  });
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json({ ok: true, newBalance: data });
-}
+  const paymentId = `fake_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const newBalance = unwrap(
+    await supabaseAdmin.rpc('credit_balance', { p_user_id: uid, p_amount_cents: cents, p_payment_id: paymentId }),
+    'credit_balance'
+  );
+  return res.status(200).json({ ok: true, newBalance });
+});

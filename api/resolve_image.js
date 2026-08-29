@@ -1,35 +1,38 @@
 import { createClient } from '@supabase/supabase-js';
-import { resolveWikimediaImage } from '../scripts/wikimedia_resolver.mjs';
+import { HttpError, readJsonBody, requireEnv, requireMethod, unwrap, withHandler } from './_lib.js';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+export default withHandler(async function handler(req, res){
+  requireMethod(req, 'POST');
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return res.status(500).json({ error: 'Supabase configuration missing' });
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+
+  const body = await readJsonBody(req);
+  const { name, category, entity_id } = body;
+  if (!name) throw new HttpError(400, 'Missing name parameter');
+
+  // The resolver lives outside api/, so it is bundled only if the build traces
+  // it. Import it lazily: a bundling miss then becomes a readable 500 rather
+  // than a cold-start crash that takes the whole function down.
+  let resolveWikimediaImage;
+  try {
+    ({ resolveWikimediaImage } = await import('../scripts/wikimedia_resolver.mjs'));
+  } catch (err) {
+    throw new HttpError(500, `Image resolver module failed to load: ${err?.message || err}`);
   }
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body;
-  const { name, category, entity_id } = body || {};
-
-  if (!name) return res.status(400).json({ error: 'Missing name parameter' });
-
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const { status, data } = await resolveWikimediaImage({ name, category: category || '' });
 
-  try {
-    const result = await resolveWikimediaImage({ name, category: category || '' });
-    const { status, data } = result;
-
-    if (entity_id && data && data.wikimedia_thumbnail_url) {
+  if (entity_id && data?.wikimedia_thumbnail_url) {
+    unwrap(
       await supa.from('people').update({
         photo_path: data.wikimedia_thumbnail_url,
         photo_credit: data.image_author,
         photo_license: data.image_license
-      }).eq('id', entity_id);
-    }
-
-    return res.status(200).json({ ok: true, status, data });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+      }).eq('id', entity_id),
+      'update person photo'
+    );
   }
-}
+
+  return res.status(200).json({ ok: true, status, data });
+});
