@@ -23,9 +23,10 @@
   </div>
 
   <div id="wallet-card" style="display:none">
+    <div class="notice ok" style="text-align:center;font-weight:600">Test mode — no real money is charged. $1 = 1 vote. Minimum 5 votes.</div>
     <div class="job-card" style="text-align:center">
       <div class="mono" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Balance</div>
-      <div id="balance-big" class="display" style="font-size:48px;color:var(--gold)">$0</div>
+      <div id="balance-big" class="display" style="font-size:48px;color:var(--gold)">0 votes</div>
       <div class="mono" style="font-size:12px;color:var(--muted)">Credit never expires and is non-refundable.</div>
       <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
         <button class="btn-primary" style="width:auto" data-topup="500">+$5</button>
@@ -34,7 +35,11 @@
         <button class="btn-primary" style="width:auto" data-topup="5000">+$50</button>
         <button class="btn-primary" style="width:auto" data-topup="10000">+$100</button>
       </div>
-      <div class="mono" style="font-size:11px;color:var(--muted);margin-top:8px">Dodo charges 4% + $0.40 once per top-up — not per $1 bid. Top up $25 to make $1 bids cost 5.6% in fees, not 44%.</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;align-items:center">
+        <input id="custom-topup" type="number" min="5" placeholder="Custom votes" style="width:140px;height:40px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 14px;text-align:center">
+        <button id="custom-btn" class="btn-ghost">Add custom</button>
+      </div>
+      <div class="mono" style="font-size:11px;color:var(--muted);margin-top:8px">Test mode — no real money is charged. When live, Dodo takes ~4% + $0.40 per top-up.</div>
       <button id="logout" class="btn-ghost" style="margin-top:12px">Sign out</button>
     </div>
     <h3 style="margin:16px 0 8px;font-size:16px">History — every bid with person, amount, date</h3>
@@ -57,7 +62,7 @@
       authCard.style.display='none'; walletCard.style.display='block';
       const {data: u}=await sb.from('users').select('*').eq('id', user.id).maybeSingle();
       const bal=u? u.balance_cents:0;
-      document.getElementById('balance-big').textContent='$'+(bal/100).toFixed(0);
+      document.getElementById('balance-big').textContent=Math.floor(bal/100).toLocaleString()+' votes';
       loadHistory(user.id);
     }
   }
@@ -72,20 +77,43 @@
   });
   document.getElementById('logout').addEventListener('click', async()=>{ await sb.auth.signOut(); location.reload(); });
 
-  document.querySelectorAll('[data-topup]').forEach(b=> b.addEventListener('click', async()=>{
-    const cents=Number(b.dataset.topup);
+  async function doTopup(cents){
     const {data:{user}}=await sb.auth.getUser();
-    if(!user) return alert('Sign in first');
-    const r=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount_cents: cents})});
+    if(!user) return alert('Sign in first — your votes will merge after you claim your fan spot.');
+    const r=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amountCents: cents, userId: user.id})});
     const j=await r.json(); if(!r.ok) return alert(j.error||'Checkout failed');
-    if(j.url) location.href=j.url; else alert('Top-up created');
-  }));
+    // fake checkout: directly credit via RPC if no real provider
+    if(j.fake){
+      let _e=null;
+      try{
+        const {error}=await sb.rpc('credit_balance',{p_user_id: user.id, p_amount_cents: cents, p_payment_id: `fake_${Date.now()}`});
+        _e=error;
+        if(_e && String(_e.message).includes('Could not find function')) throw _e;
+      }catch(e){
+        if(String(e.message||e).includes('Could not find function') || String(e.message||'').includes('credit_balance')){
+          // remote function not deployed yet — fake locally, tell user to run supabase.sql
+          alert(`${cents/100} votes (test mode) — run supabase.sql in Supabase SQL editor to persist real balance, using local optimistic balance for now.`);
+          const pill=document.getElementById('balance-pill');
+          if(pill) pill.innerHTML=`<b>${cents/100} votes</b> <a href="wallet.html">Get votes</a>`;
+          localStorage.setItem('goat_fake_balance', String((Number(localStorage.getItem('goat_fake_balance')||0)+cents)));
+          return location.reload();
+        } else throw e;
+      }
+      if(_e) return alert(_e.message);
+      alert(`${cents/100} votes added (test mode)`);
+      location.reload();
+    } else if(j.url) location.href=j.url; else { alert('Top-up created'); location.reload(); }
+  }
+  document.querySelectorAll('[data-topup]').forEach(b=> b.addEventListener('click', ()=> doTopup(Number(b.dataset.topup))));
+  const customInput=document.getElementById('custom-topup');
+  const customBtn=document.getElementById('custom-btn');
+  if(customBtn) customBtn.addEventListener('click', ()=>{ const v=Math.floor(Number(customInput.value)||0); if(v<5) return alert('Minimum is 5 votes'); doTopup(v*100); });
 
   async function loadHistory(uid){
     const {data}=await sb.from('bids').select('amount_cents,created_at,people(name,slug)').eq('user_id', uid).order('created_at',{ascending:false}).limit(100);
     const el=document.getElementById('history');
     if(!data||!data.length){ el.innerHTML='<div class="empty">No bids yet. Back someone from a category.</div>'; return; }
-    el.innerHTML=data.map(b=>`<div class="job-card" style="display:flex;justify-content:space-between;gap:10px"><span><a href="person.html?slug=${b.people.slug}" style="color:var(--gold)">${b.people.name}</a> <span class="mono" style="font-size:12px;color:var(--muted)">${window.GOAT.fmtAgo(b.created_at)}</span></span><b class="display">${window.GOAT.cents(b.amount_cents)}</b></div>`).join('');
+    el.innerHTML=data.map(b=>`<div class="job-card" style="display:flex;justify-content:space-between;gap:10px"><span><a href="person.html?slug=${b.people.slug}" style="color:var(--gold)">${b.people.name}</a> <span class="mono" style="font-size:12px;color:var(--muted)">${window.GOAT.fmtAgo(b.created_at)}</span></span><b class="display">${window.GOAT.votes(b.amount_cents)}</b></div>`).join('');
   }
 })();
 </script>

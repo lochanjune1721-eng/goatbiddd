@@ -1,6 +1,6 @@
 // GOAT.lol — Supabase + auth + balance
-const SUPABASE_URL = "https://iuvmzlrnbwptgrbkdbbn.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1dm16bHJuYndwdGdyYmtkYmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTc3MjksImV4cCI6MjEwMzE3MzcyOX0.sF9FLOHjyEjZr9FGYJAAir_GZg7Pme92T2Kcoba1nrM";
+const SUPABASE_URL = "https://orzcszqpnvicreqvpncu.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDIwNDIsImV4cCI6MjEwMzIxODA0Mn0.ayMlWauR_XCT2lWV_Pg2PZTq_CuTS-bch8KdoxslvIs";
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -65,3 +65,23 @@ async function refreshBalance(){
 window.refreshBalance=refreshBalance;
 document.addEventListener('DOMContentLoaded', refreshBalance);
 window.supabaseClient.auth.onAuthStateChange(()=> refreshBalance());
+
+// anon session helper — create users row with anon_session_id cookie before sign-in, merge on sign-in
+(function(){
+  function getAnonId(){
+    let m=document.cookie.match(/goat_anon=([^;]+)/);
+    if(m) return m[1];
+    const id='anon_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+    document.cookie='goat_anon='+id+'; path=/; max-age=31536000; SameSite=Lax';
+    return id;
+  }
+  window.getAnonId=getAnonId;
+  // On auth, merge anon row if exists (callable from wallet)
+  window.mergeAnon=async function(){
+    const anon=getAnonId();
+    const {data:{user}}=await window.supabaseClient.auth.getUser();
+    if(!user || !anon) return;
+    try{ await window.supabaseClient.rpc('merge_anon',{p_anon_id: anon}); }catch(e){}
+  }
+  try{ getAnonId(); }catch(e){}
+})();

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
-const supa = createClient('https://iuvmzlrnbwptgrbkdbbn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1dm16bHJuYndwdGdyYmtkYmJuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzU5NzcyOSwiZXhwIjoyMTAzMTczNzI5fQ.XX378u9ceV2zf8urOZoHN4wwRwlsEgkb1nJF9TG1DQU')
+const supa = createClient('https://orzcszqpnvicreqvpncu.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM')
 const groups = {
   "Greatest Footballer":"Football","Greatest Football Manager":"Football","Greatest Football Club":"Football","Greatest Goalkeeper":"Football",
   "Greatest Batsman":"Cricket","Greatest Bowler":"Cricket","Greatest All-Rounder":"Cricket","Greatest Cricket Captain":"Cricket","Greatest IPL Player":"Cricket","Greatest Wicketkeeper":"Cricket",

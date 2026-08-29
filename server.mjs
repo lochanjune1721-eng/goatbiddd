@@ -163,6 +163,22 @@ const server = http.createServer(async (req, res) => {
     return res.end(svg);
   }
 
+  // 1b. Fake checkout API for local dev — mirrors /api/checkout.js
+  if (pathname === '/api/checkout' && req.method === 'POST') {
+    let body=''; for await (const c of req) body+=c;
+    let j={}; try{ j=JSON.parse(body||'{}'); }catch{}
+    const cents = Number(j.amountCents ?? j.amount_cents ?? j.amount ?? 0);
+    res.writeHead(cents < 500 ? 400 : 200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+    if (cents < 500) return res.end(JSON.stringify({error:'Minimum is 5 votes'}));
+    // simulate latency
+    await new Promise(r=>setTimeout(r, 800));
+    return res.end(JSON.stringify({ok:true, fake:true, amountCents: cents}));
+  }
+  if (pathname === '/api/checkout' && req.method === 'OPTIONS') {
+    res.writeHead(204, {'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization'});
+    return res.end();
+  }
+
   // 2. Static File Serving
   let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
   

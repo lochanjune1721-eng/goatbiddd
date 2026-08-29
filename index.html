@@ -4,47 +4,44 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>GOAT.lol — Who is the Greatest of All Time?</title>
-<meta name="description" content="Fans buy credit, then spend it backing whoever they believe in. The money is the ranking.">
-<link rel="preconnect" href="https://iuvmzlrnbwptgrbkdbbn.supabase.co" crossorigin>
+<meta name="description" content="Who is the Greatest of All Time? Anyone can argue. Can you put your money where your mouth is? $1 = 1 vote.">
+<link rel="preconnect" href="https://orzcszqpnvicreqvpncu.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* === Filter + Featured extensions === */
-.duel{border:2px solid #3A2E14;overflow:hidden;background:linear-gradient(180deg, #1e1a14 0%, var(--surface) 100%);position:relative}
-.duel-head{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:rgba(212,162,76,.06)}
-.duel-head strong{font-size:13px;color:var(--gold);letter-spacing:.06em;text-transform:uppercase}
-.duel-body{position:relative;display:flex;align-items:center;justify-content:space-between;gap:0;padding:22px 18px 42px;min-height:260px}
-.duel-body.crazy{padding:28px 20px 48px;min-height:300px}
-.duel-side{flex:1;text-align:center;min-width:0;position:relative;z-index:1}
-.duel-side .photo{width:176px;height:176px;border-radius:24px;margin:0 auto;overflow:hidden;border:2px solid var(--border);box-shadow:var(--shadow)}
-.duel-body.crazy .duel-side .photo{width:200px;height:200px;border-radius:28px}
-@media(max-width:640px){.duel-side .photo{width:132px;height:132px}.duel-body.crazy .duel-side .photo{width:148px;height:148px}}
-@media(max-width:420px){.duel-side .photo{width:112px;height:112px}.duel-body.crazy .duel-side .photo{width:124px;height:124px}}
-.duel-side .name{font-family:'Anton',sans-serif;font-size:20px;line-height:.95;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
-.duel-body.crazy .duel-side .name{font-size:24px}
-@media(max-width:640px){.duel-side .name{font-size:16px}.duel-body.crazy .duel-side .name{font-size:18px}}
-.duel-side .total{font-family:'Anton',sans-serif;font-size:16px;color:var(--gold);margin-top:4px;letter-spacing:.02em}
-.duel-side .total span{font-size:11px!important}
-.duel-side.leader .photo{box-shadow:0 0 0 3px var(--gold), 0 12px 32px rgba(212,162,76,.45);border-color:var(--gold)}
-.duel-side.leader .name{color:var(--gold)}
-.duel-vs{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) rotate(-6deg);width:68px;height:68px;border-radius:50%;background:var(--gold);color:var(--bg);display:grid;place-items:center;font-weight:900;font-family:'Anton',sans-serif;font-size:18px;letter-spacing:.06em;border:4px solid var(--bg);box-shadow:0 0 0 3px var(--gold), 0 10px 28px rgba(0,0,0,.5);z-index:2;line-height:1}
-.duel-body.crazy .duel-vs{width:76px;height:76px;font-size:20px;top:44%;border-width:5px;transform:translate(-50%,-50%) rotate(-8deg)}
-@media(max-width:640px){.duel-vs{width:56px;height:56px;font-size:15px}.duel-body.crazy .duel-vs{width:62px;height:62px;font-size:16px}}
-.duel-gap{position:absolute;left:50%;top:74%;transform:translateX(-50%);text-align:center;font-size:12px;color:var(--ink);background:var(--bg);border:1px solid #3A2E14;border-radius:999px;padding:6px 14px;white-space:nowrap;z-index:2;box-shadow:0 4px 14px rgba(0,0,0,.35);max-width:88%;overflow:hidden;text-overflow:ellipsis}
-.duel-gap b{color:var(--gold)}
-.duel-body.crazy .duel-gap{font-size:13px;padding:7px 16px;top:76%;font-weight:700}
-@media(max-width:640px){.duel-gap{font-size:11px;padding:5px 10px;top:78%}}
-.vote-bar-wrap{position:absolute;left:18px;right:18px;bottom:10px;display:flex;flex-direction:column;gap:4px}
-.vote-bar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
-.duel-body.crazy .vote-bar{height:12px;border-width:1.5px}
-.vote-bar-fill{height:100%;transition:width .5s cubic-bezier(.22,1,.36,1)}
-.vote-bar-fill.p1{background:linear-gradient(90deg, var(--gold), #f59e0b)}
-.vote-bar-fill.p2{background:linear-gradient(90deg, #3a2e14, var(--surface-2));border-left:1px solid var(--border)}
-.vote-bar-label{text-align:center;font-size:10px;color:var(--muted);letter-spacing:.06em;font-weight:600}
-.duel-foot{padding:10px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);background:rgba(0,0,0,.18)}
-.duel-foot span:last-child{color:var(--gold);font-weight:700}
+.duel{border:1px solid var(--border);overflow:hidden;background:var(--surface);border-radius:16px}
+.duel-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.duel-head strong{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted);line-height:1.2}
+.duel-body{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;gap:10px;align-items:start;padding:14px 12px 12px}
+.duel-body.crazy{gap:10px;padding:16px 14px 12px}
+.duel-side{text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0;overflow:hidden}
+.duel-side .photo{width:100%;max-width:142px;aspect-ratio:1/1;height:auto;border-radius:12px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);position:relative;flex-shrink:0}
+.duel-body.crazy .duel-side .photo{max-width:156px}
+@media(max-width:640px){.duel-side .photo{max-width:108px}.duel-body.crazy .duel-side .photo{max-width:118px}}
+@media(max-width:380px){.duel-side .photo{max-width:92px}.duel-body.crazy .duel-side .photo{max-width:100px}}
+.duel-side .name{font-family:'Anton',sans-serif;font-size:14px;line-height:1.05;max-width:100%;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;width:100%}
+.duel-body.crazy .duel-side .name{font-size:15px}
+@media(max-width:640px){.duel-side .name{font-size:12px}.duel-body.crazy .duel-side .name{font-size:13px}}
+.duel-side .total{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.duel-side .total span{font-family:'Inter',sans-serif;font-size:9px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.duel-side.leader .photo{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold), 0 6px 14px rgba(201,168,106,.18)}
+.duel-vs{grid-column:2;grid-row:1;align-self:center;width:42px;height:42px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:12px;letter-spacing:.04em;border:2px solid var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.3);line-height:1;flex-shrink:0;margin:0 2px}
+.duel-body.crazy .duel-vs{width:46px;height:46px;font-size:13px}
+@media(max-width:640px){.duel-vs{width:36px;height:36px;font-size:11px}.duel-body.crazy .duel-vs{width:38px;height:38px;font-size:11px}}
+.duel-gap{grid-column:1 / -1;grid-row:2;text-align:center;font-size:11px;line-height:1.35;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 10px;max-width:94%;white-space:normal;overflow-wrap:break-word;justify-self:center;margin-top:2px}
+.duel-gap b{color:var(--ink);font-weight:700}
+.duel-body.crazy .duel-gap{font-size:11px;padding:5px 10px}
+.vote-bar-wrap{grid-column:1 / -1;grid-row:3;display:flex;flex-direction:column;gap:4px;margin-top:0}
+.vote-bar{display:flex;height:5px;border-radius:999px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
+.duel-body.crazy .vote-bar{height:6px}
+.vote-bar-fill{height:100%;transition:width .5s}
+.vote-bar-fill.p1{background:var(--gold)}
+.vote-bar-fill.p2{background:var(--border-2)}
+.vote-bar-label{text-align:center;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+.duel-foot{padding:8px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
 .filter-bar{position:sticky;top:53px;z-index:30;background:rgba(15,14,12,.92);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:18px;margin:10px 0 14px;padding:12px;box-shadow:var(--shadow)}
 .filter-bar-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .filter-search{flex:1;min-width:220px;position:relative;display:flex;align-items:center}
@@ -112,8 +109,14 @@
   <div class="live-pill"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">0 votes today</span></div>
 
   <div class="hero">
-    <h1 class="display">Who is the Greatest of All Time?</h1>
-    <p>Anyone can argue. Can you put your money where your mouth is? Every <b>$1 = 1 vote</b> — the board is the votes, nothing else. The greatest is who we back the most.</p>
+    <div class="hero-copy">
+      <h1 class="display">Who is the<br><em>Greatest of All Time?</em></h1>
+      <p>Anyone can argue. <span style="color:var(--ink);font-weight:700">Can you put your money where your mouth is?</span> <b>$1 = 1 vote.</b> No judges. No algorithms. Just votes. Talk is cheap — <span style="color:var(--gold)">prove it.</span></p>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><strong id="hero-boards">—</strong><span>Boards</span></div>
+      <div class="hero-stat"><strong id="hero-votes">—</strong><span>Total votes</span></div>
+    </div>
   </div>
 
   <!-- FILTER BAR -->
@@ -124,7 +127,7 @@
         <input id="q" placeholder="Search categories or people — try 'Ronaldo', 'Directors', 'President'" autocomplete="off" spellcheck="false">
       </label>
       <div class="filter-actions">
-        <select id="sort" aria-label="Sort boards"><option value="hype">🔥 Hype</option><option value="az">A → Z</option><option value="money">Most votes</option><option value="newest">Newest</option></select>
+        <select id="sort" aria-label="Sort boards"><option value="hype">Hype</option><option value="az">A → Z</option><option value="money">Most votes</option><option value="newest">Newest</option></select>
         <button id="clear" class="btn-clear" type="button">Clear</button>
         <span class="count-pill"><b id="cat-count">—</b> boards · <b id="person-count">—</b> people</span>
       </div>
@@ -135,7 +138,7 @@
   <!-- FEATURED 30 -->
   <div class="featured-wrap" id="featured-wrap">
     <div class="section-head">
-      <h2><span class="fire">🔥</span> TOP 30 FIGHTS — live head-to-head</h2>
+      <h2>Top 30 Fights <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">LIVE HEAD-TO-HEAD</span></h2>
       <p>Most debated boards on GOAT.lol • #1 vs #2, gap is real votes</p>
     </div>
     <div id="featured" class="featured-grid"></div>
@@ -326,6 +329,9 @@
 
   if(catCountEl) catCountEl.textContent = cats.length;
   if(personCountEl) personCountEl.textContent = people.length.toLocaleString();
+  const hb=document.getElementById('hero-boards'), hv=document.getElementById('hero-votes');
+  if(hb) hb.textContent = cats.length;
+  if(hv) hv.textContent = Math.floor(people.reduce((s,p)=>s+(p.total_cents||0),0)/100).toLocaleString();
 
   // Chips
   function renderChips(){
@@ -350,22 +356,23 @@
     const v1 = Math.floor(c1/100), v2 = Math.floor(c2/100);
     const gapVotes = Math.abs(v1 - v2);
     let gapText = '';
+    let fanCall = '';
     if(!p1 && !p2) gapText = '1 vote takes it';
     else if(!p2) gapText = '1 vote takes it';
     else if(v1===v2) gapText = 'Tied — 1 vote takes the lead';
-    else if(v1 > v2) gapText = `${p1.name} beating ${p2.name} by ${gapVotes.toLocaleString()} votes`;
-    else gapText = `${p2.name} beating ${p1.name} by ${gapVotes.toLocaleString()} votes`;
+    else if(v1 > v2) { gapText = `${p1.name} is beating ${p2.name} by ${gapVotes.toLocaleString()} votes`; fanCall = ` — where are you now, ${p2.name.split(' ').pop()} fans?`; }
+    else { gapText = `${p2.name} is beating ${p1.name} by ${gapVotes.toLocaleString()} votes`; fanCall = ` — where are you now, ${p1.name.split(' ').pop()} fans?`; }
     const totalVotes = v1 + v2;
     const p1Pct = totalVotes>0 ? Math.round(v1/totalVotes*100) : 50;
     const p2Pct = 100 - p1Pct;
-    const featBadge = opts.featured ? '<span class="badge-featured">🔥 TOP</span>' : '';
+    const featBadge = opts.featured ? '<span class="badge-featured">Top</span>' : '';
     const isCrazy = opts.featured;
     // crazy look: gold glow on leader, vote bar, beating line
     const p1Photo = p1 ? window.OptimizedImage.render({ photoPath: p1.photo_path, name: p1.name, size: isCrazy?160:132, priority: opts.eager?'eager':'lazy', slug: p1.slug }) : '<div class="fallback">?</div>';
     const p2Photo = p2 ? window.OptimizedImage.render({ photoPath: p2.photo_path, name: p2.name, size: isCrazy?160:132, priority: opts.eager?'eager':'lazy', slug: p2.slug }) : '<div class="fallback">?</div>';
     const bar = (p1 && p2 && totalVotes>0) ? `<div class="vote-bar-wrap"><div class="vote-bar" aria-hidden="true"><div class="vote-bar-fill p1" style="width:${p1Pct}%"></div><div class="vote-bar-fill p2" style="width:${p2Pct}%"></div></div><div class="vote-bar-label mono">${v1.toLocaleString()} votes · ${v2.toLocaleString()} votes · ${p1Pct}% / ${p2Pct}%</div></div>` : '';
     return `
-      <div class="duel-head"><strong>Greatest ${cat.name} of All Time</strong> ${featBadge}</div>
+      <div class="duel-head"><strong>${cat.name.startsWith('Greatest') ? cat.name + (cat.name.endsWith('All Time')?'':' of All Time') : 'Greatest ' + cat.name + ' of All Time'}</strong> ${featBadge}</div>
       <div class="duel-body ${isCrazy?'crazy':''}">
         <div class="duel-side ${v1>v2?'leader':''}">
           <div class="photo">${p1Photo}</div>
@@ -378,7 +385,7 @@
           <div class="name display">${p2 ? p2.name : '—'}</div>
           <div class="total display">${p2 ? v2.toLocaleString()+' <span style="font-size:12px;color:var(--muted);font-family:Inter">votes</span>' : ''}</div>
         </div>
-        <div class="duel-gap">${v1===v2 && p1 && p2 ? '<b>Tied — 1 vote takes the lead</b>' : gapText==='1 vote takes it' ? '<span class="mono" style="color:var(--gold)">1 vote takes it</span>' : '<b style="color:var(--gold)">'+gapText+'</b>'}</div>
+        <div class="duel-gap">${v1===v2 && p1 && p2 ? '<b>Tied — 1 vote takes the lead</b>' : gapText==='1 vote takes it' ? '<span class="mono" style="color:var(--gold)">1 vote takes it</span>' : '<b style="color:var(--gold)">'+gapText+'</b><span style="color:var(--muted);font-weight:500">'+fanCall+'</span>'}</div>
         ${bar}
       </div>
       <div class="duel-foot"><span>${p1 ? v1.toLocaleString()+' votes total' : 'Unclaimed — 1 vote takes it'}</span><span>View board →</span></div>`;

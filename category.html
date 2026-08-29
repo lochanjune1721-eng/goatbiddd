@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Category — GOAT.lol</title>
-<link rel="preconnect" href="https://iuvmzlrnbwptgrbkdbbn.supabase.co" crossorigin>
+<link rel="preconnect" href="https://orzcszqpnvicreqvpncu.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="css/style.css">
@@ -31,7 +31,10 @@
   <div id="board" class="list"></div>
   <div id="pagination" class="pagination"></div>
 </div>
-
+<div class="sticky-bar" id="sticky-bar">
+  <span class="balance"><span id="sticky-balance">— votes</span></span>
+  <a href="wallet.html" class="btn-primary" style="padding:8px 14px">Get votes</a>
+</div>
 <footer class="footer">GOAT.lol — pay to rank. <a href="rules.html">Rules</a></footer>
 
 <script src="js/supabase.js"></script>
@@ -46,6 +49,7 @@
   document.getElementById('cat-title').textContent='Greatest ' + cat.name + ' of All Time';
   document.title='Greatest ' + cat.name + ' of All Time — GOAT.lol';
   let people=[];
+  let optimisticQueue=[];
 
   async function fetchPeople(){
     const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(200);
@@ -53,20 +57,20 @@
     if(!people.length){
       const fb=await window.WIKI_FALLBACK?.();
       if(fb){
-        const slug=cat.slug;
         const raw=fb.people.filter(p=> p.category_slug===slug);
         people=raw.map(p=>({id:p.id, slug:p.slug, name:p.name, blurb:p.blurb, wikipedia_url:p.wikipedia_url, photo_path:p.photo_path, total_cents:0, first_backed_at:null, category_id:cat.id}));
       }
     }
   }
 
-  async function fetchFans(personIds){
+  async function fetchFansDetailed(personIds){
     if(!personIds.length) return {};
-    const {data}=await sb.from('fan_totals').select('person_id,total_cents,users(display_name,is_anonymous)').in('person_id', personIds).order('total_cents',{ascending:false});
+    // fetch top 2 per person to compute gap
+    const {data}=await sb.from('fan_totals').select('person_id,total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform,photo_status)').in('person_id', personIds).order('total_cents',{ascending:false});
     const map={};
     (data||[]).forEach(r=>{
       if(!map[r.person_id]) map[r.person_id]=[];
-      if(map[r.person_id].length<3) map[r.person_id].push(r);
+      if(map[r.person_id].length<2) map[r.person_id].push(r);
     });
     return map;
   }
@@ -78,95 +82,176 @@
     if(r<=10) return 'rank-4-10';
     return 'rank-11-plus';
   }
+  function fmtVotes(c){ return Math.floor((c||0)/100).toLocaleString() + ' votes'; }
+  function platformIcon(p){
+    if(p==='x') return '𝕏';
+    if(p==='instagram') return '◎';
+    if(p==='tiktok') return '♫';
+    if(p==='youtube') return '▶';
+    return '';
+  }
 
   async function render(){
     const board=document.getElementById('board');
     if(!people.length){
-      board.innerHTML='<div class="empty">No one on this board yet. 1 vote takes #1.</div>';
+      board.innerHTML='<div class="empty">No votes yet. 1 vote takes #1.</div>';
       return;
     }
-    const fanMap=await fetchFans(people.map(p=>p.id));
+    const fanMap=await fetchFansDetailed(people.map(p=>p.id));
     board.innerHTML='';
 
     people.forEach((p,i)=>{
       const rank=i+1, cls=rankClass(rank);
-      const priority = i < 3 ? 'eager' : 'lazy';
-      const size = rank === 1 ? 280 : (rank === 2 ? 200 : (rank === 3 ? 160 : (rank <= 10 ? 100 : 64)));
       const fans=fanMap[p.id]||[];
-      const fanStr=fans.length? fans.map(f=> f.users?.is_anonymous? 'Anonymous': (f.users?.display_name||'Unknown')).join(' · ') : '—';
-      const gap = rank>1 && people[0] ? ` · ${Math.floor(((people[0].total_cents||0) - (p.total_cents||0))/100).toLocaleString()} votes behind #1` : '';
-      const card=document.createElement('div'); card.className=`person-card ${cls}`;
+      const topFan=fans[0]||null;
+      const nextFan=fans[1]||null;
+      const gapAhead = rank>1 ? Math.floor(((people[0].total_cents||0) - (p.total_cents||0))/100) : null;
+      const gapVotesBehind = rank===1 && people[1] ? Math.floor(((p.total_cents||0)-(people[1].total_cents||0))/100) : null;
+      const gapText = rank===1 ? (gapVotesBehind!==null ? `${gapVotesBehind.toLocaleString()} votes ahead of #2` : 'No votes yet. 1 vote takes #1.') : `${Math.abs(gapAhead).toLocaleString()} votes behind #1`;
 
-      const photoHtml = window.OptimizedImage.render({
-        photoPath: p.photo_path,
-        name: p.name,
-        size,
-        priority,
-        slug: p.slug
-      });
+      const photoHtml = window.OptimizedImage.render({ photoPath: p.photo_path, name: p.name, size: rank===1?220: rank===2?160: rank===3?130:90, priority: i<3?'eager':'lazy', slug:p.slug });
 
-      card.innerHTML=`
+      // fan side
+      let fanHtml='';
+      if(topFan){
+        const u=topFan.users||{};
+        const fanName = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
+        const handle = u.social_handle ? `<a href="https://${u.social_platform==='x'?'x.com': u.social_platform+'.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,'') )}" target="_blank" rel="noopener">${u.social_handle.startsWith('@')?u.social_handle:'@'+u.social_handle} ${platformIcon(u.social_platform)}</a>` : '';
+        const fanPhoto = u.photo_path ? window.OptimizedImage.render({ photoPath: u.photo_path, name: fanName, size: 90 }) : `<div class="fan-initials">${window.GOAT.initials(fanName)}</div>`;
+        const fanVotes = fmtVotes(topFan.total_cents);
+        const fanGap = nextFan ? `${Math.floor((topFan.total_cents - nextFan.total_cents)/100).toLocaleString()} votes ahead of the next fan` : 'Only fan so far';
+        fanHtml = `
+          <div class="fan-photo">${fanPhoto}</div>
+          <div class="fan-meta">
+            <div class="fan-name">${fanName}</div>
+            ${handle?`<div class="fan-handle">${handle}</div>`:''}
+            <div class="fan-votes">GOAT fan · ${fanVotes}</div>
+            <div class="fan-gap">${fanGap}</div>
+          </div>`;
+      } else {
+        fanHtml = `
+          <div class="fan-photo"><div class="fan-initials">?</div></div>
+          <div class="fan-meta">
+            <div class="fan-name" style="color:var(--muted)">No GOAT fan yet</div>
+            <div class="fan-gap">1 vote claims it. That's an invitation, not an empty state.</div>
+          </div>`;
+      }
+
+      const row=document.createElement('div'); row.className=`board-row ${cls}`;
+      row.dataset.personId=p.id;
+      row.innerHTML=`
         <div class="rank-badge">#${rank}</div>
-        <div class="photo">${photoHtml}</div>
-        <div class="body">
-          <div class="name display">${p.name}</div>
-          <div class="blurb">${p.blurb||''}</div>
-          <div class="total display">${Math.floor((p.total_cents||0)/100).toLocaleString()} votes</div>
-          <div class="fans">Top fans: <b>${fanStr}</b>${gap}</div>
-          <div class="back-row">
-            <span class="stepper"><button data-dec>-</button><span data-amt>1 vote</span><button data-inc>+</button></span>
-            <button class="btn-back" data-back>Back</button>
-            <span class="stakes" data-stakes>1 vote → #${rank}</span>
+        <div class="row-left">
+          <div class="person-photo">${photoHtml}</div>
+          <div class="meta">
+            <div class="name display">${p.name}</div>
+            <div class="blurb">${p.blurb||''}</div>
+            <div class="total">${fmtVotes(p.total_cents)}</div>
+            <div class="gap">${gapText}</div>
           </div>
+        </div>
+        <div class="row-divider"></div>
+        <div class="row-right">${fanHtml} <a href="person.html?slug=${p.slug}#fans" style="margin-left:auto;font-size:11px;color:var(--gold);text-decoration:underline;white-space:nowrap">Report</a></div>
+        <div class="row-actions">
+          <span class="stepper"><button data-dec aria-label="Decrease">−</button><input data-amt-input type="number" min="1" value="1" style="width:56px;text-align:center;background:transparent;border:none;color:var(--ink);font-weight:700;font-size:12px;font-family:JetBrains Mono"><span data-amt style="display:none">1 vote</span><button data-inc aria-label="Increase">+</button></span>
+          <button class="btn-back back-btn" data-back style="min-height:44px;min-width:44px">Vote</button>
+          <span class="stakes" data-stakes>1 vote → #${rank}</span>
         </div>`;
 
-      // Stepper logic — any vote count, $1 = 1 vote
+      // stepper
       let amt=100;
-      const amtEl=card.querySelector('[data-amt]'), amtInput=card.querySelector('[data-amt-input]'), stakesEl=card.querySelector('[data-stakes]');
-      function setAmt(v){
-        v = Math.max(1, Math.min(100000, Math.floor(v)||1));
-        amt = v*100;
-        if(amtInput) amtInput.value = v;
-        if(amtEl) amtEl.textContent = `${v.toLocaleString()} ${v===1?"vote":"votes"}`;
-      }
+      const amtEl=row.querySelector('[data-amt]'), amtInput=row.querySelector('[data-amt-input]'), stakesEl=row.querySelector('[data-stakes]');
+      function setAmt(v){ v=Math.max(1,Math.min(100000,Math.floor(v)||1)); amt=v*100; if(amtInput) amtInput.value=v; if(amtEl) amtEl.textContent=`${v.toLocaleString()} ${v===1?"vote":"votes"}`; }
       function updateStakes(){
-        const v = Math.floor(amt/100);
+        const v=Math.floor(amt/100);
         if(amtEl) amtEl.textContent=`${v.toLocaleString()} ${v===1?"vote":"votes"}`;
-        if(amtInput && document.activeElement!==amtInput) amtInput.value = v;
+        if(amtInput && document.activeElement!==amtInput) amtInput.value=v;
         const newTotal=(p.total_cents||0)+amt;
         let newRank=1;
         for(let j=0;j<people.length;j++){
           if(people[j].id===p.id) continue;
           if((people[j].total_cents||0) > newTotal) newRank++;
-          else if((people[j].total_cents||0)===newTotal && people[j].first_backed_at && p.first_backed_at && new Date(people[j].first_backed_at) < new Date()) newRank++;
+          else if((people[j].total_cents||0)===newTotal && people[j].first_backed_at && p.first_backed_at && new Date(people[j].first_backed_at) < new Date(p.first_backed_at)) newRank++;
           else break;
         }
         stakesEl.textContent=`${v.toLocaleString()} votes → #${newRank}`;
         if(rank===1) stakesEl.textContent=`${v.toLocaleString()} votes → ${Math.floor(newTotal/100).toLocaleString()} votes`;
       }
-      card.querySelector('[data-dec]').addEventListener('click',()=>{ setAmt(Math.max(1, Math.floor(amt/100)-1)); updateStakes(); });
-      card.querySelector('[data-inc]').addEventListener('click',()=>{ setAmt(Math.min(100000, Math.floor(amt/100)+1)); updateStakes(); });
-      if(amtInput){
-        amtInput.addEventListener('input',()=>{ setAmt(amtInput.value); updateStakes(); });
-        amtInput.addEventListener('change',()=>{ setAmt(amtInput.value); updateStakes(); });
-      }
+      row.querySelector('[data-dec]').addEventListener('click',()=>{ setAmt(Math.max(1,Math.floor(amt/100)-1)); updateStakes(); });
+      row.querySelector('[data-inc]').addEventListener('click',()=>{ setAmt(Math.min(100000,Math.floor(amt/100)+1)); updateStakes(); });
+      if(amtInput){ amtInput.addEventListener('input',()=>{ setAmt(amtInput.value); updateStakes(); }); amtInput.addEventListener('change',()=>{ setAmt(amtInput.value); updateStakes(); }); }
       updateStakes();
 
-      card.querySelector('[data-back]').addEventListener('click', async()=>{
-        const btn=card.querySelector('[data-back]'); btn.disabled=true; btn.textContent='…';
+      // Vote with optimistic UI — update number and reorder in place immediately
+      row.querySelector('[data-back]').addEventListener('click', async()=>{
+        const btn=row.querySelector('[data-back]'); const v=Math.floor(amt/100);
+        // anon session check — if no auth, create anon session cookie later (optimistic still works)
+        // optimistic: bump total locally
+        const prevTotal=p.total_cents;
+        const prevBalanceText=document.getElementById('sticky-balance')?.textContent;
+        p.total_cents = (p.total_cents||0) + amt;
+        // re-sort people by total_cents desc, first_backed_at asc
+        people.sort((a,b)=> (b.total_cents - a.total_cents) || (new Date(a.first_backed_at||0) - new Date(b.first_backed_at||0)));
+        // optimistic balance tick (if header present)
+        await render();
+        // sticky highlight: flash
+        row.style.outline='2px solid var(--gold)';
+        setTimeout(()=> row.style.outline='', 600);
+        btn.disabled=true; btn.textContent='…';
         try{
-          const {error}=await sb.rpc('place_bid', {p_person_id: p.id, p_amount_cents: amt});
+          let data, error;
+          try{
+            const r=await sb.rpc('place_vote', {p_person_id: p.id, p_votes: v});
+            data=r.data; error=r.error;
+            if(error && String(error.message).includes('Could not find function')) throw error;
+          }catch(e){
+            if(String(e.message||e).includes('Could not find function') || String(e.message||'').includes('place_vote')){
+              const r2=await sb.rpc('place_bid', {p_person_id: p.id, p_amount_cents: v*100});
+              data=r2.data; error=r2.error;
+            } else throw e;
+          }
           if(error) throw error;
+          // reconcile: use server total
+          if(data && data.new_total) p.total_cents = data.new_total;
+          if(data && data.balance!==undefined) {
+            const pill=document.getElementById('balance-pill');
+            if(pill) pill.innerHTML=`<b>${Math.floor(data.balance/100).toLocaleString()} votes</b> <a href="wallet.html">Get votes</a>`;
+            const sb2=document.getElementById('sticky-balance');
+            if(sb2) sb2.innerHTML=`<b>${Math.floor(data.balance/100).toLocaleString()} votes</b>`;
+          }
           await fetchPeople(); await render(); await window.refreshBalance();
+          // post-vote: You're now X's #Y fan — claim spot
+          const myRank = people.findIndex(x=>x.id===p.id)+1;
+          setTimeout(()=> {
+            if(confirm(`You're now ${p.name}'s #${myRank} fan. Claim your spot on his card?`)) location.href='wallet.html';
+          }, 300);
         }catch(e){
-          alert(e.message.includes('insufficient')? 'Insufficient credit — top up in wallet.': e.message);
-          btn.disabled=false; btn.textContent='Back';
+          // rollback
+          p.total_cents = prevTotal;
+          people.sort((a,b)=> (b.total_cents - a.total_cents) || (new Date(a.first_backed_at||0) - new Date(b.first_backed_at||0)));
+          await render();
+          alert(e.message.includes('Not enough')?'Not enough votes — get votes first.': e.message.includes('taking #1')? e.message : e.message);
+          btn.disabled=false; btn.textContent='Vote';
         }
       });
 
-      card.addEventListener('click', ev=>{ if(ev.target.closest('button') || ev.target.closest('.stepper')) return; location.href=`person.html?slug=${p.slug}`; });
-      board.appendChild(card);
+      row.addEventListener('click', ev=>{ if(ev.target.closest('button') || ev.target.closest('.stepper') || ev.target.closest('input') || ev.target.closest('a')) return; location.href=`person.html?slug=${p.slug}`; });
+      board.appendChild(row);
     });
+
+    // sticky balance sync
+    const sbBal=document.getElementById('sticky-balance');
+    if(sbBal){
+      const {data:{user}}=await sb.auth.getUser();
+      if(user){
+        const {data}=await sb.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
+        sbBal.innerHTML=`<b>${Math.floor((data?.balance_cents||0)/100).toLocaleString()} votes</b>`;
+      } else {
+        // anon session cookie read
+        const m=document.cookie.match(/goat_anon=([^;]+)/);
+        sbBal.textContent = m ? '— votes (anon)' : '0 votes';
+      }
+    }
   }
 
   document.getElementById('add-btn').addEventListener('click', async()=>{
@@ -178,8 +263,18 @@
       const {data: person, error: addErr}=await sb.rpc('add_person', {p_category_id: cat.id, p_name: name, p_blurb:'', p_wikipedia_url:`https://en.wikipedia.org/wiki/${encodeURIComponent(name.replace(/ /g,'_'))}`, p_photo_path: null});
       if(addErr) throw addErr;
       const pid=person;
-      const {error}=await sb.rpc('place_bid', {p_person_id: pid, p_amount_cents: 100});
-      if(error) throw error;
+      let _err=null;
+      try{
+        const r=await sb.rpc('place_vote', {p_person_id: pid, p_votes: 1});
+        _err=r.error;
+        if(_err && String(_err.message).includes('Could not find function')) throw _err;
+      }catch(e){
+        if(String(e.message||e).includes('Could not find function') || String(e.message||'').includes('place_vote')){
+          const r2=await sb.rpc('place_bid', {p_person_id: pid, p_amount_cents: 100});
+          _err=r2.error;
+        } else throw e;
+      }
+      if(_err) throw _err;
       location.reload();
     }catch(e){ alert(e.message); }
   });
@@ -188,7 +283,11 @@
   await fetchPeople();
   await render();
 
-  try{ sb.channel('people-'+slug).on('postgres_changes',{event:'INSERT',schema:'public',table:'bids'}, async()=>{ await fetchPeople(); await render(); }).subscribe(); }catch{}
+  // realtime with throttle 500ms
+  let pending=false;
+  function throttledRender(){ if(pending) return; pending=true; setTimeout(async()=>{ pending=false; await fetchPeople(); await render(); }, 500); }
+  try{ sb.channel('people-'+slug).on('postgres_changes',{event:'INSERT',schema:'public',table:'bids'}, throttledRender).subscribe();
+       sb.channel('people-people-'+slug).on('postgres_changes',{event:'UPDATE',schema:'public',table:'people'}, throttledRender).subscribe(); }catch{}
 })();
 </script>
 </body>

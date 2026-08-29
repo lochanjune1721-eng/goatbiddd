@@ -20,7 +20,7 @@
       return clean;
     }
 
-    const baseUrl = window.GOAT?.SUPABASE_URL || 'https://iuvmzlrnbwptgrbkdbbn.supabase.co';
+    const baseUrl = window.GOAT?.SUPABASE_URL || 'https://orzcszqpnvicreqvpncu.supabase.co';
     return `${baseUrl}/storage/v1/object/public/people/${clean.replace(/^\/+/, '')}`;
   }
 

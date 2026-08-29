@@ -218,3 +218,68 @@ do $$ declare cat uuid; begin
       ('lionel-messi', cat, 'Lionel Messi', 'Eight-time Ballon d''Or winner.', 'https://en.wikipedia.org/wiki/Lionel_Messi', 'Photo: Wikimedia Commons', 'CC BY-SA 4.0', 0);
   end if;
 end $$;
+-- PART 6 — schema additions
+alter table users
+  add column if not exists photo_path text,
+  add column if not exists social_handle text,
+  add column if not exists social_platform text check (social_platform in ('x','instagram','tiktok','youtube','other')),
+  add column if not exists photo_status text default 'none' check (photo_status in ('none','pending','approved','flagged','rejected')),
+  add column if not exists anon_session_id text unique;
+
+create index if not exists fan_totals_person_idx on fan_totals (person_id, total_cents desc);
+create index if not exists people_category_total_idx on people (category_id, total_cents desc, first_backed_at asc);
+
+-- storage for fan photos (reuse people bucket, but add policy already exists)
+
+-- credit_balance for fake checkout — mirrors production Dodo webhook path
+create or replace function credit_balance(p_user_id uuid, p_amount_cents int, p_payment_id text)
+returns int language plpgsql security definer set search_path = public as $$
+declare v_new int;
+begin
+  if p_amount_cents < 500 then raise exception 'Minimum is 5 votes'; end if;
+  -- idempotency via dodo_payment_id
+  insert into topups (user_id, amount_cents, dodo_payment_id, status) values (p_user_id, p_amount_cents, p_payment_id, 'confirmed') on conflict (dodo_payment_id) do nothing;
+  update users set balance_cents = balance_cents + p_amount_cents where id = p_user_id returning balance_cents into v_new;
+  return v_new;
+end $$;
+
+-- place_vote — new canonical name, keeps cents internally, 1 vote = 100 cents. Wrapper keeps place_bid for back-compat.
+create or replace function place_vote(p_person_id uuid, p_votes int)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_user uuid := auth.uid();
+  v_cents int := p_votes * 100;
+  v_balance int;
+  v_new_total int;
+  v_leader_total int;
+begin
+  if p_votes is null or p_votes < 1 then raise exception 'Minimum 1 vote'; end if;
+  if v_user is null then raise exception 'not authenticated'; end if;
+  select balance_cents into v_balance from users where id = v_user for update;
+  if not found then
+    insert into users (id, balance_cents) values (v_user, 0) returning balance_cents into v_balance;
+  end if;
+  if v_balance < v_cents then raise exception 'Not enough votes'; end if;
+  if not exists (select 1 from people where id = p_person_id) then raise exception 'person not found'; end if;
+
+  update users set balance_cents = balance_cents - v_cents, total_spent_cents = total_spent_cents + v_cents where id = v_user;
+  insert into bids (user_id, person_id, amount_cents) values (v_user, p_person_id, v_cents);
+  update people set total_cents = total_cents + v_cents, first_backed_at = coalesce(first_backed_at, now()) where id = p_person_id returning total_cents into v_new_total;
+  insert into fan_totals (person_id, user_id, total_cents) values (p_person_id, v_user, v_cents) on conflict (person_id, user_id) do update set total_cents = fan_totals.total_cents + v_cents;
+
+  -- #1 must cost at least $5 more (5 votes) — keep original rule in votes
+  select max(total_cents) into v_leader_total from people where category_id = (select category_id from people where id = p_person_id) and id <> p_person_id;
+  if v_leader_total is not null and v_new_total > v_leader_total and v_new_total < v_leader_total + 500 then
+    raise exception 'taking #1 costs at least 5 votes more than the current leader';
+  end if;
+
+  return jsonb_build_object('ok', true, 'new_total', v_new_total, 'balance', v_balance - v_cents);
+exception when others then raise;
+end $$;
+
+-- keep place_bid as wrapper for old callers
+create or replace function place_bid(p_person_id uuid, p_amount_cents int)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  return place_vote(p_person_id, p_amount_cents / 100);
+end $$;
