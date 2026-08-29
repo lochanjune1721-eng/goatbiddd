@@ -1,8 +1,18 @@
 {
+  "framework": null,
+  "buildCommand": null,
   "functions": {
-    "api/checkout.js": { "includeFiles": "api/**" },
-    "api/payment-done.js": { "includeFiles": "api/**" },
-    "api/admin.js": { "includeFiles": "api/**" },
-    "api/resolve_image.js": { "includeFiles": "scripts/**" }
+    "api/checkout.js": {
+      "includeFiles": "api/**"
+    },
+    "api/payment-done.js": {
+      "includeFiles": "api/**"
+    },
+    "api/admin.js": {
+      "includeFiles": "api/**"
+    },
+    "api/resolve_image.js": {
+      "includeFiles": "scripts/**"
+    }
   }
 }
