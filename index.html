@@ -313,6 +313,7 @@
 
 <script src="js/supabase.js"></script>
 <script src="js/optimized-image.js"></script>
+<script src="js/portrait-fallback.js"></script>
 <script src="js/wiki-fallback.js"></script>
 <script>
 (async function(){
@@ -435,12 +436,12 @@
   try {
     const [catsRes, p0, p1, p2, p3, p4, p5] = await Promise.all([
       sb.from('categories').select('*').order('sort_order'),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(0, 999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(1000, 1999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(2000, 2999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(3000, 3999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(4000, 4999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(5000, 5999)
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(0, 999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(1000, 1999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(2000, 2999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(3000, 3999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(4000, 4999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(5000, 5999)
     ]);
     cats = catsRes?.data || [];
     people = [...(p0?.data||[]),...(p1?.data||[]),...(p2?.data||[]),...(p3?.data||[]),...(p4?.data||[]),...(p5?.data||[])];
@@ -550,6 +551,19 @@
   renderChips();
   renderCatNav();
 
+  // A contender with no stored photo_path renders initials now and gets a real
+  // portrait once PortraitFallback resolves it from Wikipedia.
+  function photoHtml(p, size, eager){
+    if(window.PortraitFallback) return window.PortraitFallback.photoHtml(p, size, {eager});
+    return window.OptimizedImage.render({ photoPath:p.photo_path, name:p.name, size, priority: eager?'eager':'lazy', slug:p.slug });
+  }
+  let portraitTimer=null;
+  function schedulePortraits(){
+    if(!window.PortraitFallback) return;
+    clearTimeout(portraitTimer);
+    portraitTimer=setTimeout(()=> window.PortraitFallback.scan(), 120);
+  }
+
   function duelHtml(cat, catPeople, opts={}){
     const p1=catPeople[0], p2=catPeople[1];
     const c1 = p1 ? (p1.total_cents||0) : 0;
@@ -569,8 +583,8 @@
     const featBadge = opts.featured ? '<span class="badge-featured">Top</span>' : '';
     const isCrazy = opts.featured;
     // crazy look: gold glow on leader, vote bar, beating line
-    const p1Photo = p1 ? window.OptimizedImage.render({ photoPath: p1.photo_path, name: p1.name, size: isCrazy?320:260, priority: opts.eager?'eager':'lazy', slug: p1.slug }) : '<div class="fallback">?</div>';
-    const p2Photo = p2 ? window.OptimizedImage.render({ photoPath: p2.photo_path, name: p2.name, size: isCrazy?320:260, priority: opts.eager?'eager':'lazy', slug: p2.slug }) : '<div class="fallback">?</div>';
+    const p1Photo = p1 ? photoHtml(p1, isCrazy?320:260, opts.eager) : '<div class="fallback">?</div>';
+    const p2Photo = p2 ? photoHtml(p2, isCrazy?320:260, opts.eager) : '<div class="fallback">?</div>';
     const bar = (p1 && p2 && totalVotes>0) ? `<div class="vote-bar-wrap"><div class="vote-bar" aria-hidden="true"><div class="vote-bar-fill p1" style="width:${p1Pct}%"></div><div class="vote-bar-fill p2" style="width:${p2Pct}%"></div></div><div class="vote-bar-label mono">${v1.toLocaleString()} votes · ${v2.toLocaleString()} votes · ${p1Pct}% / ${p2Pct}%</div></div>` : '';
     return `
       <div class="duel-head"><strong>${cat.name.startsWith('Greatest') ? cat.name + (cat.name.endsWith('All Time')?'':' of All Time') : 'Greatest ' + cat.name + ' of All Time'}</strong> ${featBadge}</div>
@@ -695,7 +709,7 @@
     const catById={}; cats.forEach(c=> catById[c.id]=c);
     hits.forEach(p=>{
       const cat=catById[p.category_id];
-      const photo = window.OptimizedImage.render({ photoPath: p.photo_path, name: p.name, size: 56, priority:'lazy', slug: p.slug });
+      const photo = photoHtml(p, 56, false);
       const rank = (peopleByCat[p.category_id]||[]).findIndex(x=> x.id===p.id)+1;
       const a=document.createElement('a');
       a.href=`person.html?slug=${p.slug}`;
@@ -750,12 +764,14 @@
       renderFeatured();
       renderGroups(null);
     }
+    schedulePortraits();
   }
 
   // Initial paint
   buildTicker();
   renderFeatured();
   renderGroups(null);
+  schedulePortraits();
 
   // Unclaimed banner (uses built indices)
   const emptyCats = cats.filter(c => !(peopleByCat[c.id] && peopleByCat[c.id].length));

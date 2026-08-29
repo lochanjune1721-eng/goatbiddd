@@ -39,6 +39,7 @@
 
 <script src="js/supabase.js"></script>
 <script src="js/optimized-image.js"></script>
+<script src="js/portrait-fallback.js"></script>
 <script src="js/wiki-fallback.js"></script>
 <script>
 (async function(){
@@ -109,7 +110,7 @@
       const gapVotesBehind = rank===1 && people[1] ? Math.floor(((p.total_cents||0)-(people[1].total_cents||0))/100) : null;
       const gapText = rank===1 ? (gapVotesBehind!==null ? `${gapVotesBehind.toLocaleString()} votes ahead of #2` : 'No votes yet. 1 vote takes #1.') : `${Math.abs(gapAhead).toLocaleString()} votes behind #1`;
 
-      const photoHtml = window.OptimizedImage.render({ photoPath: p.photo_path, name: p.name, size: rank===1?220: rank===2?160: rank===3?130:90, priority: i<3?'eager':'lazy', slug:p.slug });
+      const photoHtml = window.PortraitFallback.photoHtml(p, rank===1?220: rank===2?160: rank===3?130:90, {eager: i<3});
 
       // fan side
       let fanHtml='';
@@ -238,6 +239,9 @@
       row.addEventListener('click', ev=>{ if(ev.target.closest('button') || ev.target.closest('.stepper') || ev.target.closest('input') || ev.target.closest('a')) return; location.href=`person.html?slug=${p.slug}`; });
       board.appendChild(row);
     });
+
+    // Fill in portraits for anyone whose photo_path is still empty.
+    if(window.PortraitFallback) window.PortraitFallback.scan(board);
 
     // sticky balance sync
     const sbBal=document.getElementById('sticky-balance');

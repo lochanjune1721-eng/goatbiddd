@@ -40,6 +40,7 @@
 
 <script src="js/supabase.js"></script>
 <script src="js/optimized-image.js"></script>
+<script src="js/portrait-fallback.js"></script>
 <script>
 (async function(){
   const slug=window.GOAT.qs('slug');
@@ -57,12 +58,8 @@
 
   // Load hero photo with eager high priority & 640px source
   const photoWrap = document.getElementById('photo-wrap');
-  photoWrap.innerHTML = window.OptimizedImage.render({
-    photoPath: person.photo_path,
-    name: person.name,
-    size: 360,
-    priority: 'eager'
-  });
+  photoWrap.innerHTML = window.PortraitFallback.photoHtml(person, 360, {eager:true});
+  window.PortraitFallback.scan(photoWrap);
 
   // Parallel rank and fan query — full leaderboard with photo, handle, count, rank
   try {
