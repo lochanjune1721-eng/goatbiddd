@@ -51,9 +51,13 @@
   document.title='Greatest ' + cat.name + ' of All Time — GOAT.lol';
   let people=[];
   let optimisticQueue=[];
+  // Every board is a top 20: 147 categories x 20 is the canonical set in
+  // data/goat_lol_147_categories_top20.csv. Ranking is by votes, so a
+  // contender below 20th drops off the board until enough votes carry them back.
+  const BOARD_SIZE = 20;
 
   async function fetchPeople(){
-    const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(200);
+    const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(BOARD_SIZE);
     people=data||[];
     if(!people.length){
       const fb=await window.WIKI_FALLBACK?.();
