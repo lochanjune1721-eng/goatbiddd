@@ -80,20 +80,6 @@
     }
   }
 
-  // IntersectionObserver: automatically stream and play video when on screen, pause when offscreen
-  const io = ('IntersectionObserver' in window) ? new IntersectionObserver(entries => {
-    for(const entry of entries){
-      if(entry.isIntersecting){
-        play(entry.target);
-      } else {
-        teardown(entry.target);
-      }
-    }
-  }, {
-    rootMargin: '200px 0px 200px 0px',
-    threshold: [0, 0.05, 0.5]
-  }) : null;
-
   // Resolve the video element belonging to any card or element
   function resolveVideo(target){
     if(!target) return null;
@@ -113,59 +99,45 @@
     return null;
   }
 
-  // Smooth hover audio handler: card-level tracking to eliminate flickering
+  // Smooth hover video & audio handler: plays video + audio ONLY when hovering
   function handleCardHover(e){
     const card = e.target && e.target.closest ? e.target.closest('.photo, .person-photo, #photo-wrap, .duel-side, .board-row, .cat-tile, .contender-card, [data-video]') : null;
     if(card === currentHoveredCard) return;
 
-    // Leaving previous card
+    // Leaving previous card: teardown video completely so card returns to clean square portrait
     if(currentHoveredCard && (!card || !currentHoveredCard.contains(card))){
-      const prevVideo = resolveVideo(currentHoveredCard);
-      if(prevVideo){
-        prevVideo.muted = true;
+      const prevVideoTarget = currentHoveredCard.matches('[data-video]') ? currentHoveredCard : currentHoveredCard.querySelector('[data-video]');
+      if(prevVideoTarget) {
+        teardown(prevVideoTarget);
       }
-      if(activeAudioVideo === prevVideo){
-        activeAudioVideo = null;
-      }
+      activeAudioVideo = null;
     }
 
     currentHoveredCard = card;
     if(!card) return;
 
-    // Ensure video is playing for current card
+    // Entered new card: mount & play video with sound immediately
     const targetWithVideo = card.matches('[data-video]') ? card : card.querySelector('[data-video]');
-    if(targetWithVideo && !live.has(targetWithVideo)){
+    if(targetWithVideo){
       play(targetWithVideo);
-    }
-
-    const v = resolveVideo(card);
-    if(!v) return;
-
-    // Mute any other video
-    if(activeAudioVideo && activeAudioVideo !== v){
-      activeAudioVideo.muted = true;
-    }
-
-    // Turn audio on immediately on hover
-    v.muted = false;
-    v.volume = 1.0;
-    activeAudioVideo = v;
-
-    if(v.paused){
-      v.play().catch(() => {
-        v.muted = true;
-        v.play().catch(() => {});
-      });
+      const v = live.get(targetWithVideo);
+      if(v){
+        v.muted = false;
+        v.volume = 1.0;
+        activeAudioVideo = v;
+        if(v.paused) v.play().catch(()=>{ v.muted = true; v.play().catch(()=>{}); });
+      }
     }
   }
 
   document.addEventListener('mouseover', handleCardHover, true);
   document.addEventListener('pointerenter', handleCardHover, true);
   document.addEventListener('mouseleave', () => {
-    if(activeAudioVideo){
-      activeAudioVideo.muted = true;
-      activeAudioVideo = null;
+    if(currentHoveredCard){
+      const el = currentHoveredCard.matches('[data-video]') ? currentHoveredCard : currentHoveredCard.querySelector('[data-video]');
+      if(el) teardown(el);
     }
+    if(activeAudioVideo) activeAudioVideo = null;
     currentHoveredCard = null;
   });
 
@@ -178,26 +150,8 @@
       }
       currentHoveredCard = null;
       for(const [el] of live) teardown(el);
-    } else {
-      scan();
     }
   });
 
-  function scan(root){
-    if(!io || reduced) return;
-    for(const el of (root || document).querySelectorAll('[data-video]')){
-      if(el.dataset.clipWatched) continue;
-      el.dataset.clipWatched = '1';
-      io.observe(el);
-    }
-  }
-
-  if('MutationObserver' in window){
-    new MutationObserver(()=> scan()).observe(document.documentElement, { childList: true, subtree: true });
-  }
-
-  document.addEventListener('DOMContentLoaded', ()=> scan());
-  scan();
-
-  window.VideoHover = { scan, play, teardown: ()=> [...live.keys()].forEach(teardown) };
+  window.VideoHover = { scan: ()=>{}, play, teardown: ()=> [...live.keys()].forEach(teardown) };
 })();

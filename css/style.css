@@ -109,17 +109,17 @@ a{color:inherit;text-decoration:none}
 @media(max-width:380px){.duel-side .photo{max-width:118px;aspect-ratio:1/1}.duel-body.crazy .duel-side .photo{max-width:128px;aspect-ratio:1/1}}
 .duel-side.video-playing .photo, .duel-side .photo.video-playing, .duel-side.video-active .photo, .duel-side .photo:has(video.goat-clip.ready){aspect-ratio:16/9;max-width:380px}
 .duel-body.crazy .duel-side.video-playing .photo, .duel-body.crazy .duel-side .photo.video-playing, .duel-body.crazy .duel-side.video-active .photo, .duel-body.crazy .duel-side .photo:has(video.goat-clip.ready){aspect-ratio:16/9;max-width:440px}
-.photo img, img.goat-photo{width:100%;height:100%;object-fit:cover;object-position:center 16%;filter:saturate(.9) contrast(1.02);display:block}
+.photo img, img.goat-photo{width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:saturate(.9) contrast(1.02);display:block}
 .photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,.22) 0%, transparent 52%);pointer-events:none}
 /* Clips sit exactly over the still they replace (js/video-hover.js) and fade in
    only once frames exist, so a dead or slow clip never blanks a card. */
-.photo .goat-clip, .person-photo .goat-clip, #photo-wrap .goat-clip{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block;opacity:0;transition:opacity .3s ease;z-index:2;pointer-events:none}
+.photo .goat-clip, .person-photo .goat-clip, #photo-wrap .goat-clip{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block;opacity:0;transition:opacity .3s ease;z-index:2;pointer-events:none}
 .photo .goat-clip.ready, .person-photo .goat-clip.ready, #photo-wrap .goat-clip.ready{opacity:1}
 @media (prefers-reduced-motion:reduce){.photo .goat-clip,.person-photo .goat-clip,#photo-wrap .goat-clip{display:none}}
 /* Portraits resolved at runtime (js/portrait-fallback.js) sit over the
    initials placeholder and fade in once decoded, so nothing flashes. */
 .photo .fallback, .person-photo .fallback{position:relative}
-.photo .fallback img.goat-photo, .person-photo .fallback img.goat-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 16%;display:block;opacity:0;transition:opacity .25s ease}
+.photo .fallback img.goat-photo, .person-photo .fallback img.goat-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block;opacity:0;transition:opacity .25s ease}
 .photo .fallback.has-portrait, .person-photo .fallback.has-portrait{background:none}
 .photo .fallback.has-portrait img.goat-photo, .person-photo .fallback.has-portrait img.goat-photo{opacity:1}
 .fallback{width:100%;height:100%;display:grid;place-items:center;background:radial-gradient(120% 120% at 50% 30%, #2A241E 0%, #15120F 60%);color:var(--gold);font-family:'Anton',sans-serif;font-size:26px;letter-spacing:.02em}
@@ -325,7 +325,7 @@ body.preview-only #add-btn{display:none!important}
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 16%;
+  object-position: center 20%;
   display: block;
 }
 .goat-video {
