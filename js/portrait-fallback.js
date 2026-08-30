@@ -147,7 +147,8 @@
     opts = opts || {};
     if(person && person.photo_path){
       return window.OptimizedImage.render({
-        photoPath: person.photo_path, name: person.name, size,
+        photoPath: person.photo_path, videoPath: person.video_path,
+        name: person.name, size,
         priority: opts.eager ? 'eager' : 'lazy', slug: person.slug
       });
     }
@@ -155,9 +156,15 @@
     const initials = (window.GOAT && window.GOAT.initials)
       ? window.GOAT.initials(name)
       : (name.slice(0,2).toUpperCase() || '?');
+    // A contender can have a clip but no still. Carry data-video on the
+    // placeholder as well, or everyone without a stored photo silently loses
+    // their video — which is most of them until photo_path is backfilled.
+    const clip = person && person.video_path && window.GOAT && window.GOAT.getVideoUrl
+      ? window.GOAT.getVideoUrl(person.video_path) : null;
+    const videoAttr = clip ? ' data-video="' + esc(clip) + '"' : '';
     return '<div class="fallback" data-portrait="' + esc(titleFor(person)) +
            '" data-portrait-size="' + size +
-           '" data-portrait-name="' + esc(name) + '">' + esc(initials) + '</div>';
+           '" data-portrait-name="' + esc(name) + '"' + videoAttr + '>' + esc(initials) + '</div>';
   }
 
   window.PortraitFallback = { scan, titleFor, photoHtml };

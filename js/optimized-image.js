@@ -48,23 +48,27 @@
   /**
    * OptimizedImage.render: Generates resilient HTML for contender portraits with video layer
    */
-  function render({ photoPath, name, size = 120, priority = 'lazy', className = '', style = '', slug = '', enableVideo = true }) {
+  function render({ photoPath, videoPath, name, size = 120, priority = 'lazy', className = '', style = '', slug = '', enableVideo = true }) {
     const safeName = (name || '').replace(/"/g, '&quot;');
     const resolvedUrl = getThumb(photoPath, size, name);
     const styleAttr = style ? ` style="${style}"` : '';
     const classAttr = className ? `goat-photo ${className}` : 'goat-photo';
 
+    let videoSrc = (enableVideo && window.PersonMedia) ? window.PersonMedia.getVideo(name, slug) : null;
+    if (!videoSrc && videoPath && window.GOAT?.getVideoUrl) {
+      videoSrc = window.GOAT.getVideoUrl(videoPath);
+    }
+    const videoAttr = videoSrc ? ` data-video="${String(videoSrc).replace(/"/g,'&quot;')}"` : '';
+
     let imgHtml = '';
     if(!resolvedUrl) {
       const initials = window.GOAT?.initials ? window.GOAT.initials(name) : (name ? name.slice(0,2).toUpperCase() : '?');
-      imgHtml = `<div class="fallback"${styleAttr}>${initials}</div>`;
+      imgHtml = `<div class="fallback"${styleAttr}${videoAttr}>${initials}</div>`;
     } else {
       const eagerAttrs = priority === 'eager' ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
-      imgHtml = `<img src="${resolvedUrl}" alt="${safeName}" width="${size}" height="${size}" ${eagerAttrs} decoding="async" referrerpolicy="no-referrer" class="${classAttr}"${styleAttr} onerror="window.onGoatImgError(this, '${safeName}')">`;
+      imgHtml = `<img src="${resolvedUrl}" alt="${safeName}" width="${size}" height="${size}" ${eagerAttrs} decoding="async" referrerpolicy="no-referrer" class="${classAttr}"${styleAttr}${videoAttr} onerror="window.onGoatImgError(this, '${safeName}')">`;
     }
 
-    // Check if candidate has an associated video in downloads/
-    const videoSrc = (enableVideo && window.PersonMedia) ? window.PersonMedia.getVideo(name, slug) : null;
     if (videoSrc) {
       const vidHtml = `
         <video class="goat-video" loop playsinline muted preload="metadata" data-video-src="${videoSrc}"></video>
