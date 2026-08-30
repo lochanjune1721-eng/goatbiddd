@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://orzcszqpnvicreqvpncu.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=16x9_v8">
+<link rel="stylesheet" href="css/style.css?v=16x9_v9">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* === Filter + Featured extensions === */
@@ -20,12 +20,12 @@
 .duel-side{text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0;overflow:visible}
 .duel-side .photo{width:220px;height:220px;border-radius:14px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);position:relative;flex-shrink:0;transition:width .35s ease, height .35s ease}
 .duel-body.crazy .duel-side .photo{width:260px;height:260px;border-radius:16px}
-@media(max-width:768px){.duel-side .photo{width:160px;height:160px}.duel-body.crazy .duel-side .photo{width:188px;height:188px}}
-@media(max-width:480px){.duel-side .photo{width:130px;height:130px}.duel-body.crazy .duel-side .photo{width:150px;height:150px}}
+@media(max-width:768px){.duel-side .photo{width:150px;height:150px}.duel-body.crazy .duel-side .photo{width:170px;height:170px}}
+@media(max-width:480px){.duel-body{gap:8px 8px;padding:12px 10px 10px}.duel-side .photo{width:calc(43vw - 8px);height:calc(43vw - 8px);border-radius:10px}.duel-body.crazy .duel-side .photo{width:calc(43vw - 8px);height:calc(43vw - 8px)}}
 .duel-side.video-playing .photo,.duel-side .photo.video-playing{width:320px;height:180px}
 .duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:368px;height:207px}
 @media(max-width:768px){.duel-side.video-playing .photo,.duel-side .photo.video-playing{width:240px;height:135px}.duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:270px;height:152px}}
-@media(max-width:480px){.duel-side.video-playing .photo,.duel-side .photo.video-playing{width:182px;height:102px}.duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:200px;height:112px}}
+@media(max-width:480px){.duel-side.video-playing .photo,.duel-side .photo.video-playing{width:calc(85vw - 8px);height:calc((85vw - 8px) * 9/16)}.duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:calc(85vw - 8px);height:calc((85vw - 8px) * 9/16)}}
 .duel-side .name{font-family:'Anton',sans-serif;font-size:19px;line-height:1.05;max-width:100%;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;width:100%}
 .duel-body.crazy .duel-side .name{font-size:23px}
 @media(max-width:640px){.duel-side .name{font-size:15px}.duel-body.crazy .duel-side .name{font-size:17px}}
