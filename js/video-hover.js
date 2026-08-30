@@ -1,17 +1,21 @@
-// js/video-hover.js — Seamless contender video playback & responsive hover audio
+// js/video-hover.js — High-performance contender video engine with instant load & resilient hover audio
 (function(){
   if(typeof window === 'undefined') return;
 
-  const VISIBLE_THRESHOLD = 0.05; // start loading immediately when even 5% is on screen
   const live = new Map();         // [data-video] element -> HTMLVideoElement
   let activeAudioVideo = null;    // currently unmuted video
+  let currentHoveredCard = null;  // currently hovered contender card
 
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Unlock browser audio context as early as possible on any gesture
-  let audioUnlocked = false;
-  const unlockAudio = () => { audioUnlocked = true; };
-  ['pointerdown','pointermove','keydown','touchstart','mousedown','mousemove','mouseover','mouseenter','click'].forEach(evt =>
+  // Pre-unlock browser audio on any user gesture
+  const unlockAudio = () => {
+    if(activeAudioVideo && activeAudioVideo.muted) {
+      activeAudioVideo.muted = false;
+      activeAudioVideo.play().catch(() => { activeAudioVideo.muted = true; });
+    }
+  };
+  ['pointerdown','keydown','touchstart','mousedown','click'].forEach(evt =>
     window.addEventListener(evt, unlockAudio, { passive: true })
   );
 
@@ -36,7 +40,7 @@
 
     const v = document.createElement('video');
     v.className = 'goat-clip';
-    v.muted = true;               // Browsers mandate muted autoplay
+    v.muted = true;               // Always start muted so browsers start instant decode without permission blocks
     v.loop = true;
     v.playsInline = true;
     v.preload = 'auto';
@@ -45,29 +49,34 @@
     v.setAttribute('aria-hidden', 'true');
     v.src = src;
 
-    // Show clip once frames are ready
-    v.addEventListener('loadeddata', ()=>{
+    // Reveal video immediately as soon as initial frame or metadata is ready
+    const reveal = () => {
       if(!live.has(el)) return;
       v.classList.add('ready');
       el.style.visibility = 'hidden';
-    }, { once: true });
+    };
 
-    v.addEventListener('error', ()=> teardown(el));
+    v.addEventListener('loadeddata', reveal, { once: true });
+    v.addEventListener('canplay', reveal, { once: true });
+    v.addEventListener('playing', reveal, { once: true });
+    v.addEventListener('error', () => teardown(el));
 
     const parent = el.parentElement;
     if(!parent) return;
     parent.appendChild(v);
     live.set(el, v);
 
-    const playPromise = v.play();
-    if(playPromise && playPromise.catch){
-      playPromise.catch(() => {
-        // If autoplay fails, ensure video stays in DOM ready for hover
+    const p = v.play();
+    if(p && p.catch){
+      p.catch(() => {
+        // Autoplay policy fallback: guarantee muted and retry
+        v.muted = true;
+        v.play().catch(() => {});
       });
     }
   }
 
-  // IntersectionObserver: all visible videos in viewport play simultaneously
+  // IntersectionObserver: automatically stream and play video when on screen, pause when offscreen
   const io = ('IntersectionObserver' in window) ? new IntersectionObserver(entries => {
     for(const entry of entries){
       if(entry.isIntersecting){
@@ -77,21 +86,19 @@
       }
     }
   }, {
-    rootMargin: '120px 0px 120px 0px',
-    threshold: [0, VISIBLE_THRESHOLD, 0.5]
+    rootMargin: '200px 0px 200px 0px',
+    threshold: [0, 0.05, 0.5]
   }) : null;
 
-  // Resolve the video element belonging to any hovered element or its container card
+  // Resolve the video element belonging to any card or element
   function resolveVideo(target){
     if(!target) return null;
     if(target.matches && target.matches('video.goat-clip')) return target;
     const directVideo = target.closest ? target.closest('video.goat-clip') : null;
     if(directVideo) return directVideo;
 
-    // Check if target has data-video
     if(target.dataset && target.dataset.video) return live.get(target) || null;
 
-    // Search nearest contender container (photo box, duel side, category row, etc.)
     const box = target.closest ? target.closest('.photo, .person-photo, #photo-wrap, .duel-side, .board-row, .cat-tile, .contender-card, .duel-card') : null;
     if(box){
       const held = box.querySelector('video.goat-clip');
@@ -102,21 +109,35 @@
     return null;
   }
 
-  // Ensure video is created and playing when hovered, and unmute
-  function handleHoverIn(e){
-    audioUnlocked = true;
-    const container = e.target && e.target.closest ? e.target.closest('.photo, .person-photo, #photo-wrap, .duel-side, .board-row, .cat-tile, .contender-card, [data-video]') : null;
-    if(container){
-      const targetWithVideo = container.matches('[data-video]') ? container : container.querySelector('[data-video]');
-      if(targetWithVideo && !live.has(targetWithVideo)){
-        play(targetWithVideo);
+  // Smooth hover audio handler: card-level tracking to eliminate flickering
+  function handleCardHover(e){
+    const card = e.target && e.target.closest ? e.target.closest('.photo, .person-photo, #photo-wrap, .duel-side, .board-row, .cat-tile, .contender-card, [data-video]') : null;
+    if(card === currentHoveredCard) return;
+
+    // Leaving previous card
+    if(currentHoveredCard && (!card || !currentHoveredCard.contains(card))){
+      const prevVideo = resolveVideo(currentHoveredCard);
+      if(prevVideo){
+        prevVideo.muted = true;
+      }
+      if(activeAudioVideo === prevVideo){
+        activeAudioVideo = null;
       }
     }
 
-    const v = resolveVideo(e.target);
+    currentHoveredCard = card;
+    if(!card) return;
+
+    // Ensure video is playing for current card
+    const targetWithVideo = card.matches('[data-video]') ? card : card.querySelector('[data-video]');
+    if(targetWithVideo && !live.has(targetWithVideo)){
+      play(targetWithVideo);
+    }
+
+    const v = resolveVideo(card);
     if(!v) return;
 
-    // Mute any other currently unmuted video
+    // Mute any other video
     if(activeAudioVideo && activeAudioVideo !== v){
       activeAudioVideo.muted = true;
     }
@@ -124,23 +145,40 @@
     v.muted = false;
     v.volume = 1.0;
     activeAudioVideo = v;
-    const p = v.play();
-    if(p && p.catch) p.catch(() => {});
-  }
 
-  function handleHoverOut(e){
-    const v = resolveVideo(e.target);
-    if(v){
-      v.muted = true;
-      if(activeAudioVideo === v) activeAudioVideo = null;
+    const p = v.play();
+    if(p && p.catch){
+      p.catch(() => {
+        // If unmuting triggered a browser autoplay security pause, recover immediately to muted play
+        v.muted = true;
+        v.play().catch(() => {});
+      });
     }
   }
 
-  // Bind global hover sound listeners
-  document.addEventListener('pointerover', handleHoverIn, true);
-  document.addEventListener('mouseover', handleHoverIn, true);
-  document.addEventListener('pointerout', handleHoverOut, true);
-  document.addEventListener('mouseout', handleHoverOut, true);
+  // Direct click / tap immediately activates sound
+  function handleCardClick(e){
+    const card = e.target && e.target.closest ? e.target.closest('.photo, .person-photo, #photo-wrap, .duel-side, .board-row, .cat-tile, .contender-card, [data-video]') : null;
+    if(card){
+      const v = resolveVideo(card);
+      if(v){
+        v.muted = false;
+        v.volume = 1.0;
+        activeAudioVideo = v;
+        v.play().catch(() => {});
+      }
+    }
+  }
+
+  document.addEventListener('mouseover', handleCardHover, true);
+  document.addEventListener('click', handleCardClick, true);
+  document.addEventListener('mouseleave', () => {
+    if(activeAudioVideo){
+      activeAudioVideo.muted = true;
+      activeAudioVideo = null;
+    }
+    currentHoveredCard = null;
+  });
 
   // Background tab should pause and mute
   document.addEventListener('visibilitychange', ()=>{
@@ -149,6 +187,7 @@
         activeAudioVideo.muted = true;
         activeAudioVideo = null;
       }
+      currentHoveredCard = null;
       for(const [el] of live) teardown(el);
     } else {
       scan();
