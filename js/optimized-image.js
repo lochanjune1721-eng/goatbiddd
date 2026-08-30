@@ -46,21 +46,37 @@
   window.onGoatImgError = handleError;
 
   /**
-   * OptimizedImage.render: Generates resilient HTML for contender portraits
+   * OptimizedImage.render: Generates resilient HTML for contender portraits with video layer
    */
-  function render({ photoPath, name, size = 120, priority = 'lazy', className = '', style = '' }) {
+  function render({ photoPath, name, size = 120, priority = 'lazy', className = '', style = '', slug = '', enableVideo = true }) {
     const safeName = (name || '').replace(/"/g, '&quot;');
     const resolvedUrl = getThumb(photoPath, size, name);
     const styleAttr = style ? ` style="${style}"` : '';
     const classAttr = className ? `goat-photo ${className}` : 'goat-photo';
 
+    let imgHtml = '';
     if(!resolvedUrl) {
       const initials = window.GOAT?.initials ? window.GOAT.initials(name) : (name ? name.slice(0,2).toUpperCase() : '?');
-      return `<div class="fallback"${styleAttr}>${initials}</div>`;
+      imgHtml = `<div class="fallback"${styleAttr}>${initials}</div>`;
+    } else {
+      const eagerAttrs = priority === 'eager' ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
+      imgHtml = `<img src="${resolvedUrl}" alt="${safeName}" width="${size}" height="${size}" ${eagerAttrs} decoding="async" referrerpolicy="no-referrer" class="${classAttr}"${styleAttr} onerror="window.onGoatImgError(this, '${safeName}')">`;
     }
 
-    const eagerAttrs = priority === 'eager' ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
-    return `<img src="${resolvedUrl}" alt="${safeName}" width="${size}" height="${size}" ${eagerAttrs} decoding="async" referrerpolicy="no-referrer" class="${classAttr}"${styleAttr} onerror="window.onGoatImgError(this, '${safeName}')">`;
+    // Check if candidate has an associated video in downloads/
+    const videoSrc = (enableVideo && window.PersonMedia) ? window.PersonMedia.getVideo(name, slug) : null;
+    if (videoSrc) {
+      const vidHtml = `
+        <video class="goat-video" loop playsinline muted preload="metadata" data-video-src="${videoSrc}"></video>
+        <div class="goat-sound-indicator" title="Hover for sound" aria-label="Audio available">
+          <span class="sound-wave"><span class="sound-bar paused"></span><span class="sound-bar paused"></span></span>
+          <span class="sound-text">HOVER FOR AUDIO</span>
+        </div>
+      `;
+      return imgHtml + vidHtml;
+    }
+
+    return imgHtml;
   }
 
   window.OptimizedImage = {
