@@ -1,214 +1,203 @@
-// js/video-hover.js — Reliable auto-play muted on screen, unmute on hover, single audio
-// data-video lives on <img> / <div class="fallback"> inside .photo — we watch for that.
+// js/video-hover.js — Single unified video engine
+// - Looks for data-video on img/fallback inside .photo containers
+// - Auto-plays muted when card scrolls into view → expands to 16:9
+// - Unmutes on mouseenter, re-mutes on mouseleave
+// - Only one audio source at a time, globally
 (function(){
   if(typeof window === 'undefined') return;
 
-  const live = new Map();           // photoBox -> HTMLVideoElement
-  let audioPhotoBox = null;         // which photoBox has audio on
+  const LIVE = new Map();      // photoBox element -> <video>
+  let audioBox = null;         // photoBox currently unmuted
+  const observed = new WeakSet();
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ─── helpers ─── */
-
-  function getPhotoBox(el){
+  /* ─── Get the nearest .photo/.person-photo ancestor (or self) ─── */
+  function toPhotoBox(el){
     if(!el || !el.closest) return null;
-    // .photo or .person-photo is the visual container that holds the img
+    if(el.classList && (el.classList.contains('photo') || el.classList.contains('person-photo'))) return el;
     return el.closest('.photo, .person-photo');
   }
 
-  function getDuelSide(photoBox){
-    if(!photoBox) return null;
-    return photoBox.closest('.duel-side, .board-row, .cat-tile, .person-card');
+  /* ─── Get the card container wrapping a photoBox ─── */
+  function toCard(pb){
+    return pb && pb.closest ? pb.closest('.duel-side, .board-row, .cat-tile, .person-card') : null;
   }
 
-  function getVideoSrc(photoBox){
-    if(!photoBox) return null;
-    // data-video can be on the img, a fallback div, or the photoBox itself
-    const el = photoBox.matches('[data-video]') ? photoBox : photoBox.querySelector('[data-video]');
-    return el && el.dataset.video ? el.dataset.video : null;
+  /* ─── Get data-video URL from a photoBox ─── */
+  function videoSrc(pb){
+    if(!pb) return null;
+    // Attribute may be on the img, fallback div, or the photoBox itself
+    if(pb.dataset && pb.dataset.video) return pb.dataset.video;
+    const child = pb.querySelector('[data-video]');
+    return child && child.dataset && child.dataset.video ? child.dataset.video : null;
   }
 
-  /* ─── mount / unmount ─── */
-
-  function mountVideo(photoBox){
-    if(!photoBox || live.has(photoBox) || reduced) return;
-    const src = getVideoSrc(photoBox);
+  /* ─── Mount: create and play a muted video inside photoBox ─── */
+  function mount(pb){
+    if(!pb || LIVE.has(pb) || reduced) return;
+    const src = videoSrc(pb);
     if(!src) return;
 
     const v = document.createElement('video');
     v.className = 'goat-clip';
-    v.muted = true;       // MUST start muted — browsers require this for autoplay
+    v.muted = true;          // start muted — required for browser autoplay
     v.loop = true;
     v.playsInline = true;
     v.preload = 'metadata';
-    v.setAttribute('playsinline','');
-    v.setAttribute('webkit-playsinline','');
-    v.setAttribute('aria-hidden','true');
+    v.setAttribute('playsinline', '');
+    v.setAttribute('webkit-playsinline', '');
+    v.setAttribute('aria-hidden', 'true');
     v.src = src;
 
-    function onReady(){
-      if(!live.has(photoBox)) return;
+    function reveal(){
+      if(!LIVE.has(pb)) return;
       v.classList.add('ready');
-      photoBox.classList.add('video-playing');
-      const side = getDuelSide(photoBox);
-      if(side) side.classList.add('video-playing');
+      pb.classList.add('video-playing');
+      const card = toCard(pb);
+      if(card) card.classList.add('video-playing');
     }
+    v.addEventListener('loadeddata', reveal, { once: true });
+    v.addEventListener('canplay',    reveal, { once: true });
+    v.addEventListener('playing',    reveal, { once: true });
+    v.addEventListener('error',      () => unmount(pb));
 
-    v.addEventListener('loadeddata', onReady, { once: true });
-    v.addEventListener('canplay',    onReady, { once: true });
-    v.addEventListener('playing',    onReady, { once: true });
-    v.addEventListener('error', () => unmountVideo(photoBox));
-
-    photoBox.appendChild(v);
-    live.set(photoBox, v);
-
-    v.play().catch(() => {
-      // If even muted play fails, try again muted
-      v.muted = true;
-      v.play().catch(() => {});
-    });
+    pb.appendChild(v);
+    LIVE.set(pb, v);
+    v.play().catch(() => { v.muted = true; v.play().catch(()=>{}); });
   }
 
-  function unmountVideo(photoBox){
-    if(!photoBox) return;
-    const v = live.get(photoBox);
+  /* ─── Unmount: remove video, clean up classes ─── */
+  function unmount(pb){
+    if(!pb) return;
+    const v = LIVE.get(pb);
     if(v){
-      live.delete(photoBox);
+      LIVE.delete(pb);
       v.muted = true;
       v.pause();
       v.removeAttribute('src');
       try{ v.load(); }catch(e){}
       v.remove();
     }
-    photoBox.classList.remove('video-playing');
-    const side = getDuelSide(photoBox);
-    if(side) side.classList.remove('video-playing');
-    if(audioPhotoBox === photoBox) audioPhotoBox = null;
+    pb.classList.remove('video-playing');
+    const card = toCard(pb);
+    if(card) card.classList.remove('video-playing');
+    if(audioBox === pb) audioBox = null;
   }
 
-  /* ─── IntersectionObserver: auto-play when visible ─── */
+  /* ─── IntersectionObserver: mount on-screen, unmount off-screen ─── */
+  const io = typeof IntersectionObserver !== 'undefined'
+    ? new IntersectionObserver(entries => {
+        for(const e of entries){
+          if(e.isIntersecting){ mount(e.target); }
+          else if(audioBox !== e.target){ unmount(e.target); }
+        }
+      }, { rootMargin: '200px 0px 200px 0px', threshold: 0 })
+    : null;
 
-  const io = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
-    for(const entry of entries){
-      const photoBox = entry.target;
-      if(entry.isIntersecting){
-        mountVideo(photoBox);
-      } else {
-        // Only unmount if no audio is on — keep playing off-screen if user is hovering
-        if(audioPhotoBox !== photoBox) unmountVideo(photoBox);
-      }
-    }
-  }, { rootMargin: '150px 0px 150px 0px', threshold: 0.05 }) : null;
-
-  const watched = new WeakSet();
-
-  function observePhotoBox(photoBox){
-    if(!photoBox || watched.has(photoBox)) return;
-    if(!getVideoSrc(photoBox)) return;   // no video yet on this element — wait
-    watched.add(photoBox);
-    if(io) io.observe(photoBox);
+  /* ─── Register a photoBox for observation ─── */
+  function observe(pb){
+    if(!pb || observed.has(pb)) return;
+    if(!videoSrc(pb)) return;   // no video yet, wait for data-video attribute
+    observed.add(pb);
+    if(io) io.observe(pb);
   }
 
-  /* ─── Scan DOM for photo boxes that have data-video ─── */
-
+  /* ─── Scan: find all photoBoxes that have (or contain) data-video ─── */
   function scan(root){
-    const scope = root instanceof Element ? root : (root || document);
+    const scope = (root instanceof Element) ? root : document;
+    // Find all elements with data-video and resolve their photoBox
     scope.querySelectorAll('[data-video]').forEach(el => {
-      const pb = getPhotoBox(el) || (el.matches('.photo, .person-photo') ? el : null);
-      if(pb) observePhotoBox(pb);
+      const pb = toPhotoBox(el);
+      if(pb) observe(pb);
     });
-    // Also re-scan known photo boxes in case data-video was just added
+    // Also check .photo / .person-photo directly in case data-video is on them
     scope.querySelectorAll('.photo, .person-photo').forEach(pb => {
-      if(!watched.has(pb) && getVideoSrc(pb)) observePhotoBox(pb);
+      if(!observed.has(pb) && videoSrc(pb)) observe(pb);
     });
   }
 
-  /* ─── MutationObserver: catch dynamically added cards ─── */
-
-  if('MutationObserver' in window){
-    const mo = new MutationObserver(mutations => {
+  /* ─── MutationObserver: catch dynamically injected cards & data-video attrs ─── */
+  if(typeof MutationObserver !== 'undefined'){
+    new MutationObserver(mutations => {
       for(const m of mutations){
+        if(m.type === 'attributes' && m.attributeName === 'data-video'){
+          const pb = toPhotoBox(m.target);
+          if(pb) observe(pb);
+        }
         for(const node of m.addedNodes){
           if(node.nodeType !== 1) continue;
-          // If the added node itself has data-video
-          if(node.dataset && node.dataset.video){
-            const pb = getPhotoBox(node);
-            if(pb) observePhotoBox(pb);
-          }
-          // Scan inside it too
+          // Node itself might have data-video
+          if(node.dataset && node.dataset.video){ const pb = toPhotoBox(node); if(pb) observe(pb); }
+          // Or its descendants do
           scan(node);
         }
-        // If an attribute changed to data-video
-        if(m.type === 'attributes' && m.attributeName === 'data-video'){
-          const pb = getPhotoBox(m.target);
-          if(pb) observePhotoBox(pb);
-        }
       }
+    }).observe(document.documentElement, {
+      childList: true, subtree: true,
+      attributes: true, attributeFilter: ['data-video']
     });
-    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-video'] });
   }
 
-  /* ─── Hover: audio on / off ─── */
+  /* ─── Hover: set/clear audio ─── */
+  function setAudio(pb){
+    if(pb === audioBox) return;
 
-  function setAudio(photoBox){
-    if(photoBox === audioPhotoBox) return;
-
-    // Mute previous
-    if(audioPhotoBox){
-      const pv = live.get(audioPhotoBox);
-      if(pv){ pv.muted = true; pv.volume = 0; }
-      audioPhotoBox = null;
+    // Mute old
+    if(audioBox){
+      const ov = LIVE.get(audioBox);
+      if(ov){ ov.muted = true; ov.volume = 0; }
+      audioBox = null;
     }
 
-    if(!photoBox) return;
+    if(!pb) return;
+    audioBox = pb;
 
-    audioPhotoBox = photoBox;
-    let v = live.get(photoBox);
-
-    if(!v){
-      // Video not mounted yet (card just entered viewport or was off-screen) — mount it first
-      mountVideo(photoBox);
-      v = live.get(photoBox);
-    }
-
+    // If video not mounted yet (rare), mount on demand
+    if(!LIVE.has(pb)) mount(pb);
+    const v = LIVE.get(pb);
     if(v){
       v.muted = false;
       v.volume = 1.0;
-      if(v.paused){
-        v.play().catch(() => { v.muted = true; v.play().catch(()=>{}); });
-      }
+      if(v.paused) v.play().catch(() => { v.muted = true; v.play().catch(()=>{}); });
     }
   }
 
+  // Use mouseover / mouseleave on the photoBox itself
   document.addEventListener('mouseover', e => {
-    const pb = getPhotoBox(e.target);
-    if(pb && (getVideoSrc(pb) || live.has(pb))){
+    const pb = toPhotoBox(e.target);
+    // Only set audio if this photoBox has (or will have) a video
+    if(pb && (LIVE.has(pb) || videoSrc(pb))){
       setAudio(pb);
-    } else if(!pb || (!getVideoSrc(pb) && !live.has(pb))){
+    } else {
       setAudio(null);
     }
-  }, true);
+  }, { passive: true, capture: true });
 
-  document.addEventListener('mouseleave', () => setAudio(null), true);
+  document.addEventListener('mouseleave', () => setAudio(null), { passive: true });
 
-  // Pause all when tab hidden; resume when visible
+  /* ─── Visibility: pause/resume all ─── */
   document.addEventListener('visibilitychange', () => {
     if(document.hidden){
       setAudio(null);
-      for(const v of live.values()) v.pause();
+      for(const v of LIVE.values()) v.pause();
     } else {
-      for(const v of live.values()) v.play().catch(()=>{});
+      for(const v of LIVE.values()) v.play().catch(()=>{});
     }
   });
 
-  // Initial scan after DOM is ready
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', () => scan());
-  } else {
+  /* ─── Initial scans (staggered for late JS renders) ─── */
+  function initScan(){
     scan();
+    setTimeout(scan, 500);
+    setTimeout(scan, 1500);
+    setTimeout(scan, 3000);
   }
-  // Also scan after a short delay to catch any late JS renders
-  setTimeout(() => scan(), 800);
-  setTimeout(() => scan(), 2500);
 
-  window.VideoHover = { scan, play: mountVideo, teardown: () => [...live.keys()].forEach(unmountVideo) };
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initScan);
+  } else {
+    initScan();
+  }
+
+  window.VideoHover = { scan, mount, unmount, teardown: () => [...LIVE.keys()].forEach(unmount) };
 })();
