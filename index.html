@@ -484,7 +484,15 @@
   // Indices
   function buildIndices(){
     peopleByCat = {};
-    for(const p of people){ if(!peopleByCat[p.category_id]) peopleByCat[p.category_id]=[]; peopleByCat[p.category_id].push(p); }
+    const seenCatPerson = new Set();
+    for(const p of people){
+      if(!p || !p.name || !p.category_id) continue;
+      const dedupeKey = p.category_id + ':' + p.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+      if(seenCatPerson.has(dedupeKey)) continue;
+      seenCatPerson.add(dedupeKey);
+      if(!peopleByCat[p.category_id]) peopleByCat[p.category_id]=[];
+      peopleByCat[p.category_id].push(p);
+    }
     // ensure sorted by total_cents desc
     for(const k in peopleByCat) peopleByCat[k].sort((a,b)=> (b.total_cents||0)-(a.total_cents||0) );
     groupMap = {};

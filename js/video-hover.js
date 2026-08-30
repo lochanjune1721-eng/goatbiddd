@@ -142,36 +142,21 @@
       activeAudioVideo.muted = true;
     }
 
+    // Turn audio on immediately on hover
     v.muted = false;
     v.volume = 1.0;
     activeAudioVideo = v;
 
-    const p = v.play();
-    if(p && p.catch){
-      p.catch(() => {
-        // If unmuting triggered a browser autoplay security pause, recover immediately to muted play
+    if(v.paused){
+      v.play().catch(() => {
         v.muted = true;
         v.play().catch(() => {});
       });
     }
   }
 
-  // Direct click / tap immediately activates sound
-  function handleCardClick(e){
-    const card = e.target && e.target.closest ? e.target.closest('.photo, .person-photo, #photo-wrap, .duel-side, .board-row, .cat-tile, .contender-card, [data-video]') : null;
-    if(card){
-      const v = resolveVideo(card);
-      if(v){
-        v.muted = false;
-        v.volume = 1.0;
-        activeAudioVideo = v;
-        v.play().catch(() => {});
-      }
-    }
-  }
-
   document.addEventListener('mouseover', handleCardHover, true);
-  document.addEventListener('click', handleCardClick, true);
+  document.addEventListener('pointerenter', handleCardHover, true);
   document.addEventListener('mouseleave', () => {
     if(activeAudioVideo){
       activeAudioVideo.muted = true;

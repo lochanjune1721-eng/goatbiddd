@@ -92,7 +92,19 @@
       return;
     }
     const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(FETCH_SIZE);
-    people=data||[];
+    const rawList = data||[];
+    
+    // Deduplicate any duplicates from database
+    const seen = new Set();
+    people = [];
+    for(const p of rawList){
+      if(!p || !p.name) continue;
+      const key = p.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+      if(seen.has(key)) continue;
+      seen.add(key);
+      people.push(p);
+    }
+
     if(!people.length){
       const fb=await window.WIKI_FALLBACK?.();
       if(fb){
