@@ -1,141 +1,175 @@
-// js/video-hover.js — stills that become clips.
-//
-// Every contender card renders a still. Where a clip exists (people.video_path,
-// surfaced as data-video on the <img>), the still is replaced by a muted,
-// looping video while the card is on screen, and paused and torn down when it
-// scrolls away — so a page of 30 boards never has 60 videos decoding at once.
-// Hovering a playing clip turns its sound on; leaving mutes it again.
-//
-// The still is never removed, only covered. If the clip 404s, stalls, or the
-// browser refuses to play it, what remains on screen is exactly the image that
-// was there before.
+// js/video-hover.js — Seamless contender video playback & responsive hover audio
 (function(){
   if(typeof window === 'undefined') return;
 
-  const MAX_PLAYING = 8;          // cap concurrent decodes
-  const VISIBLE = 0.15;           // start playing once visible in viewport
-  const live = new Map();         // img/el -> video
-  const order = [];               // play order, oldest first
+  const VISIBLE_THRESHOLD = 0.05; // start loading immediately when even 5% is on screen
+  const live = new Map();         // [data-video] element -> HTMLVideoElement
+  let activeAudioVideo = null;    // currently unmuted video
 
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Browsers allow audio after user interaction; arm on any interaction
-  let canUnmute = false;
-  const arm = () => { canUnmute = true; };
-  ['pointerdown','keydown','touchstart','pointerover','mouseover','mouseenter','click'].forEach(e=>
-    window.addEventListener(e, arm, { once:true, passive:true }));
+  // Unlock browser audio context as early as possible on any gesture
+  let audioUnlocked = false;
+  const unlockAudio = () => { audioUnlocked = true; };
+  ['pointerdown','pointermove','keydown','touchstart','mousedown','mousemove','mouseover','mouseenter','click'].forEach(evt =>
+    window.addEventListener(evt, unlockAudio, { passive: true })
+  );
 
-  function teardown(img){
-    const v = live.get(img);
+  function teardown(el){
+    const v = live.get(el);
     if(!v) return;
-    live.delete(img);
-    const i = order.indexOf(img); if(i>=0) order.splice(i,1);
+    if(activeAudioVideo === v) {
+      activeAudioVideo = null;
+    }
+    live.delete(el);
     v.pause();
     v.removeAttribute('src');
     try { v.load(); } catch(e){}
     v.remove();
-    img.style.visibility = '';
+    el.style.visibility = '';
   }
 
-  function play(img){
-    if(live.has(img) || reduced) return;
-    const src = img.dataset.video;
+  function play(el){
+    if(live.has(el) || reduced) return;
+    const src = el.dataset.video;
     if(!src) return;
-
-    while(order.length >= MAX_PLAYING) teardown(order[0]);
 
     const v = document.createElement('video');
     v.className = 'goat-clip';
-    v.muted = true;            // muted autoplay is required by browsers
+    v.muted = true;               // Browsers mandate muted autoplay
     v.loop = true;
     v.playsInline = true;
-    v.preload = 'metadata';
-    v.setAttribute('playsinline','');
-    v.setAttribute('webkit-playsinline','');
-    v.setAttribute('aria-hidden','true');
+    v.preload = 'auto';
+    v.setAttribute('playsinline', '');
+    v.setAttribute('webkit-playsinline', '');
+    v.setAttribute('aria-hidden', 'true');
     v.src = src;
 
-    // Only reveal once frames are actually available, so a slow or dead clip
-    // never blanks the card.
+    // Show clip once frames are ready
     v.addEventListener('loadeddata', ()=>{
-      if(!live.has(img)) return;
+      if(!live.has(el)) return;
       v.classList.add('ready');
-      img.style.visibility = 'hidden';
-    }, { once:true });
-    v.addEventListener('error', ()=> teardown(img));
+      el.style.visibility = 'hidden';
+    }, { once: true });
 
-    const parent = img.parentElement;
+    v.addEventListener('error', ()=> teardown(el));
+
+    const parent = el.parentElement;
     if(!parent) return;
     parent.appendChild(v);
-    live.set(img, v);
-    order.push(img);
-    const p = v.play();
-    if(p && p.catch) p.catch(()=> teardown(img));   // autoplay refused
+    live.set(el, v);
+
+    const playPromise = v.play();
+    if(playPromise && playPromise.catch){
+      playPromise.catch(() => {
+        // If autoplay fails, ensure video stays in DOM ready for hover
+      });
+    }
   }
 
-  const io = ('IntersectionObserver' in window) ? new IntersectionObserver(entries=>{
-    for(const e of entries){
-      if(e.isIntersecting && e.intersectionRatio >= VISIBLE) play(e.target);
-      else if(!e.isIntersecting) teardown(e.target);
+  // IntersectionObserver: all visible videos in viewport play simultaneously
+  const io = ('IntersectionObserver' in window) ? new IntersectionObserver(entries => {
+    for(const entry of entries){
+      if(entry.isIntersecting){
+        play(entry.target);
+      } else {
+        teardown(entry.target);
+      }
     }
-  }, { threshold:[0, VISIBLE, 0.5, 1] }) : null;
+  }, {
+    rootMargin: '120px 0px 120px 0px',
+    threshold: [0, VISIBLE_THRESHOLD, 0.5]
+  }) : null;
 
-  // Find the clip under the pointer
-  function clipUnder(target){
-    if(!target || !target.closest) return null;
-    const v = target.closest('video.goat-clip');
-    if(v) return v;
-    const el = target.closest('[data-video]');
-    if(el) return live.get(el) || null;
-    const box = target.closest('.photo, .person-photo, #photo-wrap');
+  // Resolve the video element belonging to any hovered element or its container card
+  function resolveVideo(target){
+    if(!target) return null;
+    if(target.matches && target.matches('video.goat-clip')) return target;
+    const directVideo = target.closest ? target.closest('video.goat-clip') : null;
+    if(directVideo) return directVideo;
+
+    // Check if target has data-video
+    if(target.dataset && target.dataset.video) return live.get(target) || null;
+
+    // Search nearest contender container (photo box, duel side, category row, etc.)
+    const box = target.closest ? target.closest('.photo, .person-photo, #photo-wrap, .duel-side, .board-row, .cat-tile, .contender-card, .duel-card') : null;
     if(box){
       const held = box.querySelector('video.goat-clip');
       if(held) return held;
+      const elWithVideo = box.matches('[data-video]') ? box : box.querySelector('[data-video]');
+      if(elWithVideo) return live.get(elWithVideo) || null;
     }
     return null;
   }
 
-  // Sound follows the pointer, and only where a clip is actually playing.
-  document.addEventListener('pointerover', e=>{
-    const box = e.target && e.target.closest ? (e.target.closest('[data-video]') || e.target.closest('.photo, .person-photo, #photo-wrap')) : null;
-    if(box){
-      const targetWithVideo = box.matches('[data-video]') ? box : box.querySelector('[data-video]');
+  // Ensure video is created and playing when hovered, and unmute
+  function handleHoverIn(e){
+    audioUnlocked = true;
+    const container = e.target && e.target.closest ? e.target.closest('.photo, .person-photo, #photo-wrap, .duel-side, .board-row, .cat-tile, .contender-card, [data-video]') : null;
+    if(container){
+      const targetWithVideo = container.matches('[data-video]') ? container : container.querySelector('[data-video]');
       if(targetWithVideo && !live.has(targetWithVideo)){
         play(targetWithVideo);
       }
     }
-    const v = clipUnder(e.target);
-    if(!v || !canUnmute) return;
+
+    const v = resolveVideo(e.target);
+    if(!v) return;
+
+    // Mute any other currently unmuted video
+    if(activeAudioVideo && activeAudioVideo !== v){
+      activeAudioVideo.muted = true;
+    }
+
     v.muted = false;
-    v.volume = 0.85;
+    v.volume = 1.0;
+    activeAudioVideo = v;
     const p = v.play();
-    if(p && p.catch) p.catch(()=>{ v.muted = true; });
-  }, true);
+    if(p && p.catch) p.catch(() => {});
+  }
 
-  document.addEventListener('pointerout', e=>{
-    const v = clipUnder(e.target);
-    if(v) v.muted = true;
-  }, true);
+  function handleHoverOut(e){
+    const v = resolveVideo(e.target);
+    if(v){
+      v.muted = true;
+      if(activeAudioVideo === v) activeAudioVideo = null;
+    }
+  }
 
-  // Background tab should pause videos
+  // Bind global hover sound listeners
+  document.addEventListener('pointerover', handleHoverIn, true);
+  document.addEventListener('mouseover', handleHoverIn, true);
+  document.addEventListener('pointerout', handleHoverOut, true);
+  document.addEventListener('mouseout', handleHoverOut, true);
+
+  // Background tab should pause and mute
   document.addEventListener('visibilitychange', ()=>{
-    if(document.hidden) for(const img of [...order]) teardown(img);
+    if(document.hidden){
+      if(activeAudioVideo){
+        activeAudioVideo.muted = true;
+        activeAudioVideo = null;
+      }
+      for(const [el] of live) teardown(el);
+    } else {
+      scan();
+    }
   });
 
   function scan(root){
     if(!io || reduced) return;
-    for(const img of (root || document).querySelectorAll('[data-video]')){
-      if(img.dataset.clipWatched) continue;
-      img.dataset.clipWatched = '1';
-      io.observe(img);
+    for(const el of (root || document).querySelectorAll('[data-video]')){
+      if(el.dataset.clipWatched) continue;
+      el.dataset.clipWatched = '1';
+      io.observe(el);
     }
   }
 
   if('MutationObserver' in window){
-    new MutationObserver(()=> scan()).observe(document.documentElement, { childList:true, subtree:true });
+    new MutationObserver(()=> scan()).observe(document.documentElement, { childList: true, subtree: true });
   }
+
   document.addEventListener('DOMContentLoaded', ()=> scan());
   scan();
 
-  window.VideoHover = { scan, play, teardown: ()=> [...order].forEach(teardown) };
+  window.VideoHover = { scan, play, teardown: ()=> [...live.keys()].forEach(teardown) };
 })();
