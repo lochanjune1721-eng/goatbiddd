@@ -3,7 +3,28 @@ const SUPABASE_URL = "https://orzcszqpnvicreqvpncu.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDIwNDIsImV4cCI6MjEwMzIxODA0Mn0.ayMlWauR_XCT2lWV_Pg2PZTq_CuTS-bch8KdoxslvIs";
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
-window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// The client comes from a CDN script tag. If that fails to load, every page
+// used to die on the first property access and render nothing at all — the
+// helpers below were never defined. Create it defensively and carry on: static
+// content, curated country boards and the board pages all work without it.
+try {
+  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (e) {
+  console.warn('Supabase client unavailable — running without live data', e);
+  const noop = () => stub;
+  const stub = { select:noop, order:noop, eq:noop, in:noop, gte:noop, lt:noop,
+    limit:noop, range:noop, insert:noop, update:noop,
+    maybeSingle: () => Promise.resolve({ data:null, error:null }),
+    then: r => r({ data: [], error: null }) };
+  window.supabaseClient = {
+    from: () => stub,
+    rpc: () => Promise.resolve({ data:null, error:{ message:'offline' } }),
+    auth: { getUser: () => Promise.resolve({ data:{ user:null } }),
+            onAuthStateChange: () => {}, signOut: () => Promise.resolve({}) },
+    channel: () => ({ on(){ return this; }, subscribe(){ return this; } })
+  };
+}
 
 window.GOAT = {
   SUPABASE_URL,
