@@ -1,10 +1,17 @@
 // js/video-hover.js — Single unified video engine
+// - Desktop only (no touch / narrow screens)
 // - Looks for data-video on img/fallback inside .photo containers
 // - Auto-plays muted when card scrolls into view → expands to 16:9
 // - Unmutes on mouseenter, re-mutes on mouseleave
 // - Only one audio source at a time, globally
 (function(){
   if(typeof window === 'undefined') return;
+
+  // ── MOBILE / TOUCH GUARD: skip entirely on phones & tablets ──
+  const isMobile = window.matchMedia('(max-width: 768px)').matches ||
+                   ('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 1);
+  if(isMobile) return;  // no video on touch / small screens
 
   const LIVE = new Map();      // photoBox element -> <video>
   let audioBox = null;         // photoBox currently unmuted
@@ -18,9 +25,9 @@
     return el.closest('.photo, .person-photo');
   }
 
-  /* ─── Get the card container wrapping a photoBox ─── */
+  /* ─── Get the card container wrapping a photoBox (duel cards only) ─── */
   function toCard(pb){
-    return pb && pb.closest ? pb.closest('.duel-side, .board-row, .cat-tile, .person-card') : null;
+    return pb && pb.closest ? pb.closest('.duel-side') : null;
   }
 
   /* ─── Get data-video URL from a photoBox ─── */
