@@ -1,0 +1,900 @@
+{
+ "IN": {
+  "code": "IN",
+  "country": "India",
+  "adjective": "Indian",
+  "boards": [
+   {
+    "name": "Greatest Indian Cricketer",
+    "subject": "Cricketer"
+   },
+   {
+    "name": "Greatest Indian Batsman",
+    "subject": "Batsman"
+   },
+   {
+    "name": "Greatest Indian Bowler",
+    "subject": "Bowler"
+   },
+   {
+    "name": "Greatest Indian Cricket Captain",
+    "subject": "Cricket Captain"
+   },
+   {
+    "name": "Greatest Indian All-Rounder",
+    "subject": "All-Rounder"
+   },
+   {
+    "name": "Greatest Indian IPL Player",
+    "subject": "IPL Player"
+   },
+   {
+    "name": "Greatest Indian Hockey Player",
+    "subject": "Hockey Player"
+   },
+   {
+    "name": "Greatest Indian Wicketkeeper",
+    "subject": "Wicketkeeper"
+   },
+   {
+    "name": "Greatest Indian Footballer",
+    "subject": "Footballer"
+   },
+   {
+    "name": "Greatest Indian Badminton Player",
+    "subject": "Badminton Player"
+   },
+   {
+    "name": "Greatest Indian Tennis Player",
+    "subject": "Tennis Player"
+   },
+   {
+    "name": "Greatest Indian Footballer (Women)",
+    "subject": "Footballer (Women)"
+   },
+   {
+    "name": "Greatest Indian Olympian",
+    "subject": "Olympian"
+   },
+   {
+    "name": "Greatest Indian Football Club",
+    "subject": "Football Club"
+   },
+   {
+    "name": "Greatest Indian Chess Player",
+    "subject": "Chess Player"
+   },
+   {
+    "name": "Greatest Indian Football Coach",
+    "subject": "Football Coach"
+   },
+   {
+    "name": "Greatest Indian Boxer",
+    "subject": "Boxer"
+   },
+   {
+    "name": "Greatest Indian Wrestler",
+    "subject": "Wrestler"
+   },
+   {
+    "name": "Greatest Indian Athlete",
+    "subject": "Athlete"
+   },
+   {
+    "name": "Greatest Indian Actor",
+    "subject": "Actor"
+   },
+   {
+    "name": "Greatest Indian Actress",
+    "subject": "Actress"
+   },
+   {
+    "name": "Greatest Indian Kabaddi Player",
+    "subject": "Kabaddi Player"
+   },
+   {
+    "name": "Greatest Indian Bollywood Actor",
+    "subject": "Bollywood Actor"
+   },
+   {
+    "name": "Greatest Indian Track Athlete",
+    "subject": "Track Athlete"
+   },
+   {
+    "name": "Greatest Indian Bollywood Actress",
+    "subject": "Bollywood Actress"
+   },
+   {
+    "name": "Greatest Indian Swimmer",
+    "subject": "Swimmer"
+   },
+   {
+    "name": "Greatest Indian Film Director",
+    "subject": "Film Director"
+   },
+   {
+    "name": "Greatest Indian Golfer",
+    "subject": "Golfer"
+   },
+   {
+    "name": "Greatest Indian Film",
+    "subject": "Film"
+   },
+   {
+    "name": "Greatest Indian Singer",
+    "subject": "Singer"
+   },
+   {
+    "name": "Greatest Indian MMA Fighter",
+    "subject": "MMA Fighter"
+   },
+   {
+    "name": "Greatest Indian Music Composer",
+    "subject": "Music Composer"
+   },
+   {
+    "name": "Greatest Indian Rapper",
+    "subject": "Rapper"
+   },
+   {
+    "name": "Greatest Indian Cyclist",
+    "subject": "Cyclist"
+   },
+   {
+    "name": "Greatest Indian Prime Minister",
+    "subject": "Prime Minister"
+   },
+   {
+    "name": "Greatest Indian Motorsport Driver",
+    "subject": "Motorsport Driver"
+   },
+   {
+    "name": "Greatest Indian President",
+    "subject": "President"
+   },
+   {
+    "name": "Greatest Indian Leader",
+    "subject": "Leader"
+   },
+   {
+    "name": "Greatest Indian Basketball Player",
+    "subject": "Basketball Player"
+   },
+   {
+    "name": "Greatest Indian Revolutionary",
+    "subject": "Revolutionary"
+   },
+   {
+    "name": "Greatest Indian King",
+    "subject": "King"
+   },
+   {
+    "name": "Greatest Indian Emperor",
+    "subject": "Emperor"
+   },
+   {
+    "name": "Greatest Indian Scientist",
+    "subject": "Scientist"
+   },
+   {
+    "name": "Greatest Indian Physicist",
+    "subject": "Physicist"
+   },
+   {
+    "name": "Greatest Indian Mathematician",
+    "subject": "Mathematician"
+   },
+   {
+    "name": "Greatest Indian Inventor",
+    "subject": "Inventor"
+   },
+   {
+    "name": "Greatest Indian TV Show",
+    "subject": "TV Show"
+   },
+   {
+    "name": "Greatest Indian Entrepreneur",
+    "subject": "Entrepreneur"
+   },
+   {
+    "name": "Greatest Indian Comedian",
+    "subject": "Comedian"
+   },
+   {
+    "name": "Greatest Indian Founder",
+    "subject": "Founder"
+   },
+   {
+    "name": "Greatest Indian Screenwriter",
+    "subject": "Screenwriter"
+   },
+   {
+    "name": "Greatest Indian CEO",
+    "subject": "CEO"
+   },
+   {
+    "name": "Greatest Indian Movie Character",
+    "subject": "Movie Character"
+   },
+   {
+    "name": "Greatest Indian Author",
+    "subject": "Author"
+   },
+   {
+    "name": "Greatest Indian Poet",
+    "subject": "Poet"
+   },
+   {
+    "name": "Greatest Indian Philosopher",
+    "subject": "Philosopher"
+   },
+   {
+    "name": "Greatest Indian Band / Music Group",
+    "subject": "Band / Music Group"
+   },
+   {
+    "name": "Greatest Indian Painter",
+    "subject": "Painter"
+   },
+   {
+    "name": "Greatest Indian Composer",
+    "subject": "Composer"
+   },
+   {
+    "name": "Greatest Indian Architect",
+    "subject": "Architect"
+   },
+   {
+    "name": "Greatest Indian Music Producer",
+    "subject": "Music Producer"
+   },
+   {
+    "name": "Greatest Indian City",
+    "subject": "City"
+   },
+   {
+    "name": "Greatest Indian Guitarist",
+    "subject": "Guitarist"
+   },
+   {
+    "name": "Greatest Indian State",
+    "subject": "State"
+   },
+   {
+    "name": "Greatest Indian Drummer",
+    "subject": "Drummer"
+   },
+   {
+    "name": "Greatest Indian Cuisine",
+    "subject": "Cuisine"
+   },
+   {
+    "name": "Greatest Indian Album",
+    "subject": "Album"
+   },
+   {
+    "name": "Greatest Indian Dish",
+    "subject": "Dish"
+   },
+   {
+    "name": "Greatest Indian Playback Singer",
+    "subject": "Playback Singer"
+   },
+   {
+    "name": "Greatest Indian YouTuber",
+    "subject": "YouTuber"
+   },
+   {
+    "name": "Greatest Indian Streamer",
+    "subject": "Streamer"
+   },
+   {
+    "name": "Greatest Indian Internet Creator",
+    "subject": "Internet Creator"
+   },
+   {
+    "name": "Greatest Indian Podcaster",
+    "subject": "Podcaster"
+   },
+   {
+    "name": "Greatest Indian Brand",
+    "subject": "Brand"
+   },
+   {
+    "name": "Greatest Indian Influencer",
+    "subject": "Influencer"
+   },
+   {
+    "name": "Greatest Indian Tech Creator",
+    "subject": "Tech Creator"
+   },
+   {
+    "name": "Greatest Indian Investor",
+    "subject": "Investor"
+   },
+   {
+    "name": "Greatest Indian Company",
+    "subject": "Company"
+   },
+   {
+    "name": "Greatest Indian Startup",
+    "subject": "Startup"
+   },
+   {
+    "name": "Greatest Indian AI Startup",
+    "subject": "AI Startup"
+   },
+   {
+    "name": "Greatest Indian Technology Company",
+    "subject": "Technology Company"
+   },
+   {
+    "name": "Greatest Indian Consumer Brand",
+    "subject": "Consumer Brand"
+   },
+   {
+    "name": "Greatest Indian Chemist",
+    "subject": "Chemist"
+   },
+   {
+    "name": "Greatest Indian Biologist",
+    "subject": "Biologist"
+   },
+   {
+    "name": "Greatest Indian Medical Pioneer",
+    "subject": "Medical Pioneer"
+   },
+   {
+    "name": "Greatest Indian Engineer",
+    "subject": "Engineer"
+   },
+   {
+    "name": "Greatest Indian Computer Scientist",
+    "subject": "Computer Scientist"
+   },
+   {
+    "name": "Greatest Indian AI Researcher",
+    "subject": "AI Researcher"
+   },
+   {
+    "name": "Greatest Indian Novelist",
+    "subject": "Novelist"
+   },
+   {
+    "name": "Greatest Indian Author / Writer",
+    "subject": "Author / Writer"
+   },
+   {
+    "name": "Greatest Indian Book",
+    "subject": "Book"
+   },
+   {
+    "name": "Greatest Indian Journalist",
+    "subject": "Journalist"
+   },
+   {
+    "name": "Greatest Indian Economist",
+    "subject": "Economist"
+   },
+   {
+    "name": "Greatest Indian Historian",
+    "subject": "Historian"
+   },
+   {
+    "name": "Greatest Indian Politician",
+    "subject": "Politician"
+   },
+   {
+    "name": "Greatest Indian Head of Government",
+    "subject": "Head of Government"
+   },
+   {
+    "name": "Greatest Indian President / National Leader",
+    "subject": "President / National Leader"
+   },
+   {
+    "name": "Greatest Indian Freedom Fighter",
+    "subject": "Freedom Fighter"
+   },
+   {
+    "name": "Greatest Indian King / Monarch",
+    "subject": "King / Monarch"
+   },
+   {
+    "name": "Greatest Indian Military Commander",
+    "subject": "Military Commander"
+   },
+   {
+    "name": "Greatest Indian Diplomat",
+    "subject": "Diplomat"
+   },
+   {
+    "name": "Greatest Indian State / Province",
+    "subject": "State / Province"
+   },
+   {
+    "name": "Greatest Indian Dish / Food",
+    "subject": "Dish / Food"
+   },
+   {
+    "name": "Greatest Indian Chef",
+    "subject": "Chef"
+   },
+   {
+    "name": "Greatest Indian Restaurant / Food Brand",
+    "subject": "Restaurant / Food Brand"
+   },
+   {
+    "name": "Greatest Indian Painter / Visual Artist",
+    "subject": "Painter / Visual Artist"
+   },
+   {
+    "name": "Greatest Indian Photographer",
+    "subject": "Photographer"
+   },
+   {
+    "name": "Greatest Indian Fashion Designer",
+    "subject": "Fashion Designer"
+   },
+   {
+    "name": "Greatest Indian Dancer",
+    "subject": "Dancer"
+   },
+   {
+    "name": "Greatest Indian University",
+    "subject": "University"
+   },
+   {
+    "name": "Greatest Indian Landmark / Monument",
+    "subject": "Landmark / Monument"
+   },
+   {
+    "name": "Greatest Indian Tourist Destination",
+    "subject": "Tourist Destination"
+   }
+  ]
+ },
+ "US": {
+  "code": "US",
+  "country": "United States",
+  "adjective": "American",
+  "boards": [
+   {
+    "name": "Greatest American Basketball Player",
+    "subject": "Basketball Player"
+   },
+   {
+    "name": "Greatest American Football Player",
+    "subject": "Football Player"
+   },
+   {
+    "name": "Greatest American Baseball Player",
+    "subject": "Baseball Player"
+   },
+   {
+    "name": "Greatest American Hockey Player",
+    "subject": "Hockey Player"
+   },
+   {
+    "name": "Greatest American Boxer",
+    "subject": "Boxer"
+   },
+   {
+    "name": "Greatest American Olympian",
+    "subject": "Olympian"
+   },
+   {
+    "name": "Greatest American US President",
+    "subject": "US President"
+   },
+   {
+    "name": "Greatest American Leader",
+    "subject": "Leader"
+   },
+   {
+    "name": "Greatest American Footballer",
+    "subject": "Footballer"
+   },
+   {
+    "name": "Greatest American General",
+    "subject": "General"
+   },
+   {
+    "name": "Greatest American Footballer (Women)",
+    "subject": "Footballer (Women)"
+   },
+   {
+    "name": "Greatest American Actor",
+    "subject": "Actor"
+   },
+   {
+    "name": "Greatest American Football Club",
+    "subject": "Football Club"
+   },
+   {
+    "name": "Greatest American Actress",
+    "subject": "Actress"
+   },
+   {
+    "name": "Greatest American Football Coach",
+    "subject": "Football Coach"
+   },
+   {
+    "name": "Greatest American Film Director",
+    "subject": "Film Director"
+   },
+   {
+    "name": "Greatest American Chess Player",
+    "subject": "Chess Player"
+   },
+   {
+    "name": "Greatest American Film",
+    "subject": "Film"
+   },
+   {
+    "name": "Greatest American Badminton Player",
+    "subject": "Badminton Player"
+   },
+   {
+    "name": "Greatest American TV Show",
+    "subject": "TV Show"
+   },
+   {
+    "name": "Greatest American Tennis Player",
+    "subject": "Tennis Player"
+   },
+   {
+    "name": "Greatest American Comedian",
+    "subject": "Comedian"
+   },
+   {
+    "name": "Greatest American Singer",
+    "subject": "Singer"
+   },
+   {
+    "name": "Greatest American Rapper",
+    "subject": "Rapper"
+   },
+   {
+    "name": "Greatest American Track Athlete",
+    "subject": "Track Athlete"
+   },
+   {
+    "name": "Greatest American Band",
+    "subject": "Band"
+   },
+   {
+    "name": "Greatest American Swimmer",
+    "subject": "Swimmer"
+   },
+   {
+    "name": "Greatest American Guitarist",
+    "subject": "Guitarist"
+   },
+   {
+    "name": "Greatest American Golfer",
+    "subject": "Golfer"
+   },
+   {
+    "name": "Greatest American Music Producer",
+    "subject": "Music Producer"
+   },
+   {
+    "name": "Greatest American Scientist",
+    "subject": "Scientist"
+   },
+   {
+    "name": "Greatest American MMA Fighter",
+    "subject": "MMA Fighter"
+   },
+   {
+    "name": "Greatest American Inventor",
+    "subject": "Inventor"
+   },
+   {
+    "name": "Greatest American Wrestler",
+    "subject": "Wrestler"
+   },
+   {
+    "name": "Greatest American Entrepreneur",
+    "subject": "Entrepreneur"
+   },
+   {
+    "name": "Greatest American Cyclist",
+    "subject": "Cyclist"
+   },
+   {
+    "name": "Greatest American CEO",
+    "subject": "CEO"
+   },
+   {
+    "name": "Greatest American Motorsport Driver",
+    "subject": "Motorsport Driver"
+   },
+   {
+    "name": "Greatest American Investor",
+    "subject": "Investor"
+   },
+   {
+    "name": "Greatest American Author",
+    "subject": "Author"
+   },
+   {
+    "name": "Greatest American Poet",
+    "subject": "Poet"
+   },
+   {
+    "name": "Greatest American City",
+    "subject": "City"
+   },
+   {
+    "name": "Greatest American State",
+    "subject": "State"
+   },
+   {
+    "name": "Greatest American Cuisine",
+    "subject": "Cuisine"
+   },
+   {
+    "name": "Greatest American Dish",
+    "subject": "Dish"
+   },
+   {
+    "name": "Greatest American Company",
+    "subject": "Company"
+   },
+   {
+    "name": "Greatest American Brand",
+    "subject": "Brand"
+   },
+   {
+    "name": "Greatest American YouTuber",
+    "subject": "YouTuber"
+   },
+   {
+    "name": "Greatest American Podcaster",
+    "subject": "Podcaster"
+   },
+   {
+    "name": "Greatest American Screenwriter",
+    "subject": "Screenwriter"
+   },
+   {
+    "name": "Greatest American Tech Founder",
+    "subject": "Tech Founder"
+   },
+   {
+    "name": "Greatest American Movie Character",
+    "subject": "Movie Character"
+   },
+   {
+    "name": "Greatest American Photographer",
+    "subject": "Photographer"
+   },
+   {
+    "name": "Greatest American Architect",
+    "subject": "Architect"
+   },
+   {
+    "name": "Greatest American Fashion Designer",
+    "subject": "Fashion Designer"
+   },
+   {
+    "name": "Greatest American Band / Music Group",
+    "subject": "Band / Music Group"
+   },
+   {
+    "name": "Greatest American Superhero",
+    "subject": "Superhero"
+   },
+   {
+    "name": "Greatest American Composer",
+    "subject": "Composer"
+   },
+   {
+    "name": "Greatest American Video Game",
+    "subject": "Video Game"
+   },
+   {
+    "name": "Greatest American Space Pioneer",
+    "subject": "Space Pioneer"
+   },
+   {
+    "name": "Greatest American Civil Rights Leader",
+    "subject": "Civil Rights Leader"
+   },
+   {
+    "name": "Greatest American Drummer",
+    "subject": "Drummer"
+   },
+   {
+    "name": "Greatest American University",
+    "subject": "University"
+   },
+   {
+    "name": "Greatest American Album",
+    "subject": "Album"
+   },
+   {
+    "name": "Greatest American Restaurant Chain",
+    "subject": "Restaurant Chain"
+   },
+   {
+    "name": "Greatest American Tech Product",
+    "subject": "Tech Product"
+   },
+   {
+    "name": "Greatest American Theme Park",
+    "subject": "Theme Park"
+   },
+   {
+    "name": "Greatest American Streamer",
+    "subject": "Streamer"
+   },
+   {
+    "name": "Greatest American Internet Creator",
+    "subject": "Internet Creator"
+   },
+   {
+    "name": "Greatest American Businessperson",
+    "subject": "Businessperson"
+   },
+   {
+    "name": "Greatest American Philanthropist",
+    "subject": "Philanthropist"
+   },
+   {
+    "name": "Greatest American Influencer",
+    "subject": "Influencer"
+   },
+   {
+    "name": "Greatest American Tech Creator",
+    "subject": "Tech Creator"
+   },
+   {
+    "name": "Greatest American Founder",
+    "subject": "Founder"
+   },
+   {
+    "name": "Greatest American Startup",
+    "subject": "Startup"
+   },
+   {
+    "name": "Greatest American AI Startup",
+    "subject": "AI Startup"
+   },
+   {
+    "name": "Greatest American Technology Company",
+    "subject": "Technology Company"
+   },
+   {
+    "name": "Greatest American Consumer Brand",
+    "subject": "Consumer Brand"
+   },
+   {
+    "name": "Greatest American Physicist",
+    "subject": "Physicist"
+   },
+   {
+    "name": "Greatest American Mathematician",
+    "subject": "Mathematician"
+   },
+   {
+    "name": "Greatest American Chemist",
+    "subject": "Chemist"
+   },
+   {
+    "name": "Greatest American Biologist",
+    "subject": "Biologist"
+   },
+   {
+    "name": "Greatest American Medical Pioneer",
+    "subject": "Medical Pioneer"
+   },
+   {
+    "name": "Greatest American Engineer",
+    "subject": "Engineer"
+   },
+   {
+    "name": "Greatest American Computer Scientist",
+    "subject": "Computer Scientist"
+   },
+   {
+    "name": "Greatest American AI Researcher",
+    "subject": "AI Researcher"
+   },
+   {
+    "name": "Greatest American Novelist",
+    "subject": "Novelist"
+   },
+   {
+    "name": "Greatest American Author / Writer",
+    "subject": "Author / Writer"
+   },
+   {
+    "name": "Greatest American Book",
+    "subject": "Book"
+   },
+   {
+    "name": "Greatest American Journalist",
+    "subject": "Journalist"
+   },
+   {
+    "name": "Greatest American Philosopher",
+    "subject": "Philosopher"
+   },
+   {
+    "name": "Greatest American Economist",
+    "subject": "Economist"
+   },
+   {
+    "name": "Greatest American Historian",
+    "subject": "Historian"
+   },
+   {
+    "name": "Greatest American Politician",
+    "subject": "Politician"
+   },
+   {
+    "name": "Greatest American Head of Government",
+    "subject": "Head of Government"
+   },
+   {
+    "name": "Greatest American President / National Leader",
+    "subject": "President / National Leader"
+   },
+   {
+    "name": "Greatest American Revolutionary",
+    "subject": "Revolutionary"
+   },
+   {
+    "name": "Greatest American Freedom Fighter",
+    "subject": "Freedom Fighter"
+   },
+   {
+    "name": "Greatest American King / Monarch",
+    "subject": "King / Monarch"
+   },
+   {
+    "name": "Greatest American Military Commander",
+    "subject": "Military Commander"
+   },
+   {
+    "name": "Greatest American Diplomat",
+    "subject": "Diplomat"
+   },
+   {
+    "name": "Greatest American State / Province",
+    "subject": "State / Province"
+   },
+   {
+    "name": "Greatest American Dish / Food",
+    "subject": "Dish / Food"
+   },
+   {
+    "name": "Greatest American Chef",
+    "subject": "Chef"
+   },
+   {
+    "name": "Greatest American Restaurant / Food Brand",
+    "subject": "Restaurant / Food Brand"
+   },
+   {
+    "name": "Greatest American Painter / Visual Artist",
+    "subject": "Painter / Visual Artist"
+   },
+   {
+    "name": "Greatest American Dancer",
+    "subject": "Dancer"
+   },
+   {
+    "name": "Greatest American Landmark / Monument",
+    "subject": "Landmark / Monument"
+   },
+   {
+    "name": "Greatest American Tourist Destination",
+    "subject": "Tourist Destination"
+   }
+  ]
+ }
+}

@@ -14,34 +14,38 @@
 /* === Filter + Featured extensions === */
 .duel{border:1px solid var(--border);overflow:hidden;background:var(--surface);border-radius:16px}
 .duel-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface-2)}
-.duel-head strong{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted);line-height:1.2}
-.duel-body{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;gap:10px;align-items:start;padding:14px 12px 12px}
-.duel-body.crazy{gap:10px;padding:16px 14px 12px}
+.duel-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted);line-height:1.2}
+.duel-body{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;gap:14px;align-items:start;padding:20px 18px 16px}
+.duel-body.crazy{gap:16px;padding:26px 22px 18px}
 .duel-side{text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0;overflow:hidden}
-.duel-side .photo{width:100%;max-width:142px;aspect-ratio:1/1;height:auto;border-radius:12px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);position:relative;flex-shrink:0}
-.duel-body.crazy .duel-side .photo{max-width:156px}
-@media(max-width:640px){.duel-side .photo{max-width:108px}.duel-body.crazy .duel-side .photo{max-width:118px}}
-@media(max-width:380px){.duel-side .photo{max-width:92px}.duel-body.crazy .duel-side .photo{max-width:100px}}
-.duel-side .name{font-family:'Anton',sans-serif;font-size:14px;line-height:1.05;max-width:100%;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;width:100%}
-.duel-body.crazy .duel-side .name{font-size:15px}
-@media(max-width:640px){.duel-side .name{font-size:12px}.duel-body.crazy .duel-side .name{font-size:13px}}
-.duel-side .total{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.duel-side .photo{width:100%;max-width:260px;aspect-ratio:1/1;height:auto;border-radius:12px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);position:relative;flex-shrink:0}
+.duel-body.crazy .duel-side .photo{width:100%;max-width:300px;height:auto;aspect-ratio:1/1}
+@media(max-width:640px){.duel-side .photo{width:100%;max-width:150px;height:auto}.duel-body.crazy .duel-side .photo{width:100%;max-width:165px;height:auto}}
+@media(max-width:380px){.duel-side .photo{width:100%;max-width:118px;height:auto}.duel-body.crazy .duel-side .photo{width:100%;max-width:128px;height:auto}}
+.duel-side .name{font-family:'Anton',sans-serif;font-size:19px;line-height:1.05;max-width:100%;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;width:100%}
+.duel-body.crazy .duel-side .name{font-size:23px}
+@media(max-width:640px){.duel-side .name{font-size:15px}.duel-body.crazy .duel-side .name{font-size:17px}}
+.duel-side .total{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--gold);margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .duel-side .total span{font-family:'Inter',sans-serif;font-size:9px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
 .duel-side.leader .photo{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold), 0 6px 14px rgba(201,168,106,.18)}
-.duel-vs{grid-column:2;grid-row:1;align-self:center;width:42px;height:42px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:12px;letter-spacing:.04em;border:2px solid var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.3);line-height:1;flex-shrink:0;margin:0 2px}
-.duel-body.crazy .duel-vs{width:46px;height:46px;font-size:13px}
-@media(max-width:640px){.duel-vs{width:36px;height:36px;font-size:11px}.duel-body.crazy .duel-vs{width:38px;height:38px;font-size:11px}}
-.duel-gap{grid-column:1 / -1;grid-row:2;text-align:center;font-size:11px;line-height:1.35;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 10px;max-width:94%;white-space:normal;overflow-wrap:break-word;justify-self:center;margin-top:2px}
+/* initials fallback has to scale with the larger photo boxes */
+.duel-side .photo .fallback{font-size:40px}
+.duel-body.crazy .duel-side .photo .fallback{font-size:54px}
+@media(max-width:640px){.duel-side .photo .fallback{font-size:28px}.duel-body.crazy .duel-side .photo .fallback{font-size:32px}}
+.duel-vs{grid-column:2;grid-row:1;align-self:center;width:56px;height:56px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:15px;letter-spacing:.04em;border:2px solid var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.3);line-height:1;flex-shrink:0;margin:0 2px}
+.duel-body.crazy .duel-vs{width:62px;height:62px;font-size:17px}
+@media(max-width:640px){.duel-vs{width:44px;height:44px;font-size:12px}.duel-body.crazy .duel-vs{width:48px;height:48px;font-size:13px}}
+.duel-gap{grid-column:1 / -1;grid-row:2;text-align:center;font-size:13px;line-height:1.35;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 10px;max-width:94%;white-space:normal;overflow-wrap:break-word;justify-self:center;margin-top:2px}
 .duel-gap b{color:var(--ink);font-weight:700}
-.duel-body.crazy .duel-gap{font-size:11px;padding:5px 10px}
+.duel-body.crazy .duel-gap{font-size:13.5px;padding:7px 14px}
 .vote-bar-wrap{grid-column:1 / -1;grid-row:3;display:flex;flex-direction:column;gap:4px;margin-top:0}
-.vote-bar{display:flex;height:5px;border-radius:999px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
-.duel-body.crazy .vote-bar{height:6px}
+.vote-bar{display:flex;height:7px;border-radius:999px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
+.duel-body.crazy .vote-bar{height:9px}
 .vote-bar-fill{height:100%;transition:width .5s}
 .vote-bar-fill.p1{background:var(--gold)}
 .vote-bar-fill.p2{background:var(--border-2)}
-.vote-bar-label{text-align:center;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
-.duel-foot{padding:8px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
+.vote-bar-label{text-align:center;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+.duel-foot{padding:11px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
 .filter-bar{position:sticky;top:53px;z-index:30;background:rgba(15,14,12,.92);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:18px;margin:10px 0 14px;padding:12px;box-shadow:var(--shadow)}
 .filter-bar-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .filter-search{flex:1;min-width:220px;position:relative;display:flex;align-items:center}
@@ -65,7 +69,7 @@
 .section-head h2 .fire{font-size:18px}
 .section-head p{font-size:12px;color:var(--muted);max-width:520px}
 .section-head .view-all{font-size:12px;color:var(--gold);font-weight:700}
-.featured-grid{display:grid;grid-template-columns:1fr;gap:22px;max-width:760px;margin:0 auto}
+.featured-grid{display:grid;grid-template-columns:1fr;gap:26px;max-width:1180px;margin:0 auto}
 .featured-grid .cat-tile{border-color:#3A2E14}
 .featured-grid .cat-tile-head strong{font-size:13px;color:var(--gold)}
 .badge-featured{font-size:10px;font-weight:800;letter-spacing:.08em;background:var(--gold);color:var(--bg);padding:3px 7px;border-radius:999px}
@@ -89,9 +93,127 @@
   .featured-grid{grid-template-columns:1fr}
   .section-head h2{font-size:18px}
 }
+
+/* ============================================================
+   THREE-COLUMN SHELL — left categories / center boards / right fans
+   Additive only: no existing rule is redefined except the two
+   sticky offsets below, which shift down to clear the new ticker.
+   ============================================================ */
+.topbar{top:32px}
+.filter-bar{top:85px}
+@media(max-width:640px){.filter-bar{top:84px}}
+
+/* --- TOP LIVE TICKER --- */
+.goat-ticker{position:sticky;top:0;z-index:50;height:32px;background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;display:flex;align-items:center}
+.goat-ticker::after{content:'';position:absolute;right:0;top:0;bottom:0;width:64px;z-index:2;pointer-events:none;background:linear-gradient(270deg,var(--bg),transparent)}
+.goat-ticker-label{position:absolute;left:0;top:0;bottom:0;z-index:3;display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--gold);color:var(--bg);font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.goat-ticker-label .dot{width:6px;height:6px;border-radius:50%;background:var(--bg);opacity:.85;animation:goat-blink 1.6s ease-in-out infinite}
+@keyframes goat-blink{0%,100%{opacity:.85}50%{opacity:.25}}
+.goat-ticker-track{display:flex;width:max-content;animation:goat-ticker-scroll 60s linear infinite;will-change:transform}
+.goat-ticker:hover .goat-ticker-track{animation-play-state:paused}
+.goat-ticker-seq{display:flex;align-items:center;flex:0 0 auto}
+.goat-ticker-item{display:inline-flex;align-items:center;gap:7px;padding:0 16px;font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--muted);white-space:nowrap}
+.goat-ticker-item b{color:var(--ink);font-weight:700}
+.goat-ticker-item .g{color:var(--gold)}
+.goat-ticker-sep{color:var(--border-2);font-size:11px;user-select:none}
+@keyframes goat-ticker-scroll{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+/* style.css kills all animation under reduced motion — make the ticker a
+   scrollable strip there so no headline becomes unreachable. */
+@media (prefers-reduced-motion:reduce){
+  .goat-ticker{overflow-x:auto;scrollbar-width:none}
+  .goat-ticker::-webkit-scrollbar{display:none}
+  .goat-ticker-track{width:auto}
+  .goat-ticker-seq+.goat-ticker-seq{display:none}
+}
+
+/* --- SHELL GRID --- */
+/* Full-bleed: the shell spans the viewport, sidebars sit against the edges and
+   their dividers run the full page height. The asides stretch to the row; the
+   sticky element is the inner wrapper. */
+.topbar-inner{max-width:none;padding:10px 24px}
+.goat-shell{max-width:none;margin:0;padding:0;display:grid;grid-template-columns:272px minmax(0,1fr) 336px;gap:0;align-items:stretch}
+.goat-shell>.container{max-width:none;margin:0;padding:0 30px;min-width:0}
+.side-col{position:relative;min-width:0}
+.side-left{border-right:1px solid var(--border)}
+.side-right{border-left:1px solid var(--border)}
+.side-inner{position:sticky;top:98px;max-height:calc(100vh - 112px);overflow-y:auto;overscroll-behavior:contain;padding:18px 18px 14px;scrollbar-width:thin;scrollbar-color:var(--border-2) transparent}
+.side-inner::-webkit-scrollbar{width:6px}
+.side-inner::-webkit-scrollbar-track{background:transparent}
+.side-inner::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:999px}
+.side-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--muted-2);padding:0 6px;margin:0 0 9px}
+
+/* --- LEFT: categories --- */
+.cat-nav{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px;box-shadow:var(--shadow-sm)}
+.cat-nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:11px;border:1px solid transparent;background:none;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;line-height:1.2;text-align:left;cursor:pointer;transition:background .14s,color .14s,border-color .14s}
+.cat-nav-item .ico{width:23px;height:23px;border-radius:7px;display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--border);font-size:12px;line-height:1;flex:0 0 auto}
+.cat-nav-item .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-nav-item .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2);flex:0 0 auto}
+.cat-nav-item:hover{background:var(--surface-2);color:var(--ink)}
+.cat-nav-item:hover .ico{border-color:var(--border-2)}
+.cat-nav-item.active{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:700}
+.cat-nav-item.active .ico{background:rgba(13,12,11,.15);border-color:rgba(13,12,11,.22)}
+.cat-nav-item.active .n{color:rgba(13,12,11,.72)}
+
+.country-select{width:100%;height:38px;border-radius:11px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);padding:0 10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.country-select:hover{border-color:var(--border-2)}
+.country-select:focus{border-color:var(--gold);outline:none}
+.country-select-sm{display:none;height:44px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
+@media(max-width:1180px){.country-select-sm{display:block}}
+
+/* --- RIGHT: leading fans --- */
+.fans-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.fans-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 13px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.fans-head h3{font-family:'Anton',sans-serif;font-size:14px;letter-spacing:.06em;line-height:1}
+.fans-live{display:inline-flex;align-items:center;gap:5px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--live)}
+.fans-live .live-dot{width:6px;height:6px;box-shadow:0 0 0 3px rgba(46,204,113,.14)}
+.fan-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .14s}
+.fan-row:last-child{border-bottom:none}
+.fan-row:hover{background:var(--surface-2)}
+.fan-rank{width:22px;text-align:center;flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);line-height:1}
+.fan-row.podium .fan-rank{font-size:15px}
+.fan-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;flex:0 0 auto;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:'Anton',sans-serif;font-size:13px;line-height:1}
+.fan-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.fan-row.podium .fan-avatar{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.fan-meta{flex:1;min-width:0}
+.fan-name{font-size:12.5px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fan-supporting{font-size:10.5px;color:var(--muted);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fan-supporting b{color:var(--gold-2);font-weight:600}
+.fan-votes{flex:0 0 auto;text-align:right;line-height:1.15}
+.fan-votes strong{display:block;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--gold);font-variant-numeric:tabular-nums;font-weight:500}
+.fan-votes span{display:block;font-size:8.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.fans-empty{padding:20px 14px;text-align:center;font-size:12px;color:var(--muted);line-height:1.5}
+.fans-empty b{display:block;color:var(--ink);font-size:13px;margin-bottom:4px}
+.fans-foot{padding:9px 13px;border-top:1px solid var(--border);background:var(--surface-2);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.fans-foot a{color:var(--gold)}
+
+/* Bigger browse cards. Scoped to the shell so category.html keeps its own grid. */
+.goat-shell .cat-grid{grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:18px}
+@media(max-width:520px){.goat-shell .cat-grid{grid-template-columns:1fr}}
+
+/* Wide desktops: portraits grow with the roomier centre column. */
+@media(min-width:1600px){
+  .duel-body.crazy .duel-side .photo{max-width:340px}
+  .duel-side .photo{max-width:290px}
+}
+
+/* --- responsive: collapse to the original single column --- */
+@media(max-width:1400px){.goat-shell{grid-template-columns:240px minmax(0,1fr) 312px}.goat-shell>.container{padding:0 22px}}
+@media(max-width:1180px){.goat-shell{grid-template-columns:minmax(0,1fr) 296px}.side-left{display:none}}
+@media(max-width:900px){
+  .goat-shell{grid-template-columns:minmax(0,1fr)}
+  .goat-shell>.container{padding:0 12px}
+  .topbar-inner{padding:9px 12px}
+  .side-right{border-left:none;border-top:1px solid var(--border);margin-top:18px}
+  .side-inner{position:static;max-height:none;overflow:visible;padding:14px 12px 4px}
+  .goat-ticker-item{font-size:11px;padding:0 13px}
+}
 </style>
 </head>
 <body>
+<div class="goat-ticker" id="goat-ticker" aria-label="Live updates">
+  <span class="goat-ticker-label"><span class="dot"></span>Live</span>
+  <div class="goat-ticker-track" id="goat-ticker-track"></div>
+</div>
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand"><a href="index.html">GOAT<span>.lol</span></a></div>
@@ -104,6 +226,18 @@
     </nav>
   </div>
 </header>
+
+<div class="goat-shell">
+
+  <!-- LEFT SIDEBAR — CATEGORIES -->
+  <aside class="side-col side-left" id="side-left" aria-label="Categories">
+    <div class="side-inner">
+      <div class="side-title"><span>Country</span></div>
+      <select class="country-select" id="country-select" aria-label="Choose a country"></select>
+      <div class="side-title" style="margin-top:16px"><span id="cat-nav-title">Select category</span></div>
+      <nav class="cat-nav" id="cat-nav" role="tablist"></nav>
+    </div>
+  </aside>
 
 <div class="container">
   <div class="live-pill"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">0 votes today</span></div>
@@ -127,6 +261,7 @@
         <input id="q" placeholder="Search categories or people — try 'Ronaldo', 'Directors', 'President'" autocomplete="off" spellcheck="false">
       </label>
       <div class="filter-actions">
+        <select id="country-select-sm" class="country-select-sm" aria-label="Choose a country"></select>
         <select id="sort" aria-label="Sort boards"><option value="hype">Hype</option><option value="az">A → Z</option><option value="money">Most votes</option><option value="newest">Newest</option></select>
         <button id="clear" class="btn-clear" type="button">Clear</button>
         <span class="count-pill"><b id="cat-count">—</b> boards · <b id="person-count">—</b> people</span>
@@ -166,11 +301,30 @@
   </div>
 </div>
 
+  <!-- RIGHT SIDEBAR — LEADING FANS -->
+  <aside class="side-col side-right" id="side-right" aria-label="Leading fans">
+    <div class="side-inner">
+      <div class="side-title"><span>The board</span></div>
+      <div class="fans-panel">
+      <div class="fans-head">
+        <h3>LEADING FANS</h3>
+        <span class="fans-live"><span class="live-dot"></span>Live</span>
+      </div>
+      <div id="leading-fans"><div class="fans-empty">Loading the board…</div></div>
+        <div class="fans-foot"><span>Top backers</span><a href="fans.html">See all →</a></div>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
 <footer class="footer">GOAT.lol — pay to rank. <a href="rules.html">Rules</a> · <a href="wallet.html">Wallet</a> · <a href="fans.html">Fans</a></footer>
 
 <script src="js/supabase.js"></script>
 <script src="js/video-manager.js"></script>
 <script src="js/optimized-image.js"></script>
+<script src="js/portrait-fallback.js"></script>
+<script src="js/country-boards.js"></script>
 <script src="js/wiki-fallback.js"></script>
 <script>
 (async function(){
@@ -283,6 +437,15 @@
   let groupMap = {};
   let activeGroup = 'All';
   let lastQ = '';
+  // Country boards show as soon as data/boards/index.json carries verified:true,
+  // which scripts/fix_country_boards.mjs stamps once every contender sits on a
+  // board matching their occupation. The raw export placed them at random, so
+  // until that runs the picker stays hidden rather than shipping nonsense.
+  let activeCountry = 'GLOBAL';
+  let countryData = null;   // loaded boards for activeCountry, null when Global
+  const liveFacts = { votesToday:0, recent:[], topFan:null };
+
+  function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
 
   function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 
@@ -290,12 +453,12 @@
   try {
     const [catsRes, p0, p1, p2, p3, p4, p5] = await Promise.all([
       sb.from('categories').select('*').order('sort_order'),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(0, 999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(1000, 1999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(2000, 2999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(3000, 3999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(4000, 4999),
-      sb.from('people').select('id,slug,name,photo_path,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(5000, 5999)
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(0, 999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(1000, 1999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(2000, 2999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(3000, 3999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(4000, 4999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(5000, 5999)
     ]);
     cats = catsRes?.data || [];
     people = [...(p0?.data||[]),...(p1?.data||[]),...(p2?.data||[]),...(p3?.data||[]),...(p4?.data||[]),...(p5?.data||[])];
@@ -344,11 +507,96 @@
       b.textContent = g==='All' ? 'All categories' : g;
       b.setAttribute('role','tab');
       b.setAttribute('aria-selected', activeGroup===g?'true':'false');
-      b.addEventListener('click', ()=>{ activeGroup=g; renderChips(); applyFilters(); });
+      b.addEventListener('click', ()=> setGroup(g));
       chipsEl.appendChild(b);
     });
   }
+
+  // === LEFT SIDEBAR — CATEGORIES ===
+  // Mirrors the group filter the chips already drive, so both stay in sync.
+  const CAT_ICONS = [
+    [/american\s?football|gridiron/i,'🏈'], [/foot\s?ball|soccer/i,'⚽'],
+    [/basket/i,'🏀'], [/cricket|batsm|bowler/i,'🏏'], [/tennis/i,'🎾'],
+    [/box|combat|martial/i,'🥊'], [/mma|fighter|wrestl/i,'🥋'],
+    [/f1|formula|motorsport|driver|racing/i,'🏎'], [/golf/i,'⛳'],
+    [/chess|mind sport/i,'♟'],
+    [/music|singer|band|rapper|hip.?hop/i,'🎵'],
+    [/anime|manga/i,'🎌'],
+    [/movie|film|director|screen|actor|actress|hollywood|bollywood|tv\b/i,'🎬'],
+    [/gam|esport/i,'🎮'], [/internet|youtub|stream|social|creator|web/i,'📱'],
+    [/business|ceo|founder|entrepre|money|finance/i,'💼'], [/brand|company|corporat/i,'🏷'],
+    [/power|president|prime minister|leader|politic|emperor|general|military|royal/i,'👑'],
+    [/scien|physic|invent|philos|math/i,'🧠'], [/mind|think/i,'🧠'],
+    [/art|paint|sculpt/i,'🎨'],
+    [/word|writ|novel|poet|literat|book|author/i,'📖'],
+    [/comedy|comedian/i,'🎤'], [/food|chef|cook/i,'🍽'],
+    [/fashion|model|design/i,'👗'], [/space|astronaut|explor/i,'🚀'],
+    [/culture|icon|legend/i,'🏛'],
+    [/olymp|athlet|sport/i,'🏅']
+  ];
+
+  function catIcon(name){
+    for(const [re,ico] of CAT_ICONS) if(re.test(name)) return ico;
+    return '\u2726';
+  }
+  function renderCatNav(){
+    const nav=document.getElementById('cat-nav');
+    if(!nav) return;
+    const title=document.getElementById('cat-nav-title');
+    if(countryData){
+      // Inside a country the sidebar lists that country's boards.
+      if(title) title.textContent=`${countryData.country} boards`;
+      nav.innerHTML='';
+      (countryData.boards||[]).forEach(b=>{
+        const a=document.createElement('a');
+        a.className='cat-nav-item';
+        a.href=`category.html?slug=${encodeURIComponent(b.slug)}`;
+        a.title=b.name;
+        a.innerHTML=`<span class="ico" aria-hidden="true">${catIcon(b.name)}</span><span class="lbl">${esc(b.name.replace(/^Greatest\s+/i,''))}</span><span class="n">${b.contenders.length}</span>`;
+        nav.appendChild(a);
+      });
+      return;
+    }
+    if(title) title.textContent='Select category';
+    const groups=Object.keys(groupMap).sort();
+    nav.innerHTML='';
+    const mk=(label, key, icon, count)=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='cat-nav-item'+(activeGroup===key?' active':'');
+      b.setAttribute('role','tab');
+      b.setAttribute('aria-selected', activeGroup===key?'true':'false');
+      b.title=label;
+      b.innerHTML=`<span class="ico" aria-hidden="true">${icon}</span><span class="lbl">${esc(label)}</span><span class="n">${count}</span>`;
+      b.addEventListener('click', ()=> setGroup(key));
+      nav.appendChild(b);
+    };
+    mk('All categories','All','\u2605', cats.length);
+    groups.forEach(g=> mk(g, g, catIcon(g), (groupMap[g]||[]).length));
+  }
+  function setGroup(g){
+    activeGroup=g;
+    renderChips();
+    renderCatNav();
+    applyFilters();
+  }
+
   renderChips();
+  renderCatNav();
+  populateCountryPickers().then(()=>{ if(activeCountry && activeCountry!=='GLOBAL') setCountry(activeCountry); });
+
+  // A contender with no stored photo_path renders initials now and gets a real
+  // portrait once PortraitFallback resolves it from Wikipedia.
+  function photoHtml(p, size, eager){
+    if(window.PortraitFallback) return window.PortraitFallback.photoHtml(p, size, {eager});
+    return window.OptimizedImage.render({ photoPath:p.photo_path, name:p.name, size, priority: eager?'eager':'lazy', slug:p.slug });
+  }
+  let portraitTimer=null;
+  function schedulePortraits(){
+    if(!window.PortraitFallback) return;
+    clearTimeout(portraitTimer);
+    portraitTimer=setTimeout(()=> window.PortraitFallback.scan(), 120);
+  }
 
   function duelHtml(cat, catPeople, opts={}){
     const p1=catPeople[0], p2=catPeople[1];
@@ -369,8 +617,8 @@
     const featBadge = opts.featured ? '<span class="badge-featured">Top</span>' : '';
     const isCrazy = opts.featured;
     // crazy look: gold glow on leader, vote bar, beating line
-    const p1Photo = p1 ? window.OptimizedImage.render({ photoPath: p1.photo_path, name: p1.name, size: isCrazy?160:132, priority: opts.eager?'eager':'lazy', slug: p1.slug }) : '<div class="fallback">?</div>';
-    const p2Photo = p2 ? window.OptimizedImage.render({ photoPath: p2.photo_path, name: p2.name, size: isCrazy?160:132, priority: opts.eager?'eager':'lazy', slug: p2.slug }) : '<div class="fallback">?</div>';
+    const p1Photo = p1 ? photoHtml(p1, isCrazy?320:260, opts.eager) : '<div class="fallback">?</div>';
+    const p2Photo = p2 ? photoHtml(p2, isCrazy?320:260, opts.eager) : '<div class="fallback">?</div>';
     const bar = (p1 && p2 && totalVotes>0) ? `<div class="vote-bar-wrap"><div class="vote-bar" aria-hidden="true"><div class="vote-bar-fill p1" style="width:${p1Pct}%"></div><div class="vote-bar-fill p2" style="width:${p2Pct}%"></div></div><div class="vote-bar-label mono">${v1.toLocaleString()} votes · ${v2.toLocaleString()} votes · ${p1Pct}% / ${p2Pct}%</div></div>` : '';
     return `
       <div class="duel-head"><strong>${cat.name.startsWith('Greatest') ? cat.name + (cat.name.endsWith('All Time')?'':' of All Time') : 'Greatest ' + cat.name + ' of All Time'}</strong> ${featBadge}</div>
@@ -394,6 +642,75 @@
   function tileHtml(cat, catPeople, opts={}){
     // featured duels use equal 1v1; browse grid keeps equal duel as well for consistency
     return duelHtml(cat, catPeople, opts);
+  }
+
+  // === COUNTRY BOARDS ===
+  // A country's boards replace the global view entirely: the sidebar lists that
+  // country's boards, and the centre column shows their top-two duels.
+  function hideCountryUi(){
+    for(const id of ['country-select','country-select-sm']){
+      const el=document.getElementById(id); if(el) el.remove();
+    }
+    const t=document.querySelector('#side-left .side-title'); if(t) t.remove();
+  }
+
+  async function populateCountryPickers(){
+    if(!window.CountryBoards) return hideCountryUi();
+    const list = await window.CountryBoards.countries();
+    if(!list.length) return hideCountryUi();
+    activeCountry = window.CountryBoards.remembered();
+    const opts = ['<option value="GLOBAL">🌍 Global boards</option>']
+      .concat(list.map(c=> `<option value="${esc(c.code)}">${esc(c.country)} · ${c.boards}</option>`)).join('');
+    for(const id of ['country-select','country-select-sm']){
+      const el=document.getElementById(id);
+      if(!el) continue;
+      el.innerHTML=opts;
+      el.value=activeCountry;
+      el.addEventListener('change', ()=> setCountry(el.value));
+    }
+  }
+
+  async function setCountry(code){
+    activeCountry = code || 'GLOBAL';
+    if(window.CountryBoards) window.CountryBoards.remember(activeCountry);
+    for(const id of ['country-select','country-select-sm']){
+      const el=document.getElementById(id); if(el && el.value!==activeCountry) el.value=activeCountry;
+    }
+    countryData = activeCountry==='GLOBAL' ? null : await window.CountryBoards.load(activeCountry);
+    activeGroup='All';
+    renderChips();
+    renderCatNav();
+    applyFilters();
+  }
+
+  // Board -> the same duel tile the global boards use.
+  function countryTile(board, eager){
+    const people = window.CountryBoards.asPeople(board, activeCountry);
+    const a=document.createElement('a');
+    a.href=`category.html?slug=${encodeURIComponent(board.slug)}`;
+    a.className='cat-tile duel';
+    a.dataset.slug=board.slug;
+    a.innerHTML=duelHtml({name:board.name, slug:board.slug}, people.slice(0,2), {featured:true, eager});
+    return a;
+  }
+
+  function renderCountry(){
+    const boards=(countryData && countryData.boards) || [];
+    const q=(qEl.value||'').trim().toLowerCase();
+    const visible=boards.filter(b=> !q || b.name.toLowerCase().includes(q));
+    featuredEl.innerHTML='';
+    const head=featuredWrap.querySelector('.section-head');
+    if(head){
+      head.querySelector('h2').innerHTML=`${esc(countryData?countryData.country:'')} <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">${visible.length} BOARDS</span>`;
+      const p=head.querySelector('p'); if(p) p.textContent=`Every board inside ${countryData?countryData.country:''} — #1 vs #2, gap is real votes`;
+    }
+    visible.forEach((b,i)=> featuredEl.appendChild(countryTile(b, i<4)));
+    if(!visible.length) featuredEl.innerHTML='<div class="no-hits">No boards match that search in this country.</div>';
+    featuredWrap.style.display='';
+    groupsEl.style.display='none';
+    srWrap.style.display='none';
+    if(unclaimedEl) unclaimedEl.style.display='none';
+    schedulePortraits();
   }
 
   function renderFeatured(){
@@ -495,7 +812,7 @@
     const catById={}; cats.forEach(c=> catById[c.id]=c);
     hits.forEach(p=>{
       const cat=catById[p.category_id];
-      const photo = window.OptimizedImage.render({ photoPath: p.photo_path, name: p.name, size: 56, priority:'lazy', slug: p.slug });
+      const photo = photoHtml(p, 56, false);
       const rank = (peopleByCat[p.category_id]||[]).findIndex(x=> x.id===p.id)+1;
       const a=document.createElement('a');
       a.href=`person.html?slug=${p.slug}`;
@@ -509,6 +826,7 @@
   function applyFilters(){
     const q=(qEl.value||'').trim();
     lastQ=q;
+    if(countryData){ renderCountry(); return; }
     if(q.length>=1){
       // show search mode
       const low=q.toLowerCase();
@@ -550,11 +868,14 @@
       renderFeatured();
       renderGroups(null);
     }
+    schedulePortraits();
   }
 
   // Initial paint
+  buildTicker();
   renderFeatured();
   renderGroups(null);
+  schedulePortraits();
 
   // Unclaimed banner (uses built indices)
   const emptyCats = cats.filter(c => !(peopleByCat[c.id] && peopleByCat[c.id].length));
@@ -567,7 +888,7 @@
   qEl.addEventListener('input', debounce(applyFilters, 160));
   qEl.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); applyFilters(); } if(e.key==='Escape'){ qEl.value=''; applyFilters(); }});
   sortEl.addEventListener('change', applyFilters);
-  clearEl.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; sortEl.value='hype'; renderChips(); applyFilters(); qEl.focus(); });
+  clearEl.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; sortEl.value='hype'; renderChips(); renderCatNav(); applyFilters(); qEl.focus(); });
 
   // Legacy search (header) -> feed main search if ever used
   const legacy=document.getElementById('search-legacy');
@@ -585,9 +906,11 @@
       sb.from('bids').select('amount_cents,created_at,people(name,slug),users(display_name,is_anonymous)').order('created_at',{ascending:false}).limit(10)
     ]);
     const backedToday=(todayBidsRes.data||[]).reduce((s,r)=> s+(r.amount_cents||0),0);
+    liveFacts.votesToday=Math.floor(backedToday/100);
     const backedEl=document.getElementById('backed-today');
     if(backedEl) backedEl.textContent=Math.floor(backedToday/100).toLocaleString()+' votes today';
     const bids=activityBidsRes.data;
+    liveFacts.recent=bids||[];
     if(activityEl){
       if(bids && bids.length){
         activityEl.innerHTML=bids.map(b=>{
@@ -599,6 +922,100 @@
       }
     }
   } catch(e){ if(activityEl) activityEl.innerHTML='<div class="mono" style="color:var(--muted)">No activity yet. Be the first.</div>'; }
+
+
+  // === RIGHT SIDEBAR — LEADING FANS ===
+  // Real backers only. Rank + total come from users.total_spent_cents; who they
+  // are supporting is the contender they have put the most votes behind.
+  async function loadLeadingFans(){
+    const host=document.getElementById('leading-fans');
+    if(!host) return;
+    let res;
+    try{
+      res = await sb.from('users').select('id,display_name,is_anonymous,total_spent_cents,photo_path,social_handle').order('total_spent_cents',{ascending:false}).limit(20);
+      // photo_path / social_handle were added after the base schema — retry bare if absent
+      if(res.error) res = await sb.from('users').select('id,display_name,is_anonymous,total_spent_cents').order('total_spent_cents',{ascending:false}).limit(20);
+    }catch(e){ res={data:null}; }
+    const users=(res.data||[]).filter(u=> (u.total_spent_cents||0)>0).slice(0,10);
+    if(!users.length){
+      host.innerHTML='<div class="fans-empty"><b>No fans on the board yet.</b>Back a contender and the #1 spot is yours. $1 = 1 vote.</div>';
+      return;
+    }
+
+    const backing={};
+    try{
+      const {data:rows}=await sb.from('bids').select('user_id,amount_cents,people(name,slug)').order('created_at',{ascending:false}).limit(2000);
+      const tally={}, slugByName={};
+      (rows||[]).forEach(b=>{
+        const nm=b.people && b.people.name;
+        if(!b.user_id || !nm) return;
+        if(!tally[b.user_id]) tally[b.user_id]={};
+        tally[b.user_id][nm]=(tally[b.user_id][nm]||0)+(b.amount_cents||0);
+        slugByName[nm]=b.people.slug;
+      });
+      Object.keys(tally).forEach(uid=>{
+        const best=Object.keys(tally[uid]).sort((a,b)=> tally[uid][b]-tally[uid][a])[0];
+        if(best) backing[uid]={ name:best, slug:slugByName[best] };
+      });
+    }catch(e){}
+
+    const medals=['🥇','🥈','🥉'];
+    host.innerHTML=users.map((u,i)=>{
+      const name=u.is_anonymous ? 'Anonymous' : (u.display_name || 'Unknown');
+      const url=u.photo_path ? (window.GOAT.getPhotoUrl(u.photo_path) || u.photo_path) : null;
+      const avatar=url ? `<img src="${esc(url)}" alt="" loading="lazy">` : esc(window.GOAT.initials(name));
+      const back=backing[u.id];
+      const supporting=back ? `Supporting <b>${esc(back.name)}</b>`
+        : (u.social_handle ? '@'+esc(String(u.social_handle).replace(/^@/,'')) : 'Backing the board');
+      const votes=Math.floor((u.total_spent_cents||0)/100).toLocaleString();
+      const row=`<div class="fan-row${i<3?' podium':''}">`
+        + `<div class="fan-rank">${i<3?medals[i]:'#'+(i+1)}</div>`
+        + `<div class="fan-avatar">${avatar}</div>`
+        + `<div class="fan-meta"><div class="fan-name" title="${esc(name)}">${esc(name)}</div><div class="fan-supporting">${supporting}</div></div>`
+        + `<div class="fan-votes"><strong>${votes}</strong><span>votes</span></div>`
+        + `</div>`;
+      return (back && back.slug) ? `<a href="person.html?slug=${encodeURIComponent(back.slug)}" title="${esc(name)} → ${esc(back.name)}">${row}</a>` : row;
+    }).join('');
+
+    const top=users[0];
+    liveFacts.topFan={ name: top.is_anonymous?'Anonymous':(top.display_name||'Someone'), votes: Math.floor((top.total_spent_cents||0)/100), backing: backing[top.id] };
+  }
+
+  // === TOP LIVE TICKER ===
+  // Every line is a real fact about the board — never invented activity.
+  function buildTicker(){
+    const track=document.getElementById('goat-ticker-track');
+    if(!track) return;
+    const items=[];
+    if(liveFacts.votesToday>0) items.push(`🔥 <b>${liveFacts.votesToday.toLocaleString()}</b> votes cast today`);
+    if(liveFacts.topFan && liveFacts.topFan.votes>0){
+      const b=liveFacts.topFan.backing;
+      items.push(`👑 <b>${esc(liveFacts.topFan.name)}</b> is #1 Leading Fan`
+        + (b ? ` — backing <span class="g">${esc(b.name)}</span>` : ` with <span class="g">${liveFacts.topFan.votes.toLocaleString()}</span> votes`));
+    }
+    (liveFacts.recent||[]).slice(0,6).forEach(b=>{
+      const n=Math.floor((b.amount_cents||0)/100);
+      const nm=b.people && b.people.name;
+      if(!nm || n<=0) return;
+      const who=(b.users && b.users.is_anonymous) ? 'Anonymous' : ((b.users && b.users.display_name) || 'Someone');
+      items.push(`⚡ <b>${esc(who)}</b> put <span class="g">${n.toLocaleString()}</span> votes on <b>${esc(nm)}</b>`);
+    });
+    const totalVotes=Math.floor(people.reduce((s,p)=> s+(p.total_cents||0), 0)/100);
+    const openBoards=cats.filter(c=> !(peopleByCat[c.id]||[]).some(p=> (p.total_cents||0)>0)).length;
+    items.push(`🏆 <b>${cats.length}</b> boards · <b>${people.length.toLocaleString()}</b> contenders in the running`);
+    if(totalVotes>0) items.push(`📈 <span class="g">${totalVotes.toLocaleString()}</span> votes cast all time`);
+    if(openBoards>0) items.push(`👀 <b>${openBoards}</b> boards where #1 is still open — <span class="g">1 vote takes it</span>`);
+    items.push(`💰 <span class="g">$1 = 1 vote</span> · no judges, no algorithms`);
+
+    const seq=items.map(t=> `<span class="goat-ticker-item">${t}</span><span class="goat-ticker-sep">•</span>`).join('');
+    track.innerHTML=`<div class="goat-ticker-seq">${seq}</div><div class="goat-ticker-seq" aria-hidden="true">${seq}</div>`;
+    // Hold a constant scroll speed no matter how many lines there are.
+    const w=track.firstElementChild.scrollWidth;
+    track.style.animationDuration=Math.max(24, Math.round(w/55))+'s';
+  }
+
+  await loadLeadingFans();
+  buildTicker();
 
   try{ sb.channel('bids-index').on('postgres_changes',{event:'INSERT',schema:'public',table:'bids'}, async()=>{ location.reload(); }).subscribe(); }catch(e){}
 })();

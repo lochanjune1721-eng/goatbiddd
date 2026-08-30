@@ -40,20 +40,57 @@
 <script src="js/supabase.js"></script>
 <script src="js/video-manager.js"></script>
 <script src="js/optimized-image.js"></script>
+<script src="js/portrait-fallback.js"></script>
+<script src="js/canonical-order.js"></script>
+<script src="js/country-boards.js"></script>
 <script src="js/wiki-fallback.js"></script>
 <script>
 (async function(){
   const slug=window.GOAT.qs('slug')||'footballers';
   const sb=window.supabaseClient;
-  const {data: cat}=await sb.from('categories').select('*').eq('slug',slug).maybeSingle();
+  let {data: cat}=await sb.from('categories').select('*').eq('slug',slug).maybeSingle();
+
+  // Country boards ship as JSON (data/boards/<CC>.json) and only enter the
+  // database once data/country-boards-seed.sql has been run. Until then, read
+  // the board straight from the file so it is browsable — but without ids there
+  // is nothing to vote on, so the page goes read-only rather than offering
+  // controls that cannot work.
+  let previewOnly=false;
+  if(!cat && window.CountryBoards){
+    const hit=await window.CountryBoards.boardBySlug(slug);
+    if(hit){
+      previewOnly=true;
+      document.body.classList.add('preview-only');
+      cat={ id:'cb-'+slug, slug, name:hit.board.name.replace(/^Greatest\s+/i,''),
+            country_code:hit.code, __board:hit.board };
+    }
+  }
   if(!cat){ document.getElementById('cat-title').textContent='Category not found'; return; }
   document.getElementById('cat-title').textContent='Greatest ' + cat.name + ' of All Time';
   document.title='Greatest ' + cat.name + ' of All Time — GOAT.lol';
   let people=[];
   let optimisticQueue=[];
+  // Every board is a top 20: 147 categories x 20 is the canonical set in
+  // data/goat_lol_147_categories_top20.csv. Ranking is by votes, so a
+  // contender below 20th drops off the board until enough votes carry them back.
+  const BOARD_SIZE = 20;
+  const FETCH_SIZE = 200;   // over-fetch, then rank canonically and trim to 20
+
+  // Put the board in canonical order and cut it to 20. Votes still win; the
+  // canonical rank only decides contenders that are level (which, at zero
+  // votes, is all of them). Unknown categories keep the database order.
+  async function applyCanonical(list){
+    if(!window.CanonicalOrder || !list || !list.length) return (list||[]).slice(0, BOARD_SIZE);
+    try { return await window.CanonicalOrder.apply(list, cat, BOARD_SIZE); }
+    catch(e){ console.warn('canonical ordering skipped', e); return list.slice(0, BOARD_SIZE); }
+  }
 
   async function fetchPeople(){
-    const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(200);
+    if(previewOnly){
+      people=window.CountryBoards.asPeople(cat.__board, cat.country_code).slice(0, BOARD_SIZE);
+      return;
+    }
+    const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(FETCH_SIZE);
     people=data||[];
     if(!people.length){
       const fb=await window.WIKI_FALLBACK?.();
@@ -62,10 +99,12 @@
         people=raw.map(p=>({id:p.id, slug:p.slug, name:p.name, blurb:p.blurb, wikipedia_url:p.wikipedia_url, photo_path:p.photo_path, total_cents:0, first_backed_at:null, category_id:cat.id}));
       }
     }
+    // one application point, so the offline fallback is ordered too
+    people=await applyCanonical(people);
   }
 
   async function fetchFansDetailed(personIds){
-    if(!personIds.length) return {};
+    if(previewOnly || !personIds.length) return {};
     // fetch top 2 per person to compute gap
     const {data}=await sb.from('fan_totals').select('person_id,total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform,photo_status)').in('person_id', personIds).order('total_cents',{ascending:false});
     const map={};
@@ -110,7 +149,7 @@
       const gapVotesBehind = rank===1 && people[1] ? Math.floor(((p.total_cents||0)-(people[1].total_cents||0))/100) : null;
       const gapText = rank===1 ? (gapVotesBehind!==null ? `${gapVotesBehind.toLocaleString()} votes ahead of #2` : 'No votes yet. 1 vote takes #1.') : `${Math.abs(gapAhead).toLocaleString()} votes behind #1`;
 
-      const photoHtml = window.OptimizedImage.render({ photoPath: p.photo_path, name: p.name, size: rank===1?220: rank===2?160: rank===3?130:90, priority: i<3?'eager':'lazy', slug:p.slug });
+      const photoHtml = window.PortraitFallback.photoHtml(p, rank===1?220: rank===2?160: rank===3?130:90, {eager: i<3});
 
       // fan side
       let fanHtml='';
@@ -239,6 +278,9 @@
       row.addEventListener('click', ev=>{ if(ev.target.closest('button') || ev.target.closest('.stepper') || ev.target.closest('input') || ev.target.closest('a')) return; location.href=`person.html?slug=${p.slug}`; });
       board.appendChild(row);
     });
+
+    // Fill in portraits for anyone whose photo_path is still empty.
+    if(window.PortraitFallback) window.PortraitFallback.scan(board);
 
     // sticky balance sync
     const sbBal=document.getElementById('sticky-balance');
