@@ -1,24 +1,32 @@
 {
   "framework": null,
   "buildCommand": null,
+  "cleanUrls": true,
   "functions": {
-    "api/checkout.js": {
-      "includeFiles": "api/**"
-    },
-    "api/payment-done.js": {
-      "includeFiles": "api/**"
-    },
-    "api/admin.js": {
-      "includeFiles": "api/**"
-    },
-    "api/resolve_image.js": {
-      "includeFiles": "scripts/**"
-    },
-    "api/img.js": {
-      "maxDuration": 15
-    }
+    "api/checkout.js": { "includeFiles": "api/**" },
+    "api/payment-done.js": { "includeFiles": "api/**" },
+    "api/admin.js": { "includeFiles": "api/**" },
+    "api/resolve_image.js": { "includeFiles": "scripts/**" },
+    "api/img.js": { "maxDuration": 15 }
   },
   "rewrites": [
-    { "source": "/img", "destination": "/api/img.js" }
+    { "source": "/img", "destination": "/api/img.js" },
+    { "source": "/fans", "destination": "/fans.html" },
+    { "source": "/about", "destination": "/about.html" },
+    { "source": "/rules", "destination": "/rules.html" },
+    { "source": "/wallet", "destination": "/wallet.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/category", "destination": "/category.html" },
+    { "source": "/person", "destination": "/person.html" }
+  ],
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/fans.html", "destination": "/fans", "permanent": true },
+    { "source": "/about.html", "destination": "/about", "permanent": true },
+    { "source": "/rules.html", "destination": "/rules", "permanent": true },
+    { "source": "/wallet.html", "destination": "/wallet", "permanent": true },
+    { "source": "/category.html", "destination": "/category", "permanent": true },
+    { "source": "/person.html", "destination": "/person", "permanent": true }
   ]
 }

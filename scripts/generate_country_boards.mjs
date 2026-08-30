@@ -30,7 +30,7 @@ const SIZE = parseInt(arg('size', '50'), 10);
 const RESOLVE_ONLY = process.argv.includes('--resolve');
 
 const ENDPOINT = 'https://query.wikidata.org/sparql';
-const UA = 'GOATlolBoardBuilder/1.0 (https://thetruegoat.com)';
+const UA = 'TheTrueGOATBoardBuilder/1.0 (https://thetruegoat.com)';
 const CACHE = path.resolve('data/wikidata-cache.json');
 const OUT = path.resolve('data/generated-boards.json');
 

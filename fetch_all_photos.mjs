@@ -8,7 +8,7 @@ for(const p of people){
   const api=`https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&pithumbsize=800&piprop=original&titles=${encodeURIComponent(title)}&format=json&origin=*`;
   let img=null;
   try{
-    const r=await fetch(api,{headers:{'User-Agent':'GOAT.lol/1.0 (https://goat.lol; contact@goat.lol)'}});
+    const r=await fetch(api,{headers:{'User-Agent':'The True GOAT/1.0 (https://thetruegoat.com; contact@thetruegoat.com)'}});
     const j=await r.json();
     const pg=Object.values(j.query.pages)[0];
     if(!pg || pg.missing){ noimg++; continue; }
@@ -18,7 +18,7 @@ for(const p of people){
     const file=decodeURIComponent(img.split('/').pop().split('?')[0]);
     const api2=`https://commons.wikimedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata|user&titles=File:${encodeURIComponent(file)}&format=json&origin=*`;
     try{
-      const r2=await fetch(api2,{headers:{'User-Agent':'GOAT.lol/1.0'}});
+      const r2=await fetch(api2,{headers:{'User-Agent':'The True GOAT/1.0'}});
       const j2=await r2.json();
       const pg2=Object.values(j2.query.pages)[0];
       const lic=pg2?.imageinfo?.[0]?.extmetadata?.LicenseShortName?.value||'';
@@ -27,7 +27,7 @@ for(const p of people){
       var license=lic||'CC BY-SA 4.0';
     }catch{ var credit='Photo: Wikimedia Commons'; var license='CC BY-SA 4.0'; }
     // download, resize, upload
-    const res=await fetch(img,{headers:{'User-Agent':'GOAT.lol/1.0'}});
+    const res=await fetch(img,{headers:{'User-Agent':'The True GOAT/1.0'}});
     if(!res.ok){ failed++; continue; }
     const buf=Buffer.from(await res.arrayBuffer());
     const sharp=(await import('sharp')).default;

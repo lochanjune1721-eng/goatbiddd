@@ -109,7 +109,7 @@ const CRICKET_DATA = {
 
 async function main() {
   console.log('='.repeat(60));
-  console.log(' GOAT.lol — Loading Authentic Cricket Legends & Face Photos');
+  console.log(' The True GOAT — Loading Authentic Cricket Legends & Face Photos');
   console.log('='.repeat(60));
 
   // 1. Delete all dummy placeholder records

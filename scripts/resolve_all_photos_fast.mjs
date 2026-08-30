@@ -24,7 +24,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1Ni
 
 const supa = createClient(SUPABASE_URL, SERVICE_KEY);
 
-const USER_AGENT = "GOATlolBot/2.0 (https://goat.lol; bot@goat.lol)";
+const USER_AGENT = "TheTrueGOATBot/2.0 (https://thetruegoat.com; bot@thetruegoat.com)";
 const CONCURRENCY = 12;
 
 async function fetchWikiDirect(name, wikipediaUrl = '') {

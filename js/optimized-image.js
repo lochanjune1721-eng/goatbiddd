@@ -1,4 +1,4 @@
-// js/optimized-image.js — Bulletproof Image Rendering Component for GOAT.lol
+// js/optimized-image.js — Bulletproof Image Rendering Component for The True GOAT
 // Delivers fast, zero-failure images via local caching & auto-healing proxy in dev.
 
 (function(){

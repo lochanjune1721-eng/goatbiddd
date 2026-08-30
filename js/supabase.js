@@ -1,13 +1,21 @@
-// GOAT.lol — Supabase + auth + balance
+// The True GOAT — Supabase + auth + balance
 const SUPABASE_URL = "https://orzcszqpnvicreqvpncu.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDIwNDIsImV4cCI6MjEwMzIxODA0Mn0.ayMlWauR_XCT2lWV_Pg2PZTq_CuTS-bch8KdoxslvIs";
+const SUPABASE_ANON_KEY = "[REDACTED]";
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 
-// The client comes from a CDN script tag. If that fails to load, every page
-// used to die on the first property access and render nothing at all — the
-// helpers below were never defined. Create it defensively and carry on: static
-// content, curated country boards and the board pages all work without it.
+const SITE_URL = "https://www.thetruegoat.com";
+function getSiteUrl(){
+  // In production location.origin is https://www.thetruegoat.com — use it so preview deploys also work.
+  // Never return localhost: any hardcoded localhost breaks production.
+  try {
+    const o = window.location.origin;
+    if(o && !o.includes('localhost') && !o.includes('127.0.0.1')) return o;
+  } catch(e){}
+  return SITE_URL;
+}
+window.getSiteUrl = getSiteUrl;
+
 try {
   window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch (e) {
@@ -21,8 +29,10 @@ try {
     from: () => stub,
     rpc: () => Promise.resolve({ data:null, error:{ message:'offline' } }),
     auth: { getUser: () => Promise.resolve({ data:{ user:null } }),
-            onAuthStateChange: () => {}, signOut: () => Promise.resolve({}) },
-    channel: () => ({ on(){ return this; }, subscribe(){ return this; } })
+            onAuthStateChange: () => ({ data:{ subscription:{unsubscribe:()=>{}} } }), signOut: () => Promise.resolve({}),
+            signInWithOtp: () => Promise.resolve({ error:null }), signInWithOAuth: () => Promise.resolve({ error:null }) },
+    channel: () => ({ on(){ return this; }, subscribe(){ return this; } }),
+    storage: { from: () => ({ upload: () => Promise.resolve({ error:{message:'offline'}}), getPublicUrl: ()=>({data:{publicUrl:''}}) }) }
   };
 }
 
@@ -35,12 +45,9 @@ window.GOAT = {
     if(trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
       return trimmed;
     }
-    // Clean leading slashes
     const cleanPath = trimmed.replace(/^\/+/, '');
     return `${SUPABASE_URL}/storage/v1/object/public/people/${cleanPath}`;
   },
-  // Clips live beside the stills. A full URL is used as-is; a bare path is
-  // resolved against the same public bucket the photos come from.
   getVideoUrl: (path) => {
     if(!path || typeof path !== 'string') return null;
     const trimmed = path.trim();
@@ -74,7 +81,7 @@ async function ensureUserRow(){
   if(!user) return null;
   let {data}=await window.supabaseClient.from('users').select('*').eq('id', user.id).maybeSingle();
   if(!data){
-    const display = user.user_metadata?.display_name || user.email.split('@')[0];
+    const display = user.user_metadata?.display_name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'Fan');
     const anon = !!user.user_metadata?.is_anonymous;
     const {data: ins}=await window.supabaseClient.from('users').insert({id:user.id, email:user.email, display_name: display, is_anonymous: anon}).select('*').maybeSingle();
     data=ins;
@@ -83,20 +90,75 @@ async function ensureUserRow(){
 }
 window.ensureUserRow=ensureUserRow;
 
+// Auth helpers — real sign-in (email magic link + Google OAuth), return-to-where-you-were
+window.Auth = {
+  getReturnTo(){
+    try {
+      const rt = new URLSearchParams(location.search).get('returnTo') || sessionStorage.getItem('goat_returnTo');
+      if(rt && rt.startsWith('/') && !rt.includes('localhost')) return rt;
+    } catch(e){}
+    return null;
+  },
+  rememberReturnTo(){
+    try {
+      const cur = location.pathname + location.search;
+      if(cur !== '/wallet' && !cur.includes('/wallet')) sessionStorage.setItem('goat_returnTo', cur);
+    } catch(e){}
+  },
+  async signInWithEmail(email, displayName, isAnon){
+    const returnTo = window.Auth.getReturnTo();
+    const redirect = getSiteUrl() + '/wallet' + (returnTo ? '?returnTo='+encodeURIComponent(returnTo) : '');
+    return window.supabaseClient.auth.signInWithOtp({
+      email,
+      options:{ data:{ display_name: displayName||email.split('@')[0], is_anonymous: !!isAnon }, emailRedirectTo: redirect }
+    });
+  },
+  async signInWithGoogle(){
+    window.Auth.rememberReturnTo();
+    const returnTo = window.Auth.getReturnTo();
+    const redirect = getSiteUrl() + '/wallet' + (returnTo ? '?returnTo='+encodeURIComponent(returnTo) : '');
+    // OAuth redirect must be allowlisted in Supabase dashboard — dashboard setting outside code.
+    return window.supabaseClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: redirect } });
+  }
+};
+
 async function refreshBalance(){
   const pill=document.getElementById('balance-pill');
   if(!pill) return;
   const {data:{user}}=await window.supabaseClient.auth.getUser();
-  if(!user){ pill.innerHTML=`<a href="wallet.html">Sign in</a>`; return; }
+  if(!user){
+    // Real sign-in, not a plain link to wallet — triggers Auth
+    pill.innerHTML=`<button id="signin-btn" style="background:var(--gold);color:var(--bg);border:none;padding:7px 14px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px">Sign in</button>`;
+    const btn=document.getElementById('signin-btn');
+    if(btn) btn.addEventListener('click', ()=>{
+      window.Auth.rememberReturnTo();
+      location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search);
+    });
+    return;
+  }
+  await ensureUserRow();
   const {data}=await window.supabaseClient.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
   const bal=data? data.balance_cents:0;
-  pill.innerHTML=`<b>${Math.floor(bal/100).toLocaleString()} votes</b> <a href="wallet.html">Add</a>`;
+  const votes=Math.floor(bal/100).toLocaleString();
+  pill.innerHTML=`<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted)"> <b style="color:var(--gold)">${votes} votes</b></span> <a href="/wallet" style="margin-left:8px;background:var(--gold);color:var(--bg);padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px">Add</a> <button id="signout-btn" title="Sign out" style="margin-left:6px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:999px;cursor:pointer;font-size:11px">Out</button>`;
+  const out=document.getElementById('signout-btn');
+  if(out) out.addEventListener('click', async()=>{ await window.supabaseClient.auth.signOut(); location.reload(); });
 }
 window.refreshBalance=refreshBalance;
 document.addEventListener('DOMContentLoaded', refreshBalance);
-window.supabaseClient.auth.onAuthStateChange(()=> refreshBalance());
+window.supabaseClient.auth.onAuthStateChange((event)=>{
+  if(event==='SIGNED_IN'){
+    // land back where they were
+    const rt = window.Auth.getReturnTo();
+    if(rt && location.pathname==='/wallet'){
+      try{ sessionStorage.removeItem('goat_returnTo'); }catch(e){}
+      location.href=rt;
+    }
+  }
+  refreshBalance();
+});
 
-// anon session helper — create users row with anon_session_id cookie before sign-in, merge on sign-in
+// anon session helper
 (function(){
   function getAnonId(){
     let m=document.cookie.match(/goat_anon=([^;]+)/);
@@ -106,7 +168,6 @@ window.supabaseClient.auth.onAuthStateChange(()=> refreshBalance());
     return id;
   }
   window.getAnonId=getAnonId;
-  // On auth, merge anon row if exists (callable from wallet)
   window.mergeAnon=async function(){
     const anon=getAnonId();
     const {data:{user}}=await window.supabaseClient.auth.getUser();

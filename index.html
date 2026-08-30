@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>GOAT.lol — Who is the Greatest of All Time?</title>
-<meta name="description" content="Who is the Greatest of All Time? Anyone can argue. Can you put your money where your mouth is? $1 = 1 vote.">
+<title>The True GOAT — Who is the Greatest of All Time?</title>
+<meta name="description" content="The True GOAT — Who is the Greatest of All Time? Pay to rank. $1 = 1 vote. Top up once, vote with one tap.">
 <link rel="preconnect" href="https://orzcszqpnvicreqvpncu.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -194,6 +194,18 @@
 .goat-shell .cat-grid{grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:18px}
 @media(max-width:520px){.goat-shell .cat-grid{grid-template-columns:1fr}}
 
+/* --- SKELETONS --- */
+.skeleton{position:relative;overflow:hidden;background:var(--surface-2);border-radius:8px}
+.skeleton::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.skel-line{height:12px;border-radius:999px}
+.skel-duel{height:320px;border-radius:16px}
+.btn-vote{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--gold);background:var(--gold);color:var(--bg);font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s}
+.btn-vote:hover{opacity:.9}
+.btn-vote:disabled{opacity:.5;cursor:not-allowed}
+.inline-topup{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.inline-topup-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:360px;width:100%;text-align:center}
+
 /* Wide desktops: portraits grow with the roomier centre column. */
 @media(min-width:1600px){
   .duel-body.crazy .duel-side .photo{max-width:480px;aspect-ratio:16/9}
@@ -220,13 +232,13 @@
 </div>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand"><a href="index.html">GOAT<span>.lol</span></a></div>
+    <div class="brand"><a href="/">The True<span> GOAT</span></a></div>
     <div class="search" style="display:none"><i>⌕</i><input id="search-legacy" placeholder="Search people, categories"></div>
     <nav class="topnav">
-      <a href="index.html" class="active">Categories</a>
-      <a href="fans.html">Fans</a>
-      <a href="about.html">About</a>
-      <span id="balance-pill" class="balance-pill"><a href="wallet.html">Sign in</a></span>
+      <a href="/" class="active">Categories</a>
+      <a href="/fans">Fans</a>
+      <a href="/about">About</a>
+      <span id="balance-pill" class="balance-pill"><a href="/wallet">Sign in</a></span>
     </nav>
   </div>
 </header>
@@ -244,7 +256,7 @@
   </aside>
 
 <div class="container">
-  <div class="live-pill"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">0 votes today</span></div>
+  <div class="live-pill"><span class="live-dot"></span> <span id="online"><span class="skeleton skel-line" style="display:inline-block;width:60px;vertical-align:middle"></span></span> · <span id="backed-today"><span class="skeleton skel-line" style="display:inline-block;width:90px;vertical-align:middle"></span></span></div>
 
   <div class="hero">
     <div class="hero-copy">
@@ -252,8 +264,8 @@
       <p>Anyone can argue. <span style="color:var(--ink);font-weight:700">Can you put your money where your mouth is?</span> <b>$1 = 1 vote.</b> No judges. No algorithms. Just votes. Talk is cheap — <span style="color:var(--gold)">prove it.</span></p>
     </div>
     <div class="hero-stats">
-      <div class="hero-stat"><strong id="hero-boards">—</strong><span>Boards</span></div>
-      <div class="hero-stat"><strong id="hero-votes">—</strong><span>Total votes</span></div>
+      <div class="hero-stat"><strong id="hero-boards"><span class="skeleton skel-line" style="display:inline-block;width:36px;height:18px"></span></strong><span>Boards</span></div>
+      <div class="hero-stat"><strong id="hero-votes"><span class="skeleton skel-line" style="display:inline-block;width:50px;height:18px"></span></strong><span>Total votes</span></div>
     </div>
   </div>
 
@@ -268,7 +280,7 @@
         <select id="country-select-sm" class="country-select-sm" aria-label="Choose a country"></select>
         <select id="sort" aria-label="Sort boards"><option value="hype">Hype</option><option value="az">A → Z</option><option value="money">Most votes</option><option value="newest">Newest</option></select>
         <button id="clear" class="btn-clear" type="button">Clear</button>
-        <span class="count-pill"><b id="cat-count">—</b> boards · <b id="person-count">—</b> people</span>
+        <span class="count-pill"><b id="cat-count"><span class="skeleton skel-line" style="display:inline-block;width:20px;height:10px"></span></b> boards · <b id="person-count"><span class="skeleton skel-line" style="display:inline-block;width:30px;height:10px"></span></b> people</span>
       </div>
     </div>
     <div class="chips" id="chips" role="tablist" aria-label="Filter by group"></div>
@@ -278,9 +290,9 @@
   <div class="featured-wrap" id="featured-wrap">
     <div class="section-head">
       <h2>Top 30 Fights <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">LIVE HEAD-TO-HEAD</span></h2>
-      <p>Most debated boards on GOAT.lol • #1 vs #2, gap is real votes</p>
+      <p>Most debated boards on The True GOAT • #1 vs #2, gap is real votes</p>
     </div>
-    <div id="featured" class="featured-grid"></div>
+    <div id="featured" class="featured-grid"><div class="skeleton skel-duel"></div><div class="skeleton skel-duel"></div><div class="skeleton skel-duel"></div></div>
   </div>
 
   <!-- SEARCH RESULTS (people + categories) — shown only when typing -->
@@ -301,7 +313,7 @@
 
   <div style="margin:20px 0">
     <h2 class="display" style="font-size:18px">Live activity</h2>
-    <div id="activity" class="activity"></div>
+    <div id="activity" class="activity"><div class="skeleton" style="height:48px;border-radius:10px"></div></div>
   </div>
 </div>
 
@@ -314,15 +326,19 @@
         <h3>LEADING FANS</h3>
         <span class="fans-live"><span class="live-dot"></span>Live</span>
       </div>
-      <div id="leading-fans"><div class="fans-empty">Loading the board…</div></div>
-        <div class="fans-foot"><span>Top backers</span><a href="fans.html">See all →</a></div>
+      <div id="leading-fans"><div class="skeleton" style="height:240px;border-radius:12px"></div></div>
+        <div class="fans-foot"><span>Top backers</span><a href="/fans">See all →</a></div>
+      </div>
+      <div class="fans-panel" style="margin-top:14px">
+        <div class="fans-head"><h3>LIVE FEED</h3><span class="fans-live"><span class="live-dot"></span>Live</span></div>
+        <div id="live-feed" style="max-height:320px;overflow-y:auto"></div>
       </div>
     </div>
   </aside>
 
 </div>
 
-<footer class="footer">GOAT.lol — pay to rank. <a href="rules.html">Rules</a> · <a href="wallet.html">Wallet</a> · <a href="fans.html">Fans</a></footer>
+<footer class="footer">The True GOAT — pay to rank. <a href="/rules">Rules</a> · <a href="/wallet">Wallet</a> · <a href="/fans">Fans</a></footer>
 
 <script src="js/supabase.js"></script>
 <script src="js/video-manager.js"></script>
@@ -563,7 +579,7 @@
       (countryData.boards||[]).forEach(b=>{
         const a=document.createElement('a');
         a.className='cat-nav-item';
-        a.href=`category.html?slug=${encodeURIComponent(b.slug)}`;
+        a.href=`/category?slug=${encodeURIComponent(b.slug)}`;
         a.title=b.name;
         a.innerHTML=`<span class="ico" aria-hidden="true">${catIcon(b.name)}</span><span class="lbl">${esc(b.name.replace(/^Greatest\s+/i,''))}</span><span class="n">${b.contenders.length}</span>`;
         nav.appendChild(a);
@@ -650,7 +666,12 @@
         <div class="duel-gap">${v1===v2 && p1 && p2 ? '<b>Tied — 1 vote takes the lead</b>' : gapText==='1 vote takes it' ? '<span class="mono" style="color:var(--gold)">1 vote takes it</span>' : '<b style="color:var(--gold)">'+gapText+'</b><span style="color:var(--muted);font-weight:500">'+fanCall+'</span>'}</div>
         ${bar}
       </div>
-      <div class="duel-foot"><span>${p1 ? v1.toLocaleString()+' votes total' : 'Unclaimed — 1 vote takes it'}</span><span>View board →</span></div>`;
+      <div class="duel-foot"><span>${p1 ? v1.toLocaleString()+' votes total' : 'Unclaimed — 1 vote takes it'}</span><span>View board →</span></div>
+      <div class="duel-vote-row" style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface-2)">
+        ${p1 ? `<button class="btn-vote" data-vote="${p1.id}" data-name="${esc(p1.name)}">Vote ${esc(p1.name.split(' ').pop())} +1</button>` : ''}
+        ${p2 ? `<button class="btn-vote" data-vote="${p2.id}" data-name="${esc(p2.name)}" style="background:transparent;color:var(--ink);border-color:var(--border-2)">Vote ${esc(p2.name.split(' ').pop())} +1</button>` : ''}
+        ${!p1 && !p2 ? `<span class="mono" style="font-size:11px;color:var(--muted)">1 vote takes #1</span>` : ''}
+      </div>`;
   }
   function tileHtml(cat, catPeople, opts={}){
     // featured duels use equal 1v1; browse grid keeps equal duel as well for consistency
@@ -700,7 +721,7 @@
   function countryTile(board, eager){
     const people = window.CountryBoards.asPeople(board, activeCountry);
     const a=document.createElement('a');
-    a.href=`category.html?slug=${encodeURIComponent(board.slug)}`;
+    a.href=`/category?slug=${encodeURIComponent(board.slug)}`;
     a.className='cat-tile duel';
     a.dataset.slug=board.slug;
     a.innerHTML=duelHtml({name:board.name, slug:board.slug}, people.slice(0,2), {featured:true, eager});
@@ -735,7 +756,7 @@
       if(activeGroup!=='All' && cat.group_name!==activeGroup) continue;
       const catPeople = duoForCat(cat);
       const a=document.createElement('a');
-      a.href=`category.html?slug=${cat.slug}`;
+      a.href=`/category?slug=${cat.slug}`;
       a.className='cat-tile duel';
       a.innerHTML = duelHtml(cat, catPeople, {featured:true, eager: idx<6});
       featuredEl.appendChild(a);
@@ -793,7 +814,7 @@
       for(const cat of groupCats){
         const catPeople = duoForCat(cat);
         const a=document.createElement('a');
-        a.href=`category.html?slug=${cat.slug}`;
+        a.href=`/category?slug=${cat.slug}`;
         a.className='cat-tile duel';
         a.dataset.slug=cat.slug;
         a.dataset.name=cat.name.toLowerCase();
@@ -828,7 +849,7 @@
       const photo = photoHtml(p, 56, false);
       const rank = (peopleByCat[p.category_id]||[]).findIndex(x=> x.id===p.id)+1;
       const a=document.createElement('a');
-      a.href=`person.html?slug=${p.slug}`;
+      a.href=`/person?slug=${p.slug}`;
       a.className='person-hit';
       a.title= p.name+' — '+ (cat?cat.name:'');
       a.innerHTML=`<div class="hit-photo">${photo}</div><div class="hit-meta"><div class="hit-name">${p.name}</div><div class="hit-cat">${cat?cat.name:''}${rank? ' · #'+rank:''}</div><div class="hit-total">${Math.floor((p.total_cents||0)/100).toLocaleString()} votes</div></div><span style="color:var(--muted);font-size:12px">→</span>`;
@@ -860,7 +881,7 @@
         sorted.slice(0,30).forEach((cat,i)=>{
           const catPeople=duoForCat(cat);
           const a=document.createElement('a');
-          a.href=`category.html?slug=${cat.slug}`;
+          a.href=`/category?slug=${cat.slug}`;
           a.className='cat-tile duel';
           a.innerHTML=duelHtml(cat, catPeople, {eager:i<4});
           srCats.appendChild(a);
@@ -928,7 +949,7 @@
       if(bids && bids.length){
         activityEl.innerHTML=bids.map(b=>{
           const handle=b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'Someone');
-          return `<div><b>${handle}</b> put ${Math.floor(b.amount_cents/100).toLocaleString()} votes on <a href="person.html?slug=${b.people?.slug}" style="color:var(--gold)">${b.people?.name}</a> · ${window.GOAT.fmtAgo(b.created_at)}</div>`;
+          return `<div><b>${handle}</b> put ${Math.floor(b.amount_cents/100).toLocaleString()} votes on <a href="/person?slug=${b.people?.slug}" style="color:var(--gold)">${b.people?.name}</a> · ${window.GOAT.fmtAgo(b.created_at)}</div>`;
         }).join('');
       } else {
         activityEl.innerHTML='<div class="mono" style="color:var(--muted)">No activity yet. Be the first.</div>';
@@ -987,7 +1008,7 @@
         + `<div class="fan-meta"><div class="fan-name" title="${esc(name)}">${esc(name)}</div><div class="fan-supporting">${supporting}</div></div>`
         + `<div class="fan-votes"><strong>${votes}</strong><span>votes</span></div>`
         + `</div>`;
-      return (back && back.slug) ? `<a href="person.html?slug=${encodeURIComponent(back.slug)}" title="${esc(name)} → ${esc(back.name)}">${row}</a>` : row;
+      return (back && back.slug) ? `<a href="/person?slug=${encodeURIComponent(back.slug)}" title="${esc(name)} → ${esc(back.name)}">${row}</a>` : row;
     }).join('');
 
     const top=users[0];
@@ -1030,7 +1051,121 @@
   await loadLeadingFans();
   buildTicker();
 
-  try{ sb.channel('bids-index').on('postgres_changes',{event:'INSERT',schema:'public',table:'bids'}, async()=>{ location.reload(); }).subscribe(); }catch(e){}
+  // === INLINE TOP-UP PROMPT ===
+  function showTopupPrompt(needVotes){
+    const existing=document.getElementById('inline-topup');
+    if(existing) existing.remove();
+    const div=document.createElement('div');
+    div.id='inline-topup';
+    div.className='inline-topup';
+    div.innerHTML=`<div class="inline-topup-card"><h3 style="font-family:Anton,sans-serif;font-size:20px">Need ${needVotes} more votes</h3><p class="mono" style="font-size:12px;color:var(--muted);margin:8px 0">Top up once, vote with one tap. $1 = 1 vote.</p><div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><a href="/wallet" class="btn-primary" style="text-decoration:none;padding:10px 18px;border-radius:999px">Top up →</a><button id="topup-cancel" class="btn-ghost">Cancel</button></div></div>`;
+    document.body.appendChild(div);
+    div.addEventListener('click', e=>{ if(e.target===div) div.remove(); });
+    document.getElementById('topup-cancel').addEventListener('click', ()=> div.remove());
+  }
+
+  // === ONE-TAP VOTE FROM HOMEPAGE ===
+  async function handleHomeVote(pid, pname, btn){
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user){ window.Auth.rememberReturnTo(); location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search); return; }
+    btn.disabled=true; const orig=btn.textContent; btn.textContent='…';
+    // optimistic: find person and bump
+    const person=people.find(p=>p.id===pid);
+    if(person) person.total_cents=(person.total_cents||0)+100;
+    // re-render featured + groups to show optimistic gap, but keep scroll
+    const scroll=window.scrollY;
+    renderFeatured(); renderGroups(null); window.scrollTo(0,scroll);
+    try{
+      let data, error;
+      try{ const r=await sb.rpc('place_vote',{p_person_id: pid, p_votes:1}); data=r.data; error=r.error; if(error && String(error.message).includes('Could not find function')) throw error; }
+      catch(e){ if(String(e.message||e).includes('Could not find function')){ const r2=await sb.rpc('place_bid',{p_person_id: pid, p_amount_cents:100}); data=r2.data; error=r2.error; } else throw e; }
+      if(error) throw error;
+      if(data && data.new_total && person) person.total_cents=data.new_total;
+      // reconcile balance
+      if(window.refreshBalance) await window.refreshBalance();
+      // update activity feed optimistically
+      if(activityEl){
+        const row=document.createElement('div');
+        row.innerHTML=`<b>You</b> put 1 vote on <a href="/person?slug=${person?person.slug:''}" style="color:var(--gold)">${esc(pname)}</a> · just now`;
+        activityEl.prepend(row);
+      }
+      // refresh leading fans + ticker
+      await loadLeadingFans(); buildTicker();
+    }catch(e){
+      if(person) person.total_cents=Math.max(0,(person.total_cents||0)-100);
+      renderFeatured(); renderGroups(null);
+      const msg=String(e.message||e);
+      if(msg.toLowerCase().includes('not enough') || msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('balance')){
+        showTopupPrompt(5);
+      } else if(msg.includes('not authenticated')){
+        location.href='/wallet?returnTo='+encodeURIComponent(location.pathname);
+      } else {
+        alert(msg);
+      }
+    } finally {
+      // re-enable buttons (they were recreated, so find by pid)
+      document.querySelectorAll(`[data-vote="${pid}"]`).forEach(b=>{ b.disabled=false; b.textContent=orig; });
+    }
+  }
+  // delegate click on vote buttons (tiles are in featured + groups)
+  document.addEventListener('click', e=>{
+    const btn=e.target.closest('[data-vote]');
+    if(!btn) return;
+    e.preventDefault(); e.stopPropagation();
+    handleHomeVote(btn.dataset.vote, btn.dataset.name||'them', btn);
+  });
+
+  // === LIVE ACTIVITY FEED: polling fallback + realtime ===
+  async function refreshActivity(){
+    try{
+      const [todayBidsRes, activityBidsRes]=await Promise.all([
+        sb.from('bids').select('amount_cents').gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString()),
+        sb.from('bids').select('amount_cents,created_at,people(name,slug),users(display_name,is_anonymous)').order('created_at',{ascending:false}).limit(10)
+      ]);
+      const backedToday=(todayBidsRes.data||[]).reduce((s,r)=>s+(r.amount_cents||0),0);
+      liveFacts.votesToday=Math.floor(backedToday/100);
+      const backedEl=document.getElementById('backed-today');
+      if(backedEl) backedEl.textContent=Math.floor(backedToday/100).toLocaleString()+' votes today';
+      const onlineEl=document.getElementById('online');
+      if(onlineEl){
+        // real visitor count if available, else pseudo-live
+        let n=0;
+        try{ const {data:s}=await sb.from('site_stats').select('visitor_count').eq('id',1).maybeSingle(); n=s?.visitor_count||0; }catch(e){}
+        const live=Math.max(1, Math.min(999, Math.floor((n%200)+ 12 + Math.random()*8)));
+        onlineEl.textContent= live.toLocaleString()+' online';
+      }
+      const bids=activityBidsRes.data;
+      liveFacts.recent=bids||[];
+      if(activityEl){
+        if(bids && bids.length){
+          activityEl.innerHTML=bids.map(b=>{
+            const handle=b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'Someone');
+            return `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><b>${esc(handle)}</b> put ${Math.floor(b.amount_cents/100).toLocaleString()} votes on <a href="/person?slug=${b.people?.slug}" style="color:var(--gold)">${esc(b.people?.name)}</a> · ${window.GOAT.fmtAgo(b.created_at)}</div>`;
+          }).join('');
+        } else {
+          activityEl.innerHTML='<div class="mono" style="color:var(--muted)">No activity yet. Be the first.</div>';
+        }
+      }
+      const liveFeed=document.getElementById('live-feed');
+      if(liveFeed){
+        if(bids && bids.length){
+          liveFeed.innerHTML=bids.slice(0,8).map((b,i)=>{
+            const handle=b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'Someone');
+            const isOutbid=i===0 && Math.floor(b.amount_cents/100)>=5;
+            const msg=isOutbid ? `<b>${esc(handle)}</b> just became <b>${esc(b.people?.name)}</b>'s #1 fan` : `<b>${esc(handle)}</b> put ${Math.floor(b.amount_cents/100)} votes on ${esc(b.people?.name)}`;
+            return `<div style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;line-height:1.4">${msg}<div class="mono" style="font-size:10px;color:var(--muted)">${window.GOAT.fmtAgo(b.created_at)}</div></div>`;
+          }).join('');
+        } else {
+          liveFeed.innerHTML='<div style="padding:14px;text-align:center;color:var(--muted);font-size:12px">No activity yet. Be the first — visibly keeps moving once votes arrive.</div>';
+        }
+      }
+      buildTicker();
+    }catch(e){}
+  }
+  // poll every 5s so feed visibly keeps moving
+  setInterval(refreshActivity, 5000);
+
+  try{ sb.channel('bids-index').on('postgres_changes',{event:'INSERT',schema:'public',table:'bids'}, async()=>{ await refreshActivity(); }).subscribe(); }catch(e){}
 })();
 </script>
 </body>

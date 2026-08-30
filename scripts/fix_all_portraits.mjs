@@ -93,7 +93,7 @@ async function findBestHumanPortrait(name, wikiUrl) {
 
 async function main() {
   console.log('='.repeat(60));
-  console.log(' GOAT.lol — Human Portrait Verifier & Cleaner');
+  console.log(' The True GOAT — Human Portrait Verifier & Cleaner');
   console.log('='.repeat(60));
 
   // Specific fix for Kapil Dev

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import sharp from 'sharp'
 const supa = createClient('https://orzcszqpnvicreqvpncu.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM')
-const UA = 'GOAT.lol/1.0 (https://goat.lol; contact@goat.lol)'
+const UA = 'The True GOAT/1.0 (https://thetruegoat.com; contact@thetruegoat.com)'
 
 async function wikiImageFor(name){
   const title = name.replace(/ /g,'_')

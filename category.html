@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Category — GOAT.lol</title>
+<title>Category — The True GOAT</title>
 <link rel="preconnect" href="https://orzcszqpnvicreqvpncu.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,15 +12,15 @@
 </head>
 <body>
 <header class="topbar"><div class="topbar-inner">
-  <div class="brand"><a href="index.html">GOAT<span>.lol</span></a></div>
+  <div class="brand"><a href="/">The True<span> GOAT</span></a></div>
   <div class="search"><i>⌕</i><input id="search" placeholder="Search people, categories"></div>
-  <nav class="topnav"><a href="index.html">Categories</a><a href="fans.html">Fans</a><a href="about.html">About</a><span id="balance-pill" class="balance-pill"><a href="wallet.html">Sign in</a></span></nav>
+  <nav class="topnav"><a href="/">Categories</a><a href="/fans">Fans</a><a href="/about">About</a><span id="balance-pill" class="balance-pill"><a href="/wallet">Sign in</a></span></nav>
 </div></header>
 
 <div class="container" style="padding:16px 20px">
   <div id="cat-head" style="margin:12px 0">
     <h1 id="cat-title" class="display" style="font-size:36px;letter-spacing:.02em">—</h1>
-    <div class="mono" style="font-size:12px;color:var(--muted)">Rank is the money. Nothing else. <a href="rules.html" style="color:var(--gold);text-decoration:underline">Rules →</a></div>
+    <div class="mono" style="font-size:12px;color:var(--muted)">Rank is the money. Nothing else. <a href="/rules" style="color:var(--gold);text-decoration:underline">Rules →</a></div>
   </div>
 
   <div style="display:flex;gap:8px;margin:10px 0">
@@ -33,9 +33,9 @@
 </div>
 <div class="sticky-bar" id="sticky-bar">
   <span class="balance"><span id="sticky-balance">— votes</span></span>
-  <a href="wallet.html" class="btn-primary" style="padding:8px 14px">Get votes</a>
+  <a href="/wallet" class="btn-primary" style="padding:8px 14px">Get votes</a>
 </div>
-<footer class="footer">GOAT.lol — pay to rank. <a href="rules.html">Rules</a></footer>
+<footer class="footer">The True GOAT — pay to rank. <a href="/rules">Rules</a> · <a href="/wallet">Wallet</a> · <a href="/fans">Fans</a></footer>
 
 <script src="js/supabase.js"></script>
 <script src="js/video-manager.js"></script>
@@ -68,11 +68,11 @@
   }
   if(!cat){ document.getElementById('cat-title').textContent='Category not found'; return; }
   document.getElementById('cat-title').textContent='Greatest ' + cat.name + ' of All Time';
-  document.title='Greatest ' + cat.name + ' of All Time — GOAT.lol';
+  document.title='Greatest ' + cat.name + ' of All Time — The True GOAT';
   let people=[];
   let optimisticQueue=[];
   // Every board is a top 20: 147 categories x 20 is the canonical set in
-  // data/goat_lol_147_categories_top20.csv. Ranking is by votes, so a
+  // data/thetruegoat_147_categories_top20.csv. Ranking is by votes, so a
   // contender below 20th drops off the board until enough votes carry them back.
   const BOARD_SIZE = 20;
   const FETCH_SIZE = 200;   // over-fetch, then rank canonically and trim to 20
@@ -204,7 +204,7 @@
           </div>
         </div>
         <div class="row-divider"></div>
-        <div class="row-right">${fanHtml} <a href="person.html?slug=${p.slug}#fans" style="margin-left:auto;font-size:11px;color:var(--gold);text-decoration:underline;white-space:nowrap">Report</a></div>
+        <div class="row-right">${fanHtml} <a href="/person?slug=${p.slug}#fans" style="margin-left:auto;font-size:11px;color:var(--gold);text-decoration:underline;white-space:nowrap">Report</a></div>
         <div class="row-actions">
           <span class="stepper"><button data-dec aria-label="Decrease">−</button><input data-amt-input type="number" min="1" value="1" style="width:56px;text-align:center;background:transparent;border:none;color:var(--ink);font-weight:700;font-size:12px;font-family:JetBrains Mono"><span data-amt style="display:none">1 vote</span><button data-inc aria-label="Increase">+</button></span>
           <button class="btn-back back-btn" data-back style="min-height:44px;min-width:44px">Vote</button>
@@ -268,7 +268,7 @@
           if(data && data.new_total) p.total_cents = data.new_total;
           if(data && data.balance!==undefined) {
             const pill=document.getElementById('balance-pill');
-            if(pill) pill.innerHTML=`<b>${Math.floor(data.balance/100).toLocaleString()} votes</b> <a href="wallet.html">Get votes</a>`;
+            if(pill) pill.innerHTML=`<b>${Math.floor(data.balance/100).toLocaleString()} votes</b> <a href="/wallet">Get votes</a>`;
             const sb2=document.getElementById('sticky-balance');
             if(sb2) sb2.innerHTML=`<b>${Math.floor(data.balance/100).toLocaleString()} votes</b>`;
           }
@@ -276,7 +276,7 @@
           // post-vote: You're now X's #Y fan — claim spot
           const myRank = people.findIndex(x=>x.id===p.id)+1;
           setTimeout(()=> {
-            if(confirm(`You're now ${p.name}'s #${myRank} fan. Claim your spot on his card?`)) location.href='wallet.html';
+            if(confirm(`You're now ${p.name}'s #${myRank} fan. Claim your spot on his card?`)) location.href="/wallet";
           }, 300);
         }catch(e){
           // rollback
@@ -288,7 +288,7 @@
         }
       });
 
-      row.addEventListener('click', ev=>{ if(ev.target.closest('button') || ev.target.closest('.stepper') || ev.target.closest('input') || ev.target.closest('a')) return; location.href=`person.html?slug=${p.slug}`; });
+      row.addEventListener('click', ev=>{ if(ev.target.closest('button') || ev.target.closest('.stepper') || ev.target.closest('input') || ev.target.closest('a')) return; location.href=`/person?slug=${p.slug}`; });
       board.appendChild(row);
     });
 
@@ -314,7 +314,7 @@
     const name=document.getElementById('add-name').value.trim();
     if(!name) return alert('Enter a name — must have a Wikipedia entry.');
     const {data:{user}}=await sb.auth.getUser();
-    if(!user) return location.href='wallet.html';
+    if(!user) return location.href="/wallet";
     try{
       const {data: person, error: addErr}=await sb.rpc('add_person', {p_category_id: cat.id, p_name: name, p_blurb:'', p_wikipedia_url:`https://en.wikipedia.org/wiki/${encodeURIComponent(name.replace(/ /g,'_'))}`, p_photo_path: null});
       if(addErr) throw addErr;
@@ -335,7 +335,7 @@
     }catch(e){ alert(e.message); }
   });
 
-  document.getElementById('search').addEventListener('keydown', e=>{ if(e.key==='Enter'){ location.href='index.html?q='+encodeURIComponent(e.target.value); }});
+  document.getElementById('search').addEventListener('keydown', e=>{ if(e.key==='Enter'){ location.href="/"
   await fetchPeople();
   await render();
 

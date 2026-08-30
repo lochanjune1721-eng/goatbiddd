@@ -27,7 +27,7 @@ try {
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://orzcszqpnvicreqvpncu.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM";
 
-const USER_AGENT = "GOATlolImageBot/1.0 (https://goat.lol; contact@goat.lol) NodeFetch/2.0";
+const USER_AGENT = "TheTrueGOATImageBot/1.0 (https://thetruegoat.com; contact@thetruegoat.com) NodeFetch/2.0";
 
 // Files to blacklist (icons, maps, flags, logos, audio, book scans, etc.)
 const BAD_EXTENSIONS = ['.svg', '.ogg', '.oga', '.ogv', '.mid', '.pdf', '.tif', '.tiff', '.webm', '.djvu', '.djv'];

@@ -68,7 +68,7 @@ async function resolveBatch(names) {
 
 async function main() {
   console.log('='.repeat(60));
-  console.log(' GOAT.lol — Full Database Portrait Repair & Verification');
+  console.log(' The True GOAT — Full Database Portrait Repair & Verification');
   console.log('='.repeat(60));
 
   const allPeople = await fetchAllPeople();

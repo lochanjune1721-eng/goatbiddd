@@ -1,4 +1,4 @@
-// js/video-manager.js — Intelligent video & audio controller for GOAT.lol contenders
+// js/video-manager.js — Intelligent video & audio controller for The True GOAT contenders
 (function() {
   const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
   if (!isBrowser) return;

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/resolve_all_5238.mjs — Comprehensive resolver for ALL contenders in GOAT.lol
+// scripts/resolve_all_5238.mjs — Comprehensive resolver for ALL contenders in The True GOAT
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
@@ -23,7 +23,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://orzcszqpnvicreqvpncu.s
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM";
 
 const supa = createClient(SUPABASE_URL, SERVICE_KEY);
-const USER_AGENT = "GOATlolProductionBot/2.0 (contact@goat.lol)";
+const USER_AGENT = "TheTrueGOATProductionBot/2.0 (contact@thetruegoat.com)";
 const CONCURRENCY = 16;
 
 async function resolveContender(name, wikipediaUrl) {

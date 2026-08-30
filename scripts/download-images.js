@@ -1,4 +1,4 @@
-// scripts/download-images.js — Self-hosted image pipeline for GOAT.lol
+// scripts/download-images.js — Self-hosted image pipeline for The True GOAT
 // Downloads source Wikimedia images, resizes to 100/300/800px WebP, saves locally and uploads to Supabase
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
@@ -30,7 +30,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://orzcszqpnvicreqvpncu.s
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM";
 
 const sb = createClient(SUPABASE_URL, SERVICE_KEY);
-const UA = 'GOATlol/1.0 (admin@goat.lol)';   // Wikimedia REQUIRES a descriptive User-Agent
+const UA = 'TheTrueGOAT/1.0 (admin@thetruegoat.com)';   // Wikimedia REQUIRES a descriptive User-Agent
 
 // Create local photos directory structure
 const PHOTOS_DIR = path.join(rootDir, 'photos');
@@ -55,7 +55,7 @@ async function fetchAllPeople() {
 
 async function run() {
   console.log('='.repeat(60));
-  console.log(' GOAT.lol — High-Speed Self-Hosted Image Pipeline');
+  console.log(' The True GOAT — High-Speed Self-Hosted Image Pipeline');
   console.log('='.repeat(60));
 
   const people = await fetchAllPeople();

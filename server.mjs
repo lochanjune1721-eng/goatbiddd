@@ -31,7 +31,7 @@ const MIME_TYPES = {
   '.ogg': 'video/ogg'
 };
 
-const USER_AGENT = "GOAT-App/1.0 (https://goat.lol; admin@goat.lol)";
+const USER_AGENT = "GOAT-App/1.0 (https://thetruegoat.com; admin@thetruegoat.com)";
 
 // Extract clean file name from Wikimedia URL
 function extractFilename(url) {
@@ -226,5 +226,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 GOAT.lol auto-healing server running at http://localhost:${PORT}`);
+  console.log(`🚀 The True GOAT auto-healing server running at http://localhost:${PORT}`);
 });

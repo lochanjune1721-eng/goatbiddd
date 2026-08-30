@@ -99,7 +99,7 @@ function buildQuery(cat){
 async function fetchCat(cat){
   const q=buildQuery(cat);
   const url='https://query.wikidata.org/sparql?query='+encodeURIComponent(q);
-  const r=await fetch(url, {headers:{'Accept':'application/sparql-results+json','User-Agent':'GOAT.lol/1.0 (https://goat.lol; contact@goat.lol)'}});
+  const r=await fetch(url, {headers:{'Accept':'application/sparql-results+json','User-Agent':'The True GOAT/1.0 (https://thetruegoat.com; contact@thetruegoat.com)'}});
   if(!r.ok) throw new Error(`SPARQL ${cat.slug} ${r.status} ${await r.text().then(t=>t.slice(0,500))}`);
   const j=await r.json();
   return j.results.bindings.map(b=>({

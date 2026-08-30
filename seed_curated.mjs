@@ -15,7 +15,7 @@ for(const slug of Object.keys(curated)){
     const api=`https://en.wikipedia.org/w/api.php?action=query&prop=pageimages|description&pithumbsize=800&piprop=original&titles=${encodeURIComponent(title)}&format=json&origin=*`;
     let img=null, desc='';
     try{
-      const r=await fetch(api,{headers:{'User-Agent':'GOAT.lol/1.0 (https://goat.lol; contact@goat.lol)'}});
+      const r=await fetch(api,{headers:{'User-Agent':'The True GOAT/1.0 (https://thetruegoat.com; contact@thetruegoat.com)'}});
       const j=await r.json();
       const pages=j.query?.pages; const p=pages&&Object.values(pages)[0];
       if(p && !p.missing){
@@ -27,7 +27,7 @@ for(const slug of Object.keys(curated)){
           const file=decodeURIComponent(img.split('/').pop().split('?')[0]);
           const api2=`https://commons.wikimedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata|user&titles=File:${encodeURIComponent(file)}&format=json&origin=*`;
           try{
-            const r2=await fetch(api2,{headers:{'User-Agent':'GOAT.lol/1.0 (https://goat.lol; contact@goat.lol)'}});
+            const r2=await fetch(api2,{headers:{'User-Agent':'The True GOAT/1.0 (https://thetruegoat.com; contact@thetruegoat.com)'}});
             const j2=await r2.json();
             const pg=Object.values(j2.query.pages)[0];
             const meta=pg?.imageinfo?.[0]?.extmetadata;
@@ -38,7 +38,7 @@ for(const slug of Object.keys(curated)){
           }catch{}
           if(img){
             // download, resize, upload
-            const res=await fetch(img,{headers:{'User-Agent':'GOAT.lol/1.0'}});
+            const res=await fetch(img,{headers:{'User-Agent':'The True GOAT/1.0'}});
             if(res.ok){
               const buf=Buffer.from(await res.arrayBuffer());
               const sharp=(await import('sharp')).default;

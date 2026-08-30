@@ -123,7 +123,7 @@ async function getPortraitForWiki(title) {
 
 async function run() {
   console.log('='.repeat(60));
-  console.log(' GOAT.lol — Dummy Records & Cricket Legends Overhaul');
+  console.log(' The True GOAT — Dummy Records & Cricket Legends Overhaul');
   console.log('='.repeat(60));
 
   // 1. Delete all dummy placeholder records

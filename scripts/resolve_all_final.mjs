@@ -32,7 +32,7 @@ function sleep(ms) {
 
 async function run() {
   console.log('='.repeat(60));
-  console.log(' GOAT.lol — Full Contender Image Resolver');
+  console.log(' The True GOAT — Full Contender Image Resolver');
   console.log('='.repeat(60));
 
   // 1. Fetch all contenders from Supabase

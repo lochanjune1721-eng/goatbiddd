@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Person — GOAT.lol</title>
+<title>Person — The True GOAT</title>
 <link rel="preconnect" href="https://orzcszqpnvicreqvpncu.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,9 +13,9 @@
 </head>
 <body>
 <header class="topbar"><div class="topbar-inner">
-  <div class="brand"><a href="index.html">GOAT<span>.lol</span></a></div>
+  <div class="brand"><a href="/">The True<span> GOAT</span></a></div>
   <div class="search"><i>⌕</i><input id="search" placeholder="Search"></div>
-  <nav class="topnav"><a href="fans.html">Fans</a><span id="balance-pill" class="balance-pill"></span></nav>
+  <nav class="topnav"><a href="/fans">Fans</a><span id="balance-pill" class="balance-pill"></span></nav>
 </div></header>
 
 <div class="container" style="padding:16px 20px">
@@ -32,11 +32,12 @@
       <div id="wiki" class="mono" style="font-size:11px;color:var(--muted);margin-top:10px"></div>
     </div>
   </div>
-  <h2 class="display" style="font-size:20px;margin:18px 0 10px">Top fans</h2>
-  <div id="fans" class="list"></div>
+  <div id="outbid-card" class="job-card" style="display:none;margin-top:14px;border-color:var(--gold)"></div>
+  <h2 class="display" style="font-size:20px;margin:18px 0 10px">Top fans — #1 is the Greatest Fan of All Time <span style="font-size:11px;color:var(--gold);font-family:Inter">LIVE</span></h2>
+  <div id="fans" class="list"><div class="skeleton" style="height:96px;border-radius:12px"></div></div>
 </div>
 
-<footer class="footer">GOAT.lol — pay to rank. <a href="rules.html">Rules</a></footer>
+<footer class="footer">The True GOAT — pay to rank. <a href="/rules">Rules</a> · <a href="/wallet">Wallet</a> · <a href="/fans">Fans</a></footer>
 
 <script src="js/supabase.js"></script>
 <script src="js/video-manager.js"></script>
@@ -45,17 +46,18 @@
 <script src="js/video-hover.js?v=single_audio_v5"></script>
 <script>
 (async function(){
+  function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
   const slug=window.GOAT.qs('slug');
   if(!slug){ document.getElementById('name').textContent='Missing ?slug='; return; }
   const sb=window.supabaseClient;
   const {data: person}=await sb.from('people').select('*, categories(name,slug,group_name)').eq('slug',slug).maybeSingle();
   if(!person){ document.getElementById('name').textContent='Not found'; return; }
-  document.title=person.name+' — GOAT.lol';
+  document.title=person.name+' — The True GOAT';
   document.getElementById('name').textContent=person.name;
   document.getElementById('blurb').textContent=person.blurb||'';
   document.getElementById('total').textContent=window.GOAT.votes(person.total_cents||0);
   if(person.categories){
-    document.getElementById('crumb').innerHTML=`<a href="category.html?slug=${person.categories.slug}" style="color:var(--gold)">${person.categories.name}</a> · ${person.categories.group_name}`;
+    document.getElementById('crumb').innerHTML=`<a href="/category?slug=${person.categories.slug}" style="color:var(--gold)">${person.categories.name}</a> · ${person.categories.group_name}`;
   }
 
   // Load hero photo with eager high priority & 640px source
@@ -78,18 +80,76 @@
     // fans — full leaderboard where repeat spending lives
     const fans = fansRes?.data;
     const el=document.getElementById('fans');
-    if(!fans||!fans.length) el.innerHTML='<div class="empty">No fans yet. Be the first for 1 vote — your face goes next to '+person.name+'\'s.</div>';
-    else {
-      el.innerHTML=fans.map((f,i)=>{
-        const u=f.users||{};
-        const name = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
-        const handle = u.social_handle ? `<a href="https://${u.social_platform==='x'?'x.com':u.social_platform+'.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,''))}" target="_blank" rel="noopener" style="color:var(--gold);font-size:11px">@${u.social_handle.replace(/^@/,'')} · ${u.social_platform||''}</a>` : '';
-        const initials = window.GOAT.initials(name);
-        const photo = u.photo_path ? window.OptimizedImage.render({photoPath:u.photo_path, name, size:44}) : `<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif">${initials}</div>`;
-        const count = window.GOAT.votes(f.total_cents);
-        return `<div class="job-card" style="display:flex;gap:12px;align-items:center"><div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted);width:28px">#${i+1}</div><div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex:0 0 auto">${photo}</div><div style="flex:1;min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div><div style="font-size:11px;color:var(--muted)">${handle || '<span style="color:var(--muted)">—</span>'} · <a href="#" onclick="event.preventDefault(); if(confirm('Report this photo?')) fetch('/api/report',{method:'POST',body:JSON.stringify({userId:'${u.id||''}'})})" style="font-size:11px;color:var(--muted);text-decoration:underline">Report</a></div></div><b class="display" style="color:var(--gold);font-size:18px">${count}</b></div>`;
-      }).join('');
+    function renderFans(list){
+      if(!list||!list.length) el.innerHTML='<div class="empty">No fans yet. Be the first for 1 vote — your face goes next to '+person.name+'\'s.</div>';
+      else {
+        el.innerHTML=list.map((f,i)=>{
+          const u=f.users||{};
+          const name = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
+          const handle = u.social_handle ? `<a href="https://${u.social_platform==='x'?'x.com':u.social_platform+'.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,''))}" target="_blank" rel="noopener" style="color:var(--gold);font-size:11px">@${u.social_handle.replace(/^@/,'')} · ${u.social_platform||''}</a>` : '';
+          const initials = window.GOAT.initials(name);
+          const photo = u.photo_path ? window.OptimizedImage.render({photoPath:u.photo_path, name, size:44}) : `<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif">${initials}</div>`;
+          const crown = i===0 ? '👑 ' : '';
+          const count = window.GOAT.votes(f.total_cents);
+          return `<div class="job-card" style="display:flex;gap:12px;align-items:center;${i===0?'border-color:var(--gold);':''}"><div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted);width:28px">${i===0?crown:'#'+(i+1)}</div><div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex:0 0 auto">${photo}</div><div style="flex:1;min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${crown}${name}${i===0?' — Greatest Fan of All Time':''}</div><div style="font-size:11px;color:var(--muted)">${handle || '<span style="color:var(--muted)">—</span>'} · <a href="#" onclick="event.preventDefault(); if(confirm('Report this photo?')) fetch('/api/report',{method:'POST',body:JSON.stringify({userId:'${u.id||''}'})})" style="font-size:11px;color:var(--muted);text-decoration:underline">Report</a></div></div><b class="display" style="color:var(--gold);font-size:18px">${count}</b></div>`;
+        }).join('');
+      }
     }
+    renderFans(fans);
+    // === OUTBID CARD ===
+    const outbidCard=document.getElementById('outbid-card');
+    async function updateOutbid(){
+      const {data:{user}}=await sb.auth.getUser();
+      if(!user){ outbidCard.style.display='none'; return; }
+      // find user's total for this person
+      const mine=fans.find(f=> f.users && f.users.id===user.id);
+      const top=fans[0];
+      const myTotal=mine? mine.total_cents:0;
+      const topTotal=top? top.total_cents:0;
+      const isTop = top && top.users && top.users.id===user.id;
+      if(isTop){
+        outbidCard.style.display='block';
+        outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center"><span style="font-size:20px">👑</span><div><div style="font-weight:700">You are the Greatest Fan of All Time</div><div class="mono" style="font-size:12px;color:var(--muted)">${window.GOAT.votes(myTotal)} on ${person.name} — keep backing to stay #1</div></div></div>`;
+        return;
+      }
+      const need = Math.max(1, Math.floor((topTotal - myTotal)/100)+1);
+      const topName=top? (top.users.is_anonymous?'Anonymous':top.users.display_name) : 'none yet';
+      outbidCard.style.display='block';
+      outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:180px"><div style="font-weight:700">Outbid ${esc(topName)} to become Greatest Fan</div><div class="mono" style="font-size:12px;color:var(--muted)">You have ${Math.floor(myTotal/100)} votes · #1 has ${Math.floor(topTotal/100)} · <b style="color:var(--gold)">needs ${need} votes ($${need})</b></div></div><button id="outbid-btn" class="btn-primary" style="width:auto;white-space:nowrap">Outbid +${need} →</button></div>`;
+      document.getElementById('outbid-btn').addEventListener('click', async()=>{
+        const btn=document.getElementById('outbid-btn'); btn.disabled=true; btn.textContent='…';
+        // optimistic: bump user's total in fans array
+        const optimisticNeed=need;
+        try{
+          let _d,_e;
+          try{ const r=await sb.rpc('place_vote',{p_person_id: person.id, p_votes: optimisticNeed}); _d=r.data; _e=r.error; if(_e && String(_e.message).includes('Could not find function')) throw _e; }
+          catch(e){ if(String(e.message||e).includes('Could not find function')){ const r2=await sb.rpc('place_bid',{p_person_id: person.id, p_amount_cents: optimisticNeed*100}); _d=r2.data; _e=r2.error; } else throw e; }
+          if(_e) throw _e;
+          // reload fans live
+          const {data:newFans}=await sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100);
+          fans.length=0; (newFans||[]).forEach(f=> fans.push(f));
+          renderFans(fans); updateOutbid();
+          document.getElementById('total').textContent=window.GOAT.votes(_d.new_total||person.total_cents+optimisticNeed*100);
+          if(window.refreshBalance) window.refreshBalance();
+          // confetti
+          btn.textContent='You are #1 👑';
+        }catch(e){
+          const m=String(e.message||e);
+          if(m.toLowerCase().includes('not enough')||m.toLowerCase().includes('insufficient')) alert('Not enough votes — top up first.');
+          else alert(m);
+          btn.disabled=false; btn.textContent=`Outbid +${need} →`;
+        }
+      });
+    }
+    updateOutbid();
+    // live recalc every 4s
+    setInterval(async()=>{
+      try{
+        const {data:nf}=await sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100);
+        if(nf){ fans.length=0; nf.forEach(f=> fans.push(f)); renderFans(fans); updateOutbid(); }
+      }catch(e){}
+    }, 4000);
+    try{ sb.channel('fan-'+person.id).on('postgres_changes',{event:'*',schema:'public',table:'fan_totals'}, async()=>{ const {data:nf}=await sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100); if(nf){ fans.length=0; nf.forEach(f=> fans.push(f)); renderFans(fans); updateOutbid(); } }).subscribe(); }catch(e){}
   } catch(e) {
     console.warn('Fans load error:', e);
   }
@@ -104,12 +164,20 @@
   document.getElementById('inc').addEventListener('click',()=>{ amt=Math.min(100000, amt+100); upd(); });
   upd();
 
+  // optimistic vote with immediate total bump and balance tick
   document.getElementById('back').addEventListener('click', async()=>{
-    const btn=document.getElementById('back'); btn.disabled=true; btn.textContent='…';
+    const btn=document.getElementById('back'); const v=Math.floor(amt/100);
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user){ location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search); return; }
+    const prev=person.total_cents;
+    person.total_cents+=v*100;
+    document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
+    if(window.refreshBalance) window.refreshBalance(); // will show optimistic spend via header?
+    btn.disabled=true; btn.textContent='…';
     try{
       let _data,_error;
       try{
-        const r=await sb.rpc('place_vote',{p_person_id: person.id, p_votes: Math.floor(amt/100)});
+        const r=await sb.rpc('place_vote',{p_person_id: person.id, p_votes: v});
         _data=r.data; _error=r.error;
         if(_error && String(_error.message).includes('Could not find function')) throw _error;
       }catch(e){
@@ -119,9 +187,17 @@
         } else throw e;
       }
       if(_error) throw _error;
+      if(_data && _data.new_total) person.total_cents=_data.new_total;
+      document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
+      if(window.refreshBalance) await window.refreshBalance();
       location.reload();
     }catch(e){
-      alert(e.message.includes('insufficient')?'Insufficient credit — top up.':e.message);
+      person.total_cents=prev;
+      document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
+      const m=String(e.message||e);
+      if(m.toLowerCase().includes('not enough')||m.toLowerCase().includes('insufficient')||m.toLowerCase().includes('balance')){
+        if(confirm('Not enough votes — top up?')) location.href='/wallet';
+      } else alert(m);
       btn.disabled=false; btn.textContent='Back';
     }
   });

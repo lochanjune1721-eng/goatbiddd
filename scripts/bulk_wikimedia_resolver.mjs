@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/bulk_wikimedia_resolver.mjs — Bulk Wikimedia Image Resolver for GOAT.lol contenders
+// scripts/bulk_wikimedia_resolver.mjs — Bulk Wikimedia Image Resolver for The True GOAT contenders
 // Usage: node scripts/bulk_wikimedia_resolver.mjs [--limit=100] [--category=footballers] [--force] [--dry]
 
 import { createClient } from '@supabase/supabase-js';
@@ -46,7 +46,7 @@ function sleep(ms) {
 
 async function main() {
   console.log('='.repeat(60));
-  console.log(' GOAT.lol — Bulk Wikimedia Commons Image Resolver');
+  console.log(' The True GOAT — Bulk Wikimedia Commons Image Resolver');
   console.log(` Mode: ${DRY ? 'DRY RUN' : 'LIVE DB UPDATE'} | Force: ${FORCE} | Concurrency: ${CONCURRENCY}`);
   if (CAT_FILTER) console.log(` Category filter: ${CAT_FILTER}`);
   if (LIMIT) console.log(` Limit: ${LIMIT}`);

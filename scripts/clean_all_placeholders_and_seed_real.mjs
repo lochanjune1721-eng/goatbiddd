@@ -26,7 +26,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://orzcszqpnvicreqvpncu.s
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM";
 
 const supa = createClient(SUPABASE_URL, SERVICE_KEY);
-const UA = "GOAT-App/1.0 (https://goat.lol; admin@goat.lol)";
+const UA = "GOAT-App/1.0 (https://thetruegoat.com; admin@thetruegoat.com)";
 
 // Authentic Iconic Category Contenders
 const AUTHENTIC_ROSTERS = {
@@ -145,7 +145,7 @@ async function getWikiPhoto(wikiTitle) {
 
 async function main() {
   console.log('='.repeat(60));
-  console.log(' GOAT.lol — Complete Database Purge of Dummy Records');
+  console.log(' The True GOAT — Complete Database Purge of Dummy Records');
   console.log('='.repeat(60));
 
   // 1. Delete all dummy placeholder records

@@ -1,7 +1,7 @@
 // api/img.js — Vercel Serverless Function for High-Performance Edge-Cached Contender Portraits
 // Complies with Wikimedia User-Agent Policy and provides auto-healing image fallback
 
-const USER_AGENT = "GOAT-App/1.0 (https://goat.lol; admin@goat.lol)";
+const USER_AGENT = "GOAT-App/1.0 (https://thetruegoat.com; admin@thetruegoat.com)";
 
 // Generate fallback SVG avatar when no image is available
 function generateSvgAvatar(name) {

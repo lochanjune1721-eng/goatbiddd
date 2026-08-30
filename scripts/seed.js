@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// GOAT.lol seeding — Wikidata SPARQL per category + image download 800x800 + Supabase storage
+// The True GOAT seeding — Wikidata SPARQL per category + image download 800x800 + Supabase storage
 // Usage: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed.js [--dry]
 // Requires: npm i @supabase/supabase-js sharp
 
@@ -100,7 +100,7 @@ async function sparqlFor(cat){
     const q = build(ordered);
     const url = 'https://query.wikidata.org/sparql?query=' + encodeURIComponent(q);
     try{
-      const r = await fetch(url, { headers: { 'Accept':'application/sparql-results+json', 'User-Agent':'GOAT.lol/1.0 (https://goat.lol; contact@goat.lol)' }});
+      const r = await fetch(url, { headers: { 'Accept':'application/sparql-results+json', 'User-Agent':'The True GOAT/1.0 (https://thetruegoat.com; contact@thetruegoat.com)' }});
       if(!r.ok){
         const txt=await r.text().then(t=>t.slice(0,600));
         if((r.status>=500 || r.status===429) && attempt<2){ const wait = r.status===429 ? 2500*(attempt+1) : 800*(attempt+1); await new Promise(r=>setTimeout(r, wait)); continue; }
@@ -127,7 +127,7 @@ async function downloadAndStore(imageUrl, slug){
   try{
     const file = decodeURIComponent(imageUrl.split('/').pop());
     const api = `https://commons.wikimedia.org/w/api.php?action=query&prop=imageinfo&iiprop=extmetadata|user&titles=File:${encodeURIComponent(file)}&format=json&origin=*`;
-    const r = await fetch(api, { headers: { 'User-Agent':'GOAT.lol/1.0 (https://goat.lol; contact@goat.lol)' }}); const j=await r.json();
+    const r = await fetch(api, { headers: { 'User-Agent':'The True GOAT/1.0 (https://thetruegoat.com; contact@thetruegoat.com)' }}); const j=await r.json();
     const pages = j.query?.pages; const p = pages && Object.values(pages)[0];
     const meta = p?.imageinfo?.[0]?.extmetadata;
     license = meta?.LicenseShortName?.value || meta?.UsageTerms?.value || null;
@@ -135,7 +135,7 @@ async function downloadAndStore(imageUrl, slug){
     const bad = ['Fair use','Non-free','Copyrighted'];
     if(license && bad.some(b=> license.includes(b))) return { path:null, credit:null, license:null };
   }catch{}
-  const imgRes = await fetch(imageUrl, { headers: { 'User-Agent':'GOAT.lol/1.0 (https://goat.lol; contact@goat.lol)' }});
+  const imgRes = await fetch(imageUrl, { headers: { 'User-Agent':'The True GOAT/1.0 (https://thetruegoat.com; contact@thetruegoat.com)' }});
   if(!imgRes.ok) return { path:null, credit, license };
   const buf = Buffer.from(await imgRes.arrayBuffer());
   let out = buf;
