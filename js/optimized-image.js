@@ -50,7 +50,7 @@
   /**
    * OptimizedImage.render: Generates resilient HTML for contender portraits
    */
-  function render({ photoPath, name, size = 120, priority = 'lazy', className = '', style = '' }) {
+  function render({ photoPath, videoPath, name, size = 120, priority = 'lazy', className = '', style = '' }) {
     const safeName = (name || '').replace(/"/g, '&quot;');
     const resolvedUrl = getThumb(photoPath, size, name);
     const styleAttr = style ? ` style="${style}"` : '';
@@ -62,7 +62,11 @@
     }
 
     const eagerAttrs = priority === 'eager' ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
-    return `<img src="${resolvedUrl}" alt="${safeName}" width="${size}" height="${size}" ${eagerAttrs} decoding="async" referrerpolicy="no-referrer" class="${classAttr}"${styleAttr} onerror="window.onGoatImgError(this, '${safeName}')">`;
+    // data-video is picked up by js/video-hover.js, which swaps the still for a
+    // clip while the card is on screen. Absent, the image behaves as before.
+    const clip = videoPath && window.GOAT?.getVideoUrl ? window.GOAT.getVideoUrl(videoPath) : null;
+    const videoAttr = clip ? ` data-video="${String(clip).replace(/"/g,'&quot;')}"` : '';
+    return `<img src="${resolvedUrl}" alt="${safeName}" width="${size}" height="${size}" ${eagerAttrs} decoding="async" referrerpolicy="no-referrer" class="${classAttr}"${styleAttr}${videoAttr} onerror="window.onGoatImgError(this, '${safeName}')">`;
   }
 
   window.OptimizedImage = {

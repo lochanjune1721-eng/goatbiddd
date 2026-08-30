@@ -147,7 +147,8 @@
     opts = opts || {};
     if(person && person.photo_path){
       return window.OptimizedImage.render({
-        photoPath: person.photo_path, name: person.name, size,
+        photoPath: person.photo_path, videoPath: person.video_path,
+        name: person.name, size,
         priority: opts.eager ? 'eager' : 'lazy', slug: person.slug
       });
     }

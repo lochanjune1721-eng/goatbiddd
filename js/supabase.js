@@ -39,6 +39,15 @@ window.GOAT = {
     const cleanPath = trimmed.replace(/^\/+/, '');
     return `${SUPABASE_URL}/storage/v1/object/public/people/${cleanPath}`;
   },
+  // Clips live beside the stills. A full URL is used as-is; a bare path is
+  // resolved against the same public bucket the photos come from.
+  getVideoUrl: (path) => {
+    if(!path || typeof path !== 'string') return null;
+    const trimmed = path.trim();
+    if(!trimmed) return null;
+    if(trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
+    return `${SUPABASE_URL}/storage/v1/object/public/people/${trimmed.replace(/^\/+/, '')}`;
+  },
   cents: (c)=> `$${(c/100).toLocaleString()}`,
   votes: (c)=> `${Math.floor((c||0)/100).toLocaleString()} votes`,
   votesShort: (c)=> `${Math.floor((c||0)/100).toLocaleString()}`,
