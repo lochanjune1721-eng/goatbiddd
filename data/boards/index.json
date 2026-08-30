@@ -1,7 +1,7 @@
 {
  "verified": true,
  "source": "data/curated-boards.json",
- "builtAt": "2026-08-30T09:29:16.301Z",
+ "builtAt": "2026-08-30T12:06:00.833Z",
  "countries": [
   {
    "code": "EU",
@@ -12,8 +12,8 @@
   {
    "code": "IN",
    "country": "India",
-   "boards": 12,
-   "contenders": 235
+   "boards": 30,
+   "contenders": 595
   },
   {
    "code": "GB",
@@ -24,8 +24,8 @@
   {
    "code": "US",
    "country": "United States",
-   "boards": 12,
-   "contenders": 240
+   "boards": 30,
+   "contenders": 600
   }
  ]
 }
