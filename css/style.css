@@ -103,12 +103,16 @@ a{color:inherit;text-decoration:none}
 .duel-body{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;gap:10px 10px;align-items:center;padding:16px 14px 14px}
 .duel-body.crazy{gap:12px 10px;padding:18px 16px 14px}
 .duel-side{text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0}
-.duel-side .photo{width:100%;max-width:260px;aspect-ratio:1/1;height:auto;border-radius:14px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);contain:paint;position:relative;transition:aspect-ratio .35s cubic-bezier(0.4,0,0.2,1), max-width .35s cubic-bezier(0.4,0,0.2,1)}
-.duel-body.crazy .duel-side .photo{max-width:300px;width:100%;aspect-ratio:1/1;height:auto;border-radius:16px;transition:aspect-ratio .35s cubic-bezier(0.4,0,0.2,1), max-width .35s cubic-bezier(0.4,0,0.2,1)}
-@media(max-width:640px){.duel-side .photo{max-width:150px;aspect-ratio:1/1}.duel-body.crazy .duel-side .photo{max-width:165px;aspect-ratio:1/1}}
-@media(max-width:380px){.duel-side .photo{max-width:118px;aspect-ratio:1/1}.duel-body.crazy .duel-side .photo{max-width:128px;aspect-ratio:1/1}}
-.duel-side.video-playing .photo, .duel-side .photo.video-playing, .duel-side.video-active .photo, .duel-side .photo:has(video.goat-clip.ready){aspect-ratio:16/9;max-width:380px}
-.duel-body.crazy .duel-side.video-playing .photo, .duel-body.crazy .duel-side .photo.video-playing, .duel-body.crazy .duel-side.video-active .photo, .duel-body.crazy .duel-side .photo:has(video.goat-clip.ready){aspect-ratio:16/9;max-width:440px}
+.duel-side .photo{width:154px;height:154px;border-radius:14px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);contain:paint;position:relative;flex-shrink:0;transition:width .3s ease, height .3s ease}
+.duel-body.crazy .duel-side .photo{width:172px;height:172px;border-radius:16px;transition:width .3s ease, height .3s ease}
+@media(max-width:640px){.duel-side .photo{width:110px;height:110px}.duel-body.crazy .duel-side .photo{width:122px;height:122px}}
+@media(max-width:380px){.duel-side .photo{width:96px;height:96px}.duel-body.crazy .duel-side .photo{width:106px;height:106px}}
+.duel-side.video-playing .photo, .duel-side .photo.video-playing, .duel-side.video-active .photo{width:270px;height:152px}
+.duel-body.crazy .duel-side.video-playing .photo, .duel-body.crazy .duel-side .photo.video-playing, .duel-body.crazy .duel-side.video-active .photo{width:300px;height:169px}
+@media(max-width:640px){
+  .duel-side.video-playing .photo, .duel-side .photo.video-playing{width:178px;height:100px}
+  .duel-body.crazy .duel-side.video-playing .photo, .duel-body.crazy .duel-side .photo.video-playing{width:196px;height:110px}
+}
 .photo img, img.goat-photo{width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:saturate(.9) contrast(1.02);display:block}
 .photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,.22) 0%, transparent 52%);pointer-events:none}
 /* Clips sit exactly over the still they replace (js/video-hover.js) and fade in
