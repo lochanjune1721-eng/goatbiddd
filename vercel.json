@@ -1,9 +1,7 @@
 {
-  "cleanUrls": true,
+  "framework": null,
+  "buildCommand": null,
   "functions": {
-    "api/*.js": {
-      "maxDuration": 15
-    },
     "api/checkout.js": {
       "includeFiles": "api/**"
     },
@@ -15,11 +13,12 @@
     },
     "api/resolve_image.js": {
       "includeFiles": "scripts/**"
+    },
+    "api/img.js": {
+      "maxDuration": 15
     }
   },
   "rewrites": [
-    { "source": "/api/checkout", "destination": "/api/checkout.js" },
-    { "source": "/api/payment-done", "destination": "/api/payment-done.js" },
-    { "source": "/api/admin", "destination": "/api/admin.js" }
+    { "source": "/img", "destination": "/api/img.js" }
   ]
 }
