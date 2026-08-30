@@ -80,11 +80,28 @@
     }
   }, { threshold:[0, VISIBLE, 1] }) : null;
 
+  // Find the clip under the pointer. The <video> is layered ON TOP of the
+  // element carrying data-video, and is its sibling rather than its child, so
+  // closest('[data-video]') from the video returns nothing — resolve the video
+  // directly when the pointer is over it, and fall back to the still otherwise.
+  function clipUnder(target){
+    if(!target || !target.closest) return null;
+    const v = target.closest('video.goat-clip');
+    if(v) return v;
+    const el = target.closest('[data-video]');
+    if(el) return live.get(el) || null;
+    // Pointer may be over the card padding: check the photo box it belongs to.
+    const box = target.closest('.photo, .person-photo');
+    if(box){
+      const held = box.querySelector('video.goat-clip');
+      if(held) return held;
+    }
+    return null;
+  }
+
   // Sound follows the pointer, and only where a clip is actually playing.
   document.addEventListener('pointerover', e=>{
-    const img = e.target.closest && e.target.closest('img[data-video]');
-    if(!img) return;
-    const v = live.get(img);
+    const v = clipUnder(e.target);
     if(!v || !canUnmute) return;
     v.muted = false;
     v.volume = 0.85;
@@ -93,9 +110,7 @@
   }, true);
 
   document.addEventListener('pointerout', e=>{
-    const img = e.target.closest && e.target.closest('img[data-video]');
-    if(!img) return;
-    const v = live.get(img);
+    const v = clipUnder(e.target);
     if(v) v.muted = true;
   }, true);
 
@@ -106,7 +121,7 @@
 
   function scan(root){
     if(!io || reduced) return;
-    for(const img of (root || document).querySelectorAll('img[data-video]')){
+    for(const img of (root || document).querySelectorAll('[data-video]')){
       if(img.dataset.clipWatched) continue;
       img.dataset.clipWatched = '1';
       io.observe(img);
