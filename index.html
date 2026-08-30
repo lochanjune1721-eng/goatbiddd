@@ -323,7 +323,7 @@
       const byNameLower = {};
       list.forEach(p => byNameLower[norm(p.name)] = p);
       
-      const p1 = byNameLower[norm(canonNames[0])] || {
+      const p1 = byNameLower[norm(canonNames[0])] || list.find(p => norm(p.name).includes(norm(canonNames[0])) || norm(canonNames[0]).includes(norm(p.name))) || {
         id: 'synth-'+cat.slug+'-1',
         slug: canonNames[0].toLowerCase().replace(/[^a-z0-9]+/g,'-'),
         name: canonNames[0],
@@ -331,7 +331,7 @@
         total_cents: 0,
         category_id: cat.id
       };
-      const p2 = byNameLower[norm(canonNames[1])] || {
+      const p2 = byNameLower[norm(canonNames[1])] || list.find(p => norm(p.name).includes(norm(canonNames[1])) || norm(canonNames[1]).includes(norm(p.name))) || {
         id: 'synth-'+cat.slug+'-2',
         slug: canonNames[1].toLowerCase().replace(/[^a-z0-9]+/g,'-'),
         name: canonNames[1],
@@ -658,7 +658,7 @@
       const [todayBidsRes, activityBidsRes, fansRes] = await Promise.all([
         sb.from('bids').select('amount_cents').gte('created_at', today.toISOString()),
         sb.from('bids').select('amount_cents,created_at,people(name,slug)').order('created_at',{ascending:false}).limit(12),
-        fetch('/api/fans').then(r => r.json()).catch(()=>({fans:[]}))
+        fetch('/api/fans?t='+Date.now()).then(r => r.json()).catch(()=>({fans:[]}))
       ]);
 
       const backedToday = (todayBidsRes.data||[]).reduce((s,r)=> s + (r.amount_cents||0), 0);

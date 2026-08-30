@@ -17,7 +17,6 @@ export default withHandler(async function handler(req, res){
     .order('total_spent_cents', { ascending: false })
     .limit(50);
 
-  // Cache for 10s on CDN
-  res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=30');
+  res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=15');
   return res.status(200).json({ ok: true, fans: users || [] });
 });
