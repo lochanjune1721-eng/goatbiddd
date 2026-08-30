@@ -18,10 +18,10 @@
 .duel-body{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;gap:14px;align-items:start;padding:20px 18px 16px}
 .duel-body.crazy{gap:16px;padding:26px 22px 18px}
 .duel-side{text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0;overflow:hidden}
-.duel-side .photo{width:100%;max-width:260px;aspect-ratio:1/1;height:auto;border-radius:12px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);position:relative;flex-shrink:0}
-.duel-body.crazy .duel-side .photo{width:100%;max-width:300px;height:auto;aspect-ratio:1/1}
-@media(max-width:640px){.duel-side .photo{width:100%;max-width:150px;height:auto}.duel-body.crazy .duel-side .photo{width:100%;max-width:165px;height:auto}}
-@media(max-width:380px){.duel-side .photo{width:100%;max-width:118px;height:auto}.duel-body.crazy .duel-side .photo{width:100%;max-width:128px;height:auto}}
+.duel-side .photo{width:100%;max-width:380px;aspect-ratio:16/9;height:auto;border-radius:14px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);position:relative;flex-shrink:0}
+.duel-body.crazy .duel-side .photo{width:100%;max-width:440px;height:auto;aspect-ratio:16/9}
+@media(max-width:640px){.duel-side .photo{width:100%;max-width:200px;aspect-ratio:16/9;height:auto}.duel-body.crazy .duel-side .photo{width:100%;max-width:220px;aspect-ratio:16/9;height:auto}}
+@media(max-width:380px){.duel-side .photo{width:100%;max-width:150px;aspect-ratio:16/9;height:auto}.duel-body.crazy .duel-side .photo{width:100%;max-width:160px;aspect-ratio:16/9;height:auto}}
 .duel-side .name{font-family:'Anton',sans-serif;font-size:19px;line-height:1.05;max-width:100%;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;width:100%}
 .duel-body.crazy .duel-side .name{font-size:23px}
 @media(max-width:640px){.duel-side .name{font-size:15px}.duel-body.crazy .duel-side .name{font-size:17px}}
@@ -192,8 +192,8 @@
 
 /* Wide desktops: portraits grow with the roomier centre column. */
 @media(min-width:1600px){
-  .duel-body.crazy .duel-side .photo{max-width:340px}
-  .duel-side .photo{max-width:290px}
+  .duel-body.crazy .duel-side .photo{max-width:480px;aspect-ratio:16/9}
+  .duel-side .photo{max-width:420px;aspect-ratio:16/9}
 }
 
 /* --- responsive: collapse to the original single column --- */
