@@ -16,7 +16,7 @@ function generateSvgAvatar(name) {
 async function queryWikiForPortrait(name) {
   if (!name) return null;
   try {
-    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages|pageprops&piprop=thumbnail&pithumbsize=500&redirects=1&titles=${encodeURIComponent(name)}&format=json`;
+    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages|pageprops&piprop=thumbnail&pithumbsize=800&redirects=1&titles=${encodeURIComponent(name)}&format=json`;
     const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
     if (!res.ok) return null;
     const j = await res.json();
@@ -29,8 +29,13 @@ async function queryWikiForPortrait(name) {
 
 export default async function handler(req, res) {
   const { url, name } = req.query || {};
-  const targetUrl = url ? decodeURIComponent(url).trim().split('?')[0] : '';
+  let targetUrl = url ? decodeURIComponent(url).trim().split('?')[0] : '';
   const personName = name ? decodeURIComponent(name).trim() : '';
+
+  // Auto-upgrade Wikimedia thumbnail URLs to high-resolution 800px
+  if (targetUrl && targetUrl.includes('upload.wikimedia.org') && /\/\d+px-/.test(targetUrl)) {
+    targetUrl = targetUrl.replace(/\/\d+px-/, '/800px-');
+  }
 
   // Set long-lived cache headers for Vercel Edge Network
   res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=86400, immutable');

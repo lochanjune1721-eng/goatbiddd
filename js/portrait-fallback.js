@@ -70,7 +70,11 @@
 
   function apply(el, url){
     if(!url){ el.dataset.portraitDone = 'none'; return; }
-    const size = parseInt(el.dataset.portraitSize, 10) || 300;
+    let hdUrl = url;
+    if(hdUrl.includes('upload.wikimedia.org') && /\/\d+px-/.test(hdUrl)){
+      hdUrl = hdUrl.replace(/\/\d+px-/, '/800px-');
+    }
+    const size = parseInt(el.dataset.portraitSize, 10) || 400;
     const img = document.createElement('img');
     img.className = 'goat-photo';
     img.alt = el.dataset.portraitName || '';
@@ -94,34 +98,35 @@
       }
     });
     img.addEventListener('error', ()=>{
+      // If 800px fails, fallback to standard url
+      if(img.src !== url && url) {
+        img.src = url;
+        return;
+      }
       img.remove();
       el.dataset.portraitDone = 'error';
     });
-    img.src = url;
+    img.src = hdUrl;
     el.appendChild(img);
-    el.dataset.portraitDone = 'loading';
-    if(clip && window.VideoHover && window.VideoHover.scan) {
-      window.VideoHover.scan(el.parentElement || el);
-    }
   }
 
   let inFlight = false;
   async function scan(root){
-    if(inFlight) return;
-    const scope = root || document;
-    const nodes = [...scope.querySelectorAll('[data-portrait]')]
-      .filter(el=> !el.dataset.portraitDone && el.dataset.portrait);
+    const nodes = (root || document).querySelectorAll('[data-portrait-name]:not([data-portrait-done])');
     if(!nodes.length) return;
 
-    // Serve whatever the cache already knows before touching the network.
     const pending = new Map();
     for(const el of nodes){
-      const title = el.dataset.portrait;
-      const hit = readCache(title);
-      if(hit !== undefined){ apply(el, hit); continue; }
-      if(!pending.has(title)) pending.set(title, []);
-      pending.get(title).push(el);
+      const name = el.dataset.portraitName;
+      const cached = readCache(name);
+      if(cached !== undefined){
+        apply(el, cached);
+      } else {
+        if(!pending.has(name)) pending.set(name, []);
+        pending.get(name).push(el);
+      }
     }
+
     if(!pending.size) return;
 
     inFlight = true;
@@ -131,7 +136,7 @@
       for(let i = 0; i < titles.length && i < BATCH * MAX_CALLS; i += BATCH){
         const chunk = titles.slice(i, i + BATCH);
         let found;
-        try { found = await fetchBatch(chunk, Math.max(size, 320)); }
+        try { found = await fetchBatch(chunk, Math.max(size * 2, 700)); }
         catch(e){ console.warn('portrait lookup failed', e); break; }
         for(const t of chunk){
           const url = found[t] || null;

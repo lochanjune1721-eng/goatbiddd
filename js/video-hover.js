@@ -31,6 +31,8 @@
     try { v.load(); } catch(e){}
     v.remove();
     el.style.visibility = '';
+    const box = el.closest ? el.closest('.duel-side, .photo, .person-photo, .person-card') : null;
+    if(box) box.classList.remove('video-playing', 'video-active');
   }
 
   function play(el){
@@ -54,6 +56,8 @@
       if(!live.has(el)) return;
       v.classList.add('ready');
       el.style.visibility = 'hidden';
+      const box = el.closest ? el.closest('.duel-side, .photo, .person-photo, .person-card') : null;
+      if(box) box.classList.add('video-playing', 'video-active');
     };
 
     v.addEventListener('loadeddata', reveal, { once: true });
