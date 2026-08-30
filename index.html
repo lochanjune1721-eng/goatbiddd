@@ -196,7 +196,7 @@
       <div class="chips" id="chips" role="tablist" aria-label="Filter by group"></div>
     </div>
 
-    <!-- FEATURED DUELS — TOP 50 FIGHTS -->
+    <!-- FEATURED DUELS — PREMIER GLOBAL TOP 50 FIGHTS -->
     <div class="featured-wrap" id="featured-wrap">
       <div class="section-head">
         <h2>Top 50 Fights <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span></h2>
@@ -272,18 +272,19 @@
   let groupMap = {};
   let activeGroup = 'All';
 
-  // EXACT TOP 50 FIGHTS SLUGS
-  const TOP_50_FIGHTS = [
-    'footballers', 'basketball-players', 'tennis-men', 'directors', 'hollywood-actors',
-    'singers', 'us-presidents', 'scientists', 'founders', 'rappers',
-    'boxers', 'f1-drivers', 'bollywood-actors', 'batsmen', 'painters',
-    'emperors', 'philosophers', 'inventors', 'novelists', 'ceos',
-    'youtubers', 'bands', 'tennis-women', 'chess-players', 'mma-fighters',
-    'physicists', 'indian-pms', 'comedians', 'generals', 'hollywood-actresses',
-    'football-managers', 'clubs', 'goalkeepers', 'bowlers', 'all-rounders',
-    'cricket-captains', 'ipl-players', 'wicketkeepers', 'basketball-teams', 'wrestlers',
-    'f1-teams', 'motogp-riders', 'track-athletes', 'swimmers', 'golfers',
-    'hockey-players', 'gymnasts', 'cyclists', 'esports-players', 'poker-players'
+  // CLEAN PREMIER GLOBAL TOP 50 FIGHTS (NO REGIONAL MIXING IN TOP FIGHTS)
+  const GLOBAL_TOP_50_FIGHTS = [
+    'footballers', 'basketball-players', 'tennis-men', 'tennis-women',
+    'hollywood-actors', 'hollywood-actresses', 'directors', 'films', 'tv-shows',
+    'singers', 'rappers', 'bands', 'guitarists', 'composers',
+    'boxers', 'mma-fighters', 'wrestlers', 'f1-drivers', 'motogp-riders',
+    'track-athletes', 'swimmers', 'golfers', 'hockey-players', 'gymnasts', 'cyclists',
+    'chess-players', 'esports-players', 'poker-players',
+    'us-presidents', 'world-leaders', 'conquerors', 'generals', 'military-strategists',
+    'scientists', 'physicists', 'mathematicians', 'chemists', 'biologists',
+    'philosophers', 'economists', 'inventors', 'astronauts',
+    'novelists', 'poets', 'playwrights', 'founders', 'investors', 'ceos',
+    'painters', 'youtubers'
   ];
 
   function norm(s){
@@ -495,7 +496,7 @@
   function renderFeatured(){
     featuredEl.innerHTML = '';
     let idx = 0;
-    for(const slug of TOP_50_FIGHTS){
+    for(const slug of GLOBAL_TOP_50_FIGHTS){
       const cat = cats.find(c => c.slug === slug || (c.slug.includes(slug) || slug.includes(c.slug)));
       if(!cat) continue;
       if(activeGroup !== 'All' && cat.group_name !== activeGroup) continue;
