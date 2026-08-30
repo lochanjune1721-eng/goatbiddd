@@ -15,25 +15,30 @@
 <header class="topbar"><div class="topbar-inner">
   <div class="brand"><a href="/">The True<span> GOAT</span></a></div>
   <div class="search"><i>⌕</i><input id="search" placeholder="Search"></div>
-  <nav class="topnav"><a href="/fans">Fans</a><span id="balance-pill" class="balance-pill"></span></nav>
+  <nav class="topnav"><a href="/">Categories</a><a href="/fans">Fans</a><a href="/about">About</a><span id="balance-pill" class="balance-pill"></span></nav>
 </div></header>
 
-<div class="container" style="padding:16px 20px">
-  <div id="person-head" class="job-card" style="display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:20px;align-items:start">
-    <div id="photo-wrap" class="photo" style="width:100%;max-width:360px;aspect-ratio:1/1;border-radius:20px">
+<div class="container" style="padding:16px 20px;max-width:840px">
+  <div id="person-head" class="job-card" style="display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:22px;align-items:start">
+    <div id="photo-wrap" class="photo" style="width:100%;max-width:320px;aspect-ratio:1/1;border-radius:18px">
       <div class="fallback skeleton" style="width:100%;height:100%"></div>
     </div>
     <div>
       <div id="crumb" class="mono" style="font-size:12px;color:var(--muted)"></div>
-      <h1 id="name" class="display" style="font-size:42px;line-height:1">—</h1>
-      <div id="blurb" style="color:var(--muted);margin-top:6px"></div>
-      <div style="margin-top:12px;display:flex;gap:12px;align-items:baseline"><span id="total" class="display" style="font-size:36px;color:var(--gold)">0 votes</span><span id="rank" class="mono" style="font-size:13px;color:var(--muted)"></span></div>
-      <div class="back-row" id="back-row" style="margin-top:12px"></div>
-      <div id="wiki" class="mono" style="font-size:11px;color:var(--muted);margin-top:10px"></div>
+      <h1 id="name" class="display" style="font-size:42px;line-height:1;margin-top:4px">—</h1>
+      <div id="blurb" style="color:var(--muted);margin-top:6px;font-size:14px"></div>
+      <div style="margin-top:14px;display:flex;gap:12px;align-items:baseline">
+        <span id="total" class="display" style="font-size:36px;color:var(--gold)">0 votes</span>
+        <span id="rank" class="mono" style="font-size:13px;color:var(--muted)"></span>
+      </div>
+      <div class="back-row" id="back-row" style="margin-top:14px"></div>
+      <div id="wiki" class="mono" style="font-size:11px;color:var(--muted);margin-top:12px"></div>
     </div>
   </div>
-  <div id="outbid-card" class="job-card" style="display:none;margin-top:14px;border-color:var(--gold)"></div>
-  <h2 class="display" style="font-size:20px;margin:18px 0 10px">Top fans — #1 is the Greatest Fan of All Time <span style="font-size:11px;color:var(--gold);font-family:Inter">LIVE</span></h2>
+
+  <div id="outbid-card" class="job-card" style="display:none;margin-top:16px;border-color:var(--gold)"></div>
+
+  <h2 class="display" style="font-size:22px;margin:24px 0 12px">Top fans — #1 is the Greatest Fan of All Time <span style="font-size:11px;color:var(--gold);font-family:Inter;margin-left:4px">LIVE</span></h2>
   <div id="fans" class="list"><div class="skeleton" style="height:96px;border-radius:12px"></div></div>
 </div>
 
@@ -60,147 +65,196 @@
     document.getElementById('crumb').innerHTML=`<a href="/category?slug=${person.categories.slug}" style="color:var(--gold)">${person.categories.name}</a> · ${person.categories.group_name}`;
   }
 
-  // Load hero photo with eager high priority & 640px source
+  // Load hero photo with eager high priority
   const photoWrap = document.getElementById('photo-wrap');
-  photoWrap.innerHTML = window.PortraitFallback.photoHtml(person, 360, {eager:true});
+  photoWrap.innerHTML = window.PortraitFallback.photoHtml(person, 320, {eager:true});
   window.PortraitFallback.scan(photoWrap);
 
-  // Parallel rank and fan query — full leaderboard with photo, handle, count, rank
-  try {
-    const [catPeopleRes, fansRes] = await Promise.all([
-      person.category_id ? sb.from('people').select('id,total_cents,first_backed_at').eq('category_id', person.category_id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}) : Promise.resolve({data:[]}),
-      sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform,photo_status)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100)
-    ]);
+  // Parallel rank and fan query
+  let fans = [];
+  async function loadFansData(){
+    try {
+      const [catPeopleRes, fansRes] = await Promise.all([
+        person.category_id ? sb.from('people').select('id,total_cents,first_backed_at').eq('category_id', person.category_id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}) : Promise.resolve({data:[]}),
+        sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform,photo_status)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100)
+      ]);
 
-    const catPeople = catPeopleRes?.data || [];
-    const rank = catPeople.findIndex(p => p.id === person.id) + 1 || '—';
-    document.getElementById('rank').textContent = `#${rank} in ${person.categories?.name || 'Category'} · ${window.GOAT.votes(person.total_cents||0)}`;
-    document.getElementById('wiki').innerHTML = `<a href="${person.wikipedia_url}" target="_blank" rel="noopener" style="text-decoration:underline">${person.wikipedia_url}</a> ${person.photo_credit? '· '+person.photo_credit:''} ${person.photo_license? '('+person.photo_license+')':''}`;
-
-    // fans — full leaderboard where repeat spending lives
-    const fans = fansRes?.data;
-    const el=document.getElementById('fans');
-    function renderFans(list){
-      if(!list||!list.length) el.innerHTML='<div class="empty">No fans yet. Be the first for 1 vote — your face goes next to '+person.name+'\'s.</div>';
-      else {
-        el.innerHTML=list.map((f,i)=>{
-          const u=f.users||{};
-          const name = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
-          const handle = u.social_handle ? `<a href="https://${u.social_platform==='x'?'x.com':u.social_platform+'.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,''))}" target="_blank" rel="noopener" style="color:var(--gold);font-size:11px">@${u.social_handle.replace(/^@/,'')} · ${u.social_platform||''}</a>` : '';
-          const initials = window.GOAT.initials(name);
-          const photo = u.photo_path ? window.OptimizedImage.render({photoPath:u.photo_path, name, size:44}) : `<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif">${initials}</div>`;
-          const crown = i===0 ? '👑 ' : '';
-          const count = window.GOAT.votes(f.total_cents);
-          return `<div class="job-card" style="display:flex;gap:12px;align-items:center;${i===0?'border-color:var(--gold);':''}"><div style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted);width:28px">${i===0?crown:'#'+(i+1)}</div><div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex:0 0 auto">${photo}</div><div style="flex:1;min-width:0"><div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${crown}${name}${i===0?' — Greatest Fan of All Time':''}</div><div style="font-size:11px;color:var(--muted)">${handle || '<span style="color:var(--muted)">—</span>'} · <a href="#" onclick="event.preventDefault(); if(confirm('Report this photo?')) fetch('/api/report',{method:'POST',body:JSON.stringify({userId:'${u.id||''}'})})" style="font-size:11px;color:var(--muted);text-decoration:underline">Report</a></div></div><b class="display" style="color:var(--gold);font-size:18px">${count}</b></div>`;
-        }).join('');
+      const catPeople = catPeopleRes?.data || [];
+      const rank = catPeople.findIndex(p => p.id === person.id) + 1 || '—';
+      document.getElementById('rank').textContent = `#${rank} in ${person.categories?.name || 'Category'} · ${window.GOAT.votes(person.total_cents||0)}`;
+      if(person.wikipedia_url) {
+        document.getElementById('wiki').innerHTML = `<a href="${person.wikipedia_url}" target="_blank" rel="noopener" style="text-decoration:underline">Wikipedia</a> ${person.photo_credit? '· '+person.photo_credit:''}`;
       }
+
+      fans = fansRes?.data || [];
+      renderFans(fans);
+      updateOutbid();
+    } catch(e) {
+      console.warn('Fans load error:', e);
     }
-    renderFans(fans);
-    // === OUTBID CARD ===
-    const outbidCard=document.getElementById('outbid-card');
-    async function updateOutbid(){
-      const {data:{user}}=await sb.auth.getUser();
-      if(!user){ outbidCard.style.display='none'; return; }
-      // find user's total for this person
-      const mine=fans.find(f=> f.users && f.users.id===user.id);
-      const top=fans[0];
-      const myTotal=mine? mine.total_cents:0;
-      const topTotal=top? top.total_cents:0;
-      const isTop = top && top.users && top.users.id===user.id;
-      if(isTop){
-        outbidCard.style.display='block';
-        outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center"><span style="font-size:20px">👑</span><div><div style="font-weight:700">You are the Greatest Fan of All Time</div><div class="mono" style="font-size:12px;color:var(--muted)">${window.GOAT.votes(myTotal)} on ${person.name} — keep backing to stay #1</div></div></div>`;
-        return;
-      }
-      const need = Math.max(1, Math.floor((topTotal - myTotal)/100)+1);
-      const topName=top? (top.users.is_anonymous?'Anonymous':top.users.display_name) : 'none yet';
+  }
+
+  function renderFans(list){
+    const el=document.getElementById('fans');
+    if(!list||!list.length) {
+      el.innerHTML=`<div class="empty">No fans yet. Be the first with 1 vote — your face becomes crowned as ${esc(person.name)}'s #1 Fan!</div>`;
+      return;
+    }
+    el.innerHTML=list.map((f,i)=>{
+      const u=f.users||{};
+      const name = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
+      const handle = u.social_handle ? `<a href="https://${u.social_platform==='instagram'?'instagram.com':'x.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,''))}" target="_blank" rel="noopener" style="color:var(--gold);font-size:11px">@${u.social_handle.replace(/^@/,'')}</a>` : '';
+      const initials = window.GOAT.initials(name);
+      const photoUrl = u.photo_path ? (window.GOAT.getPhotoUrl(u.photo_path)||u.photo_path) : null;
+      const photo = photoUrl ? `<img src="${photoUrl}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">` : `<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif">${initials}</div>`;
+      const crown = i===0 ? '👑 ' : '';
+      const count = window.GOAT.votes(f.total_cents);
+      return `<div class="job-card" style="display:flex;gap:12px;align-items:center;padding:12px 14px;${i===0?'border-color:var(--gold);background:linear-gradient(180deg, var(--gold-lo) 0%, var(--surface) 60%);':''}">
+        <div style="font-family:JetBrains Mono,monospace;font-size:13px;color:var(--muted);width:28px;text-align:center;font-weight:700">${i===0?'👑':'#'+(i+1)}</div>
+        <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex:0 0 auto">${photo}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${crown}${name}${i===0?' <span style="font-size:11px;color:var(--gold);margin-left:4px">— Greatest Fan of All Time</span>':''}</div>
+          <div style="font-size:11px;color:var(--muted)">${handle || 'Supporter'} · <a href="#" onclick="event.preventDefault(); alert('Reported for review.');" style="color:var(--muted);text-decoration:underline">Report</a></div>
+        </div>
+        <b class="display" style="color:var(--gold);font-size:18px">${count}</b>
+      </div>`;
+    }).join('');
+  }
+
+  // === OUTBID CARD ===
+  const outbidCard=document.getElementById('outbid-card');
+  async function updateOutbid(){
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user){ 
       outbidCard.style.display='block';
-      outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:180px"><div style="font-weight:700">Outbid ${esc(topName)} to become Greatest Fan</div><div class="mono" style="font-size:12px;color:var(--muted)">You have ${Math.floor(myTotal/100)} votes · #1 has ${Math.floor(topTotal/100)} · <b style="color:var(--gold)">needs ${need} votes ($${need})</b></div></div><button id="outbid-btn" class="btn-primary" style="width:auto;white-space:nowrap">Outbid +${need} →</button></div>`;
-      document.getElementById('outbid-btn').addEventListener('click', async()=>{
-        const btn=document.getElementById('outbid-btn'); btn.disabled=true; btn.textContent='…';
-        // optimistic: bump user's total in fans array
-        const optimisticNeed=need;
+      const top=fans[0];
+      const topVotes=top ? Math.floor(top.total_cents/100) : 0;
+      const needVotes = topVotes + 1;
+      outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:700">Become ${esc(person.name)}'s Greatest Fan</div>
+          <div class="mono" style="font-size:12px;color:var(--muted)">Current #1 has ${topVotes} votes · <b style="color:var(--gold)">Take #1 with ${needVotes} votes ($${needVotes})</b></div>
+        </div>
+        <button onclick="window.Auth.openAuthModal()" class="btn-primary" style="width:auto">Sign in to Outbid →</button>
+      </div>`;
+      return; 
+    }
+
+    const mine=fans.find(f=> f.users && f.users.id===user.id);
+    const top=fans[0];
+    const myTotal=mine? mine.total_cents:0;
+    const topTotal=top? top.total_cents:0;
+    const isTop = top && top.users && top.users.id===user.id;
+    
+    if(isTop){
+      outbidCard.style.display='block';
+      outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">👑</span><div><div style="font-weight:700;font-size:16px">You are the Greatest Fan of All Time</div><div class="mono" style="font-size:12px;color:var(--muted)">${window.GOAT.votes(myTotal)} on ${esc(person.name)} — keep backing to defend your #1 spot</div></div></div>`;
+      return;
+    }
+    const need = Math.max(1, Math.floor((topTotal - myTotal)/100)+1);
+    const topName=top? (top.users.is_anonymous?'Anonymous':top.users.display_name) : 'none yet';
+    
+    outbidCard.style.display='block';
+    outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-weight:700;font-size:15px">Outbid ${esc(topName)} to become Greatest Fan of All Time</div>
+        <div class="mono" style="font-size:12px;color:var(--muted);margin-top:2px">You have ${Math.floor(myTotal/100)} votes · #1 has ${Math.floor(topTotal/100)} · <b style="color:var(--gold)">needs ${need} votes ($${need})</b></div>
+      </div>
+      <button id="outbid-btn" class="btn-primary" style="width:auto;white-space:nowrap;padding:10px 18px">Outbid +${need} votes →</button>
+    </div>`;
+
+    const outbidBtn = document.getElementById('outbid-btn');
+    if(outbidBtn){
+      outbidBtn.addEventListener('click', async()=>{
+        outbidBtn.disabled=true; outbidBtn.textContent='Outbidding…';
         try{
-          let _d,_e;
-          try{ const r=await sb.rpc('place_vote',{p_person_id: person.id, p_votes: optimisticNeed}); _d=r.data; _e=r.error; if(_e && String(_e.message).includes('Could not find function')) throw _e; }
-          catch(e){ if(String(e.message||e).includes('Could not find function')){ const r2=await sb.rpc('place_bid',{p_person_id: person.id, p_amount_cents: optimisticNeed*100}); _d=r2.data; _e=r2.error; } else throw e; }
-          if(_e) throw _e;
-          // reload fans live
-          const {data:newFans}=await sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100);
-          fans.length=0; (newFans||[]).forEach(f=> fans.push(f));
-          renderFans(fans); updateOutbid();
-          document.getElementById('total').textContent=window.GOAT.votes(_d.new_total||person.total_cents+optimisticNeed*100);
-          if(window.refreshBalance) window.refreshBalance();
-          // confetti
-          btn.textContent='You are #1 👑';
+          let res = await sb.rpc('place_vote',{p_person_id: person.id, p_votes: need});
+          if(res.error && String(res.error.message).includes('Could not find function')){
+            res = await sb.rpc('place_bid',{p_person_id: person.id, p_amount_cents: need*100});
+          }
+          if(res.error) throw res.error;
+
+          person.total_cents = (res.data?.new_total) || (person.total_cents + need*100);
+          document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
+          if(window.refreshBalance) await window.refreshBalance();
+          
+          await loadFansData();
+          outbidBtn.textContent='You are #1 👑';
         }catch(e){
           const m=String(e.message||e);
-          if(m.toLowerCase().includes('not enough')||m.toLowerCase().includes('insufficient')) alert('Not enough votes — top up first.');
-          else alert(m);
-          btn.disabled=false; btn.textContent=`Outbid +${need} →`;
+          if(m.toLowerCase().includes('not enough')||m.toLowerCase().includes('insufficient')||m.toLowerCase().includes('balance')){
+            if(confirm(`You need ${need} votes ($${need}) to outbid. Top up your wallet now?`)){
+              location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search);
+            }
+          } else {
+            alert(m);
+          }
+          outbidBtn.disabled=false; outbidBtn.textContent=`Outbid +${need} votes →`;
         }
       });
     }
-    updateOutbid();
-    // live recalc every 4s
-    setInterval(async()=>{
-      try{
-        const {data:nf}=await sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100);
-        if(nf){ fans.length=0; nf.forEach(f=> fans.push(f)); renderFans(fans); updateOutbid(); }
-      }catch(e){}
-    }, 4000);
-    try{ sb.channel('fan-'+person.id).on('postgres_changes',{event:'*',schema:'public',table:'fan_totals'}, async()=>{ const {data:nf}=await sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100); if(nf){ fans.length=0; nf.forEach(f=> fans.push(f)); renderFans(fans); updateOutbid(); } }).subscribe(); }catch(e){}
-  } catch(e) {
-    console.warn('Fans load error:', e);
   }
 
-  // back stepper
+  await loadFansData();
+
+  // Backing stepper
   const row=document.getElementById('back-row');
   let amt=100;
-  row.innerHTML=`<span class="stepper"><button id="dec">−</button><span id="amt">1 vote</span><button id="inc">+</button></span><button id="back" class="btn-back">Back</button><span class="stakes mono" id="stakes"></span>`;
-  function setAmt(v){ v=Math.max(1,Math.min(100000,Math.floor(v)||1)); amt=v*100; const inp=document.getElementById('amt-input'); if(inp) inp.value=v; document.getElementById('amt').textContent=`${v} ${v===1?"vote":"votes"}`; }
-  function upd(){ const v=Math.floor(amt/100); const inp=document.getElementById('amt-input'); if(inp && document.activeElement!==inp) inp.value=v; document.getElementById('amt').textContent=`${v} ${v===1?"vote":"votes"}`; document.getElementById('stakes').textContent=`${v} votes → ${Math.floor((person.total_cents+amt)/100)} votes`; }
+  row.innerHTML=`<span class="stepper"><button id="dec">−</button><span id="amt">1 vote</span><button id="inc">+</button></span><button id="back" class="btn-back">Back (+1)</button><span class="stakes mono" id="stakes"></span>`;
+  
+  function upd(){ 
+    const v=Math.floor(amt/100); 
+    document.getElementById('amt').textContent=`${v} ${v===1?"vote":"votes"}`; 
+    document.getElementById('back').textContent=`Back (+${v})`;
+    document.getElementById('stakes').textContent=`${v} votes → ${Math.floor((person.total_cents+amt)/100)} votes`; 
+  }
   document.getElementById('dec').addEventListener('click',()=>{ amt=Math.max(100, amt-100); upd(); });
   document.getElementById('inc').addEventListener('click',()=>{ amt=Math.min(100000, amt+100); upd(); });
   upd();
 
-  // optimistic vote with immediate total bump and balance tick
+  // Optimistic vote with balance check
   document.getElementById('back').addEventListener('click', async()=>{
-    const btn=document.getElementById('back'); const v=Math.floor(amt/100);
+    const btn=document.getElementById('back'); 
+    const v=Math.floor(amt/100);
     const {data:{user}}=await sb.auth.getUser();
-    if(!user){ location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search); return; }
+    if(!user){ 
+      window.Auth.openAuthModal();
+      return; 
+    }
     const prev=person.total_cents;
-    person.total_cents+=v*100;
+    person.total_cents += v*100;
     document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
-    if(window.refreshBalance) window.refreshBalance(); // will show optimistic spend via header?
-    btn.disabled=true; btn.textContent='…';
+    btn.disabled=true; btn.textContent='Voting…';
+    
     try{
-      let _data,_error;
-      try{
-        const r=await sb.rpc('place_vote',{p_person_id: person.id, p_votes: v});
-        _data=r.data; _error=r.error;
-        if(_error && String(_error.message).includes('Could not find function')) throw _error;
-      }catch(e){
-        if(String(e.message||e).includes('Could not find function') || String(e.message||'').includes('place_vote')){
-          const r2=await sb.rpc('place_bid',{p_person_id: person.id, p_amount_cents: amt});
-          _data=r2.data; _error=r2.error;
-        } else throw e;
+      let res = await sb.rpc('place_vote',{p_person_id: person.id, p_votes: v});
+      if(res.error && String(res.error.message).includes('Could not find function')){
+        res = await sb.rpc('place_bid',{p_person_id: person.id, p_amount_cents: amt});
       }
-      if(_error) throw _error;
-      if(_data && _data.new_total) person.total_cents=_data.new_total;
+      if(res.error) throw res.error;
+      
+      if(res.data && res.data.new_total) person.total_cents=res.data.new_total;
       document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
       if(window.refreshBalance) await window.refreshBalance();
-      location.reload();
+      await loadFansData();
+      btn.disabled=false; btn.textContent=`Back (+${v})`;
     }catch(e){
       person.total_cents=prev;
       document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
       const m=String(e.message||e);
       if(m.toLowerCase().includes('not enough')||m.toLowerCase().includes('insufficient')||m.toLowerCase().includes('balance')){
-        if(confirm('Not enough votes — top up?')) location.href='/wallet';
-      } else alert(m);
-      btn.disabled=false; btn.textContent='Back';
+        if(confirm(`Not enough votes in wallet. Top up now?`)){
+          location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search);
+        }
+      } else {
+        alert(m);
+      }
+      btn.disabled=false; btn.textContent=`Back (+${v})`;
     }
   });
+
+  // Polling for live fan updates
+  setInterval(loadFansData, 4000);
 })();
 </script>
 </body>

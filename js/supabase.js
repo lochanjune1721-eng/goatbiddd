@@ -1,18 +1,17 @@
-// The True GOAT — Supabase + auth + balance
+// js/supabase.js — The True GOAT Auth, Balance & Supabase Client
 const SUPABASE_URL = "https://orzcszqpnvicreqvpncu.supabase.co";
 const SUPABASE_ANON_KEY = "[REDACTED]";
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 
-const SITE_URL = "https://www.thetruegoat.com";
+const PRODUCTION_DOMAIN = "https://www.thetruegoat.com";
+
 function getSiteUrl(){
-  // In production location.origin is https://www.thetruegoat.com — use it so preview deploys also work.
-  // Never return localhost: any hardcoded localhost breaks production.
   try {
     const o = window.location.origin;
-    if(o && !o.includes('localhost') && !o.includes('127.0.0.1')) return o;
+    if(o && !o.includes('localhost') && !o.includes('127.0.0.1') && !o.includes('0.0.0.0')) return o;
   } catch(e){}
-  return SITE_URL;
+  return PRODUCTION_DOMAIN;
 }
 window.getSiteUrl = getSiteUrl;
 
@@ -106,6 +105,7 @@ window.Auth = {
     } catch(e){}
   },
   async signInWithEmail(email, displayName, isAnon){
+    window.Auth.rememberReturnTo();
     const returnTo = window.Auth.getReturnTo();
     const redirect = getSiteUrl() + '/wallet' + (returnTo ? '?returnTo='+encodeURIComponent(returnTo) : '');
     return window.supabaseClient.auth.signInWithOtp({
@@ -117,8 +117,66 @@ window.Auth = {
     window.Auth.rememberReturnTo();
     const returnTo = window.Auth.getReturnTo();
     const redirect = getSiteUrl() + '/wallet' + (returnTo ? '?returnTo='+encodeURIComponent(returnTo) : '');
-    // OAuth redirect must be allowlisted in Supabase dashboard — dashboard setting outside code.
     return window.supabaseClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: redirect } });
+  },
+  openAuthModal(){
+    const existing = document.getElementById('auth-modal');
+    if(existing) { existing.style.display='flex'; return; }
+
+    window.Auth.rememberReturnTo();
+    const modal = document.createElement('div');
+    modal.id = 'auth-modal';
+    modal.className = 'inline-topup';
+    modal.innerHTML = `
+      <div class="inline-topup-card" style="max-width:380px;text-align:left;position:relative">
+        <button id="modal-close-btn" style="position:absolute;right:14px;top:14px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+        <h2 class="display" style="font-size:22px;margin-bottom:6px">Sign in to The True GOAT</h2>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin-bottom:14px">Back your GOAT with one tap. $1 = 1 vote.</p>
+        <button id="modal-google-btn" class="btn-primary" style="background:#fff;color:#111;border:1px solid var(--border);display:flex;align-items:center;gap:8px;justify-content:center;width:100%;font-weight:700">
+          <span style="font-size:16px">G</span> Continue with Google
+        </button>
+        <div class="mono" style="text-align:center;color:var(--muted);font-size:11px;margin:12px 0">— or email magic link —</div>
+        <div class="field" style="margin-bottom:8px">
+          <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Email</label>
+          <input id="modal-email" type="email" placeholder="you@example.com" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px">
+        </div>
+        <div class="field" style="margin-bottom:8px">
+          <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Display name</label>
+          <input id="modal-name" placeholder="e.g. Alex" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px">
+        </div>
+        <button id="modal-send-link" class="btn-primary" style="width:100%;margin-top:6px">Send magic link →</button>
+        <div id="modal-msg" style="display:none;margin-top:10px;font-size:12px;text-align:center" class="mono"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (e)=> { if(e.target===modal) modal.style.display='none'; });
+    document.getElementById('modal-close-btn').addEventListener('click', ()=> modal.style.display='none');
+
+    document.getElementById('modal-google-btn').addEventListener('click', async()=>{
+      const {error} = await window.Auth.signInWithGoogle();
+      if(error) {
+        const m = document.getElementById('modal-msg');
+        m.style.display='block'; m.style.color='#e55'; m.textContent=error.message;
+      }
+    });
+
+    document.getElementById('modal-send-link').addEventListener('click', async()=>{
+      const email = document.getElementById('modal-email').value.trim();
+      const name = document.getElementById('modal-name').value.trim();
+      const m = document.getElementById('modal-msg');
+      if(!email) {
+        m.style.display='block'; m.style.color='#e55'; m.textContent='Please enter your email';
+        return;
+      }
+      m.style.display='block'; m.style.color='var(--gold)'; m.textContent='Sending magic link…';
+      const {error} = await window.Auth.signInWithEmail(email, name, false);
+      if(error) {
+        m.style.color='#e55'; m.textContent=error.message;
+      } else {
+        m.style.color='var(--live)'; m.textContent='Magic link sent! Check your email to sign in.';
+      }
+    });
   }
 };
 
@@ -127,28 +185,28 @@ async function refreshBalance(){
   if(!pill) return;
   const {data:{user}}=await window.supabaseClient.auth.getUser();
   if(!user){
-    // Real sign-in, not a plain link to wallet — triggers Auth
-    pill.innerHTML=`<button id="signin-btn" style="background:var(--gold);color:var(--bg);border:none;padding:7px 14px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px">Sign in</button>`;
+    pill.innerHTML=`<button id="signin-btn" style="background:var(--gold);color:var(--bg);border:none;padding:6px 14px;border-radius:999px;font-weight:700;cursor:pointer;font-size:12px">Sign in</button>`;
     const btn=document.getElementById('signin-btn');
     if(btn) btn.addEventListener('click', ()=>{
-      window.Auth.rememberReturnTo();
-      location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search);
+      window.Auth.openAuthModal();
     });
     return;
   }
-  await ensureUserRow();
-  const {data}=await window.supabaseClient.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
+  const u = await ensureUserRow();
+  const {data}=await window.supabaseClient.from('users').select('balance_cents,display_name,photo_path').eq('id', user.id).maybeSingle();
   const bal=data? data.balance_cents:0;
   const votes=Math.floor(bal/100).toLocaleString();
-  pill.innerHTML=`<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted)"> <b style="color:var(--gold)">${votes} votes</b></span> <a href="/wallet" style="margin-left:8px;background:var(--gold);color:var(--bg);padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px">Add</a> <button id="signout-btn" title="Sign out" style="margin-left:6px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:999px;cursor:pointer;font-size:11px">Out</button>`;
+  
+  pill.innerHTML=`<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted)"><b style="color:var(--gold)">${votes} votes</b></span> <a href="/wallet" style="margin-left:6px;background:var(--gold);color:var(--bg);padding:5px 11px;border-radius:999px;font-weight:700;font-size:11px">+ Add</a> <button id="signout-btn" title="Sign out" style="margin-left:5px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:999px;cursor:pointer;font-size:11px">Out</button>`;
+  
   const out=document.getElementById('signout-btn');
   if(out) out.addEventListener('click', async()=>{ await window.supabaseClient.auth.signOut(); location.reload(); });
 }
 window.refreshBalance=refreshBalance;
 document.addEventListener('DOMContentLoaded', refreshBalance);
+
 window.supabaseClient.auth.onAuthStateChange((event)=>{
   if(event==='SIGNED_IN'){
-    // land back where they were
     const rt = window.Auth.getReturnTo();
     if(rt && location.pathname==='/wallet'){
       try{ sessionStorage.removeItem('goat_returnTo'); }catch(e){}
@@ -157,22 +215,3 @@ window.supabaseClient.auth.onAuthStateChange((event)=>{
   }
   refreshBalance();
 });
-
-// anon session helper
-(function(){
-  function getAnonId(){
-    let m=document.cookie.match(/goat_anon=([^;]+)/);
-    if(m) return m[1];
-    const id='anon_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
-    document.cookie='goat_anon='+id+'; path=/; max-age=31536000; SameSite=Lax';
-    return id;
-  }
-  window.getAnonId=getAnonId;
-  window.mergeAnon=async function(){
-    const anon=getAnonId();
-    const {data:{user}}=await window.supabaseClient.auth.getUser();
-    if(!user || !anon) return;
-    try{ await window.supabaseClient.rpc('merge_anon',{p_anon_id: anon}); }catch(e){}
-  }
-  try{ getAnonId(); }catch(e){}
-})();

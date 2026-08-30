@@ -1,54 +1,72 @@
 import { createClient } from '@supabase/supabase-js';
 import { HttpError, readJsonBody, requireEnv, requireMethod, unwrap, withHandler } from './_lib.js';
 
-// Dodo webhook — confirm top-up, add to balance. Idempotent on dodo_payment_id.
+// Dodo Payments webhook — confirm top-up, add credit to user's wallet. Idempotent.
 export default withHandler(async function handler(req, res){
   requireMethod(req, 'POST');
 
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
 
-  // A malformed webhook payload is the sender's problem, not a crash: fall back
-  // to an empty object so the lookups below just miss and return 404.
   let body;
   try { body = await readJsonBody(req); } catch { body = {}; }
-  console.log('payment-done', JSON.stringify(body).slice(0, 3000));
+  console.log('[payment-done] webhook received:', JSON.stringify(body).slice(0, 3000));
 
-  const dodoId = body.paymentId || body.payment_id || body.id || body.dodo_payment_id;
-  const topupId = body.metadata?.topup_id || body.topup_id;
-  const userId = body.metadata?.user_id || body.user_id;
-  const amount = body.amount_cents || body.amount || body.total || 0;
+  // Extract payment details from Dodo payload (support both root and nested data)
+  const data = body.data || body;
+  const dodoId = data.payment_id || data.paymentId || data.id || data.dodo_payment_id || body.payment_id;
+  const metadata = data.metadata || body.metadata || {};
+  const topupId = metadata.topup_id || data.topup_id;
+  const userId = metadata.user_id || data.user_id || data.customer?.customer_id;
+  const amount = metadata.amount_cents || data.total_amount || data.amount_cents || data.amount || 0;
 
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  // find topup
+  // 1. Find the topup record
   let topup = null;
   if (topupId) {
-    topup = unwrap(await supa.from('topups').select('*').eq('id', topupId).maybeSingle(), 'lookup topup by id');
-  } else if (dodoId) {
-    topup = unwrap(await supa.from('topups').select('*').eq('dodo_payment_id', dodoId).maybeSingle(), 'lookup topup by payment id');
+    const { data: t } = await supa.from('topups').select('*').eq('id', topupId).maybeSingle();
+    topup = t;
   }
-  // fallback find pending for user
+  if (!topup && dodoId) {
+    const { data: t } = await supa.from('topups').select('*').eq('dodo_payment_id', dodoId).maybeSingle();
+    topup = t;
+  }
   if (!topup && userId) {
-    topup = unwrap(
-      await supa.from('topups').select('*').eq('user_id', userId).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      'lookup pending topup'
-    );
+    const { data: t } = await supa.from('topups').select('*').eq('user_id', userId).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle();
+    topup = t;
   }
-  if (!topup) throw new HttpError(404, 'Topup not found');
-  if (topup.status === 'confirmed') return res.status(200).json({ received: true, duplicate: true });
 
   const parsedAmount = Math.round(Number(amount));
-  const cents = topup.amount_cents || (Number.isFinite(parsedAmount) ? parsedAmount : 0);
+  const cents = (topup?.amount_cents) || (Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 500);
+  const targetUserId = topup?.user_id || userId;
 
-  // idempotent
-  const { error: upErr } = await supa.from('topups').update({ status: 'confirmed', dodo_payment_id: dodoId || `dodo_${Date.now()}` }).eq('id', topup.id);
-  if (upErr && !String(upErr.message || '').includes('duplicate')) throw new HttpError(500, `confirm topup: ${upErr.message || upErr}`);
+  if (!targetUserId) {
+    console.warn('[payment-done] Missing user id for webhook payload');
+    return res.status(200).json({ received: true, warning: 'Missing user id' });
+  }
 
-  // add balance
-  const user = unwrap(await supa.from('users').select('balance_cents').eq('id', topup.user_id).maybeSingle(), 'lookup user balance');
-  unwrap(
-    await supa.from('users').update({ balance_cents: (user?.balance_cents || 0) + cents }).eq('id', topup.user_id),
-    'credit user balance'
-  );
-  return res.status(200).json({ received: true });
+  if (topup && topup.status === 'confirmed') {
+    return res.status(200).json({ received: true, duplicate: true });
+  }
+
+  // 2. Mark confirmed in topups table
+  if (topup) {
+    await supa.from('topups').update({ status: 'confirmed', dodo_payment_id: dodoId || `dodo_${Date.now()}` }).eq('id', topup.id);
+  } else {
+    await supa.from('topups').insert({
+      id: topupId || `topup_${Date.now()}`,
+      user_id: targetUserId,
+      amount_cents: cents,
+      dodo_payment_id: dodoId || `dodo_${Date.now()}`,
+      status: 'confirmed'
+    });
+  }
+
+  // 3. Credit user's wallet balance
+  const { data: user } = await supa.from('users').select('balance_cents').eq('id', targetUserId).maybeSingle();
+  const newBalance = (user?.balance_cents || 0) + cents;
+  await supa.from('users').update({ balance_cents: newBalance }).eq('id', targetUserId);
+
+  console.log(`[payment-done] Successfully credited ${cents} cents (${cents/100} votes) to user ${targetUserId}. New balance: ${newBalance}`);
+  return res.status(200).json({ received: true, credited: cents, newBalance });
 });

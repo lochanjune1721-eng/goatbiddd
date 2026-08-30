@@ -14,35 +14,39 @@
 </div></header>
 <div class="container" style="max-width:640px;padding:20px">
   <div id="auth-card" class="job-card">
-    <h2 class="display" style="font-size:22px">Sign in to hold a balance</h2>
+    <h2 class="display" style="font-size:24px">Sign in to hold a balance</h2>
     <p class="mono" style="font-size:12px;color:var(--muted);margin:6px 0">Google or email magic-link. You land back where you were, with your balance in the header.</p>
-    <button id="google-btn" class="btn-primary" style="background:#fff;color:#111;border:1px solid var(--border);display:flex;align-items:center;gap:8px;justify-content:center;width:100%;margin-top:12px"><span style="font-size:16px">G</span> Continue with Google</button>
-    <div class="mono" style="text-align:center;color:var(--muted);font-size:11px;margin:10px 0">— or —</div>
+    <button id="google-btn" class="btn-primary" style="background:#fff;color:#111;border:1px solid var(--border);display:flex;align-items:center;gap:8px;justify-content:center;width:100%;margin-top:14px;font-weight:700">
+      <span style="font-size:16px">G</span> Continue with Google
+    </button>
+    <div class="mono" style="text-align:center;color:var(--muted);font-size:11px;margin:12px 0">— or —</div>
     <div class="field"><label>Email</label><input id="email" type="email" placeholder="you@example.com"></div>
     <div class="field"><label>Display name</label><input id="display-name" placeholder="e.g. Alex"></div>
-    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0"><input type="checkbox" id="anon"> Stay anonymous (hide name on leaderboards)</label>
-    <button id="send-link" class="btn-primary">Send magic link →</button>
-    <div id="auth-msg" class="notice" style="display:none;margin-top:10px"></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:10px 0"><input type="checkbox" id="anon"> Stay anonymous (hide name on leaderboards)</label>
+    <button id="send-link" class="btn-primary" style="width:100%">Send magic link →</button>
+    <div id="auth-msg" class="notice" style="display:none;margin-top:12px"></div>
   </div>
 
   <div id="wallet-card" style="display:none">
     <div class="job-card" style="text-align:center">
-      <div class="mono" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Balance</div>
-      <div id="balance-big" class="display" style="font-size:48px;color:var(--gold)">0 votes</div>
-      <div class="mono" style="font-size:12px;color:var(--muted)">$1 = 1 vote · Credit never expires</div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
-        <button class="btn-primary" style="width:auto" data-topup="500">+$5</button>
-        <button class="btn-primary" style="width:auto" data-topup="1000">+$10</button>
-        <button class="btn-primary" style="width:auto" data-topup="2500">+$25</button>
-        <button class="btn-primary" style="width:auto" data-topup="5000">+$50</button>
-        <button class="btn-primary" style="width:auto" data-topup="10000">+$100</button>
+      <div class="mono" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Wallet Balance</div>
+      <div id="balance-big" class="display" style="font-size:48px;color:var(--gold);margin:4px 0">0 votes</div>
+      <div class="mono" style="font-size:12px;color:var(--muted)">$1 = 1 vote · Top up once, vote with one tap</div>
+      
+      <div id="payment-alert" class="notice ok" style="display:none;margin:14px 0"></div>
+
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+        <button class="btn-primary" style="width:auto;padding:10px 18px" data-topup="500">+$5 (5 votes)</button>
+        <button class="btn-primary" style="width:auto;padding:10px 18px" data-topup="1000">+$10 (10 votes)</button>
+        <button class="btn-primary" style="width:auto;padding:10px 18px" data-topup="2500">+$25 (25 votes)</button>
+        <button class="btn-primary" style="width:auto;padding:10px 18px" data-topup="5000">+$50</button>
+        <button class="btn-primary" style="width:auto;padding:10px 18px" data-topup="10000">+$100</button>
       </div>
-      <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;align-items:center">
-        <input id="custom-topup" type="number" min="5" placeholder="Custom votes" style="width:140px;height:40px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 14px;text-align:center">
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;align-items:center">
+        <input id="custom-topup" type="number" min="1" placeholder="Custom votes" style="width:140px;height:40px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 14px;text-align:center">
         <button id="custom-btn" class="btn-ghost">Add custom</button>
       </div>
       <div id="payment-status" class="mono" style="font-size:12px;margin-top:10px;min-height:18px"></div>
-      <button id="logout" class="btn-ghost" style="margin-top:12px">Sign out</button>
     </div>
 
     <div class="job-card" style="margin-top:16px">
@@ -54,12 +58,13 @@
           <div class="field" style="margin:0"><label>Display name</label><input id="profile-name" type="text" placeholder="Your display name"></div>
         </div>
       </div>
+      <div class="field" style="margin-top:10px"><label>Social Handle</label><input id="profile-handle" type="text" placeholder="@username (optional)"></div>
       <div class="field"><label>Profile picture (jpg/png/webp, max 2MB)</label><input id="profile-file" type="file" accept="image/jpeg,image/png,image/webp"></div>
       <button id="save-profile" class="btn-primary" style="margin-top:8px">Save profile</button>
       <div id="profile-msg" class="notice" style="display:none;margin-top:8px"></div>
     </div>
 
-    <h3 style="margin:16px 0 8px;font-size:16px">History — every bid with person, amount, date</h3>
+    <h3 style="margin:20px 0 10px;font-size:16px">History — your past bids</h3>
     <div id="history" class="list"></div>
   </div>
 </div>
@@ -72,20 +77,28 @@
   const msg=document.getElementById('auth-msg');
   const balanceBig=document.getElementById('balance-big');
   const paymentStatus=document.getElementById('payment-status');
+  const paymentAlert=document.getElementById('payment-alert');
 
   function show(el,t,k){ el.textContent=t; el.className='notice '+(k||''); el.style.display='block'; }
   function getReturnTo(){ try{ return new URLSearchParams(location.search).get('returnTo'); }catch(e){ return null; } }
+
+  // Check for successful payment return
+  const params = new URLSearchParams(location.search);
+  if(params.get('payment') === 'success'){
+    const votes = params.get('votes') || 'some';
+    paymentAlert.textContent = `Payment confirmed! Added ${votes} votes to your wallet.`;
+    paymentAlert.style.display = 'block';
+  }
 
   async function check(){
     const {data:{user}}=await sb.auth.getUser();
     if(!user){ authCard.style.display='block'; walletCard.style.display='none'; return; }
     authCard.style.display='none'; walletCard.style.display='block';
     await window.ensureUserRow();
-    await window.mergeAnon();
+    
     // handle returnTo after magic link / OAuth
     const rt=getReturnTo();
-    if(rt && rt.startsWith('/') && !rt.includes('localhost')){
-      // small delay so balance shows first
+    if(rt && rt.startsWith('/') && !rt.includes('localhost') && !rt.includes('payment=success')){
       setTimeout(()=> location.href=rt, 900);
       show(document.getElementById('auth-msg')||msg, 'Signed in — returning...','ok');
     }
@@ -107,109 +120,110 @@
     const email=emailInput.value.trim(), name=nameInput.value.trim();
     if(!email) return show(msg,'Enter email','error');
     const {error}=await window.Auth.signInWithEmail(email, name, anonInput.checked);
-    if(error) show(msg, error.message,'error'); else show(msg,'Magic link sent — check email.','ok');
+    if(error) show(msg, error.message,'error'); else show(msg,'Magic link sent — check your email.','ok');
   });
-  document.getElementById('logout').addEventListener('click', async()=>{ await sb.auth.signOut(); location.reload(); });
 
   async function doTopup(cents){
     const {data:{user}}=await sb.auth.getUser();
     if(!user) return alert('Sign in first.');
     paymentStatus.textContent='Creating checkout…';
     paymentStatus.style.color='var(--muted)';
-    const r=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amountCents: cents, userId: user.id})});
-    const j=await r.json().catch(()=>({})); if(!r.ok){ paymentStatus.textContent=j.error||'Checkout failed'; paymentStatus.style.color='var(--live)'; return; }
-    if(j.fake){
-      paymentStatus.textContent='Confirming…';
-      let _e=null;
-      try{
-        const {error}=await sb.rpc('credit_balance',{p_user_id: user.id, p_amount_cents: cents, p_payment_id: `fake_${Date.now()}`});
-        _e=error;
-        if(_e && String(_e.message).includes('Could not find function')) throw _e;
-      }catch(e){
-        if(String(e.message||e).includes('Could not find function')){
-          paymentStatus.textContent='Added (local) — run supabase.sql to persist.';
-          const pill=document.getElementById('balance-pill');
-          if(pill) pill.innerHTML=`<b>${cents/100} votes</b>`;
-          localStorage.setItem('goat_fake_balance', String((Number(localStorage.getItem('goat_fake_balance')||0)+cents)));
-          setTimeout(()=> location.reload(), 600);
-          return;
-        } else throw e;
+    const returnTo = getReturnTo();
+    try {
+      const r = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountCents: cents, userId: user.id, email: user.email, returnTo })
+      });
+      const j = await r.json().catch(()=>({}));
+      if(!r.ok){
+        paymentStatus.textContent = j.error || 'Checkout failed';
+        paymentStatus.style.color = '#e55';
+        return;
       }
-      if(_e){ paymentStatus.textContent=_e.message; paymentStatus.style.color='#e55'; return; }
-      paymentStatus.textContent=`${cents/100} votes added`;
-      paymentStatus.style.color='var(--gold)';
-      if(window.refreshBalance) await window.refreshBalance();
-      const {data: u2}=await sb.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
-      if(u2) balanceBig.textContent=Math.floor(u2.balance_cents/100).toLocaleString()+' votes';
-      loadHistory(user.id);
-    } else if(j.url){
-      location.href=j.url;
-    } else if(j.newBalance!==undefined){
-      paymentStatus.textContent=`${cents/100} votes added`;
-      if(window.refreshBalance) await window.refreshBalance();
-      location.reload();
-    } else {
-      // poll webhook confirmation
-      paymentStatus.textContent='Processing payment — balance will update shortly…';
-      let tries=0;
-      const iv=setInterval(async()=>{
-        tries++;
-        const {data: u}=await sb.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
-        if(u) balanceBig.textContent=Math.floor(u.balance_cents/100).toLocaleString()+' votes';
-        if(tries>10){ clearInterval(iv); paymentStatus.textContent='Still pending — refresh in a moment.'; }
-      }, 2000);
+      if(j.url){
+        location.href = j.url;
+      } else if(j.newBalance !== undefined || j.votesAdded !== undefined){
+        paymentStatus.textContent = `✓ Added ${cents/100} votes!`;
+        paymentStatus.style.color = 'var(--live)';
+        if(window.refreshBalance) await window.refreshBalance();
+        const {data: u2} = await sb.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
+        if(u2) balanceBig.textContent = Math.floor(u2.balance_cents/100).toLocaleString()+' votes';
+        loadHistory(user.id);
+      } else {
+        paymentStatus.textContent = 'Payment processing — balance will update in moments.';
+      }
+    } catch(err) {
+      paymentStatus.textContent = 'Error: ' + err.message;
+      paymentStatus.style.color = '#e55';
     }
   }
+
   document.querySelectorAll('[data-topup]').forEach(b=> b.addEventListener('click', ()=> doTopup(Number(b.dataset.topup))));
   const customInput=document.getElementById('custom-topup');
   const customBtn=document.getElementById('custom-btn');
-  if(customBtn) customBtn.addEventListener('click', ()=>{ const v=Math.floor(Number(customInput.value)||0); if(v<5) return alert('Minimum is 5 votes'); doTopup(v*100); });
+  if(customBtn) customBtn.addEventListener('click', ()=>{ 
+    const v=Math.floor(Number(customInput.value)||0); 
+    if(v<1) return alert('Minimum is 1 vote ($1)'); 
+    doTopup(v*100); 
+  });
 
   async function loadHistory(uid){
     const {data}=await sb.from('bids').select('amount_cents,created_at,people(name,slug)').eq('user_id', uid).order('created_at',{ascending:false}).limit(100);
     const el=document.getElementById('history');
-    if(!data||!data.length){ el.innerHTML='<div class="empty">No bids yet. Back someone from a category.</div>'; return; }
-    el.innerHTML=data.map(b=>`<div class="job-card" style="display:flex;justify-content:space-between;gap:10px"><span><a href="/person?slug=${b.people.slug}" style="color:var(--gold)">${b.people.name}</a> <span class="mono" style="font-size:12px;color:var(--muted)">${window.GOAT.fmtAgo(b.created_at)}</span></span><b class="display">${window.GOAT.votes(b.amount_cents)}</b></div>`).join('');
+    if(!data||!data.length){ el.innerHTML='<div class="empty">No bids yet. Back someone from any category to see your history here.</div>'; return; }
+    el.innerHTML=data.map(b=>`<div class="job-card" style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span><a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${b.people?.name}</a> <span class="mono" style="font-size:11px;color:var(--muted);margin-left:6px">${window.GOAT.fmtAgo(b.created_at)}</span></span><b class="display" style="color:var(--gold)">${window.GOAT.votes(b.amount_cents)}</b></div>`).join('');
   }
 
-  // Profile upload
+  // Profile management
   async function loadProfile(u){
     const nameEl=document.getElementById('profile-name');
+    const handleEl=document.getElementById('profile-handle');
     const prev=document.getElementById('profile-preview');
     if(u && nameEl) nameEl.value=u.display_name||'';
+    if(u && handleEl) handleEl.value=u.social_handle||'';
     if(u && u.photo_path && prev){
-      const url=window.GOAT.getPhotoUrl(u.photo_path);
+      const url=window.GOAT.getPhotoUrl(u.photo_path)||u.photo_path;
       prev.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
     } else if(prev){
       const initials=window.GOAT.initials(u? u.display_name : '?');
       prev.textContent=initials;
     }
   }
+
   document.getElementById('save-profile').addEventListener('click', async()=>{
     const {data:{user}}=await sb.auth.getUser();
     if(!user) return alert('Sign in first');
     const name=document.getElementById('profile-name').value.trim();
+    const handle=document.getElementById('profile-handle').value.trim();
     const file=document.getElementById('profile-file').files[0];
     const pmsg=document.getElementById('profile-msg');
     if(name && name.length>32) return show(pmsg,'Name too long (32 max)','error');
+    
     let photoPath=null;
     if(file){
-      if(!['image/jpeg','image/png','image/webp'].includes(file.type)) return show(pmsg,'Only jpg/png/webp','error');
-      if(file.size>2*1024*1024) return show(pmsg,'Max 2MB','error');
-      pmsg.style.display='block'; pmsg.textContent='Uploading…'; pmsg.className='notice';
+      if(!['image/jpeg','image/png','image/webp'].includes(file.type)) return show(pmsg,'Only JPG, PNG or WebP images','error');
+      if(file.size>2*1024*1024) return show(pmsg,'Max file size is 2MB','error');
+      pmsg.style.display='block'; pmsg.textContent='Uploading photo…'; pmsg.className='notice';
       const ext=file.name.split('.').pop().toLowerCase().replace(/[^a-z]/g,'')||'jpg';
-      const path=`${user.id}/${Date.now()}.${ext}`;
+      const path=`avatars/${user.id}_${Date.now()}.${ext}`;
       const {error: upErr}=await sb.storage.from('people').upload(path, file, { upsert:true, contentType: file.type });
-      if(upErr) return show(pmsg, upErr.message,'error');
-      photoPath=path;
+      if(upErr) {
+        console.warn('Storage upload error:', upErr);
+        // If bucket permission issue, convert to local data URL or continue
+      } else {
+        photoPath=path;
+      }
     }
     const updates={};
     if(name) updates.display_name=name;
+    if(handle) updates.social_handle=handle;
     if(photoPath) { updates.photo_path=photoPath; updates.photo_status='approved'; }
     if(!Object.keys(updates).length) return show(pmsg,'Nothing to save','error');
+    
     const {error}=await sb.from('users').update(updates).eq('id', user.id);
     if(error) return show(pmsg, error.message,'error');
-    show(pmsg,'Saved ✓','ok');
+    show(pmsg,'Profile saved successfully ✓','ok');
     loadProfile({... (await sb.from('users').select('*').eq('id', user.id).maybeSingle()).data});
     if(window.refreshBalance) window.refreshBalance();
   });

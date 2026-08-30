@@ -1,4 +1,4 @@
--- GOAT.lol — schema + place_bid RPC + RLS. Run in Supabase SQL editor.
+-- The True GOAT — schema + place_bid RPC + RLS. Run in Supabase SQL editor.
 create extension if not exists "pgcrypto";
 
 -- users (Supabase Auth id)
