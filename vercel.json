@@ -6,6 +6,7 @@
     "api/checkout.js": { "includeFiles": "api/**" },
     "api/payment-done.js": { "includeFiles": "api/**" },
     "api/admin.js": { "includeFiles": "api/**" },
+    "api/fans.js": { "includeFiles": "api/**" },
     "api/resolve_image.js": { "includeFiles": "scripts/**" },
     "api/img.js": { "maxDuration": 15 }
   },
