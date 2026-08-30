@@ -12,18 +12,17 @@
 (function(){
   if(typeof window === 'undefined') return;
 
-  const MAX_PLAYING = 6;          // cap concurrent decodes
-  const VISIBLE = 0.5;            // half the card on screen before it plays
-  const live = new Map();         // img -> video
+  const MAX_PLAYING = 8;          // cap concurrent decodes
+  const VISIBLE = 0.15;           // start playing once visible in viewport
+  const live = new Map();         // img/el -> video
   const order = [];               // play order, oldest first
 
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Browsers only allow audio after the user has interacted with the page.
-  // Until then a hover cannot unmute, so track the first real gesture.
+  // Browsers allow audio after user interaction; arm on any interaction
   let canUnmute = false;
   const arm = () => { canUnmute = true; };
-  ['pointerdown','keydown','touchstart'].forEach(e=>
+  ['pointerdown','keydown','touchstart','pointerover','mouseover','mouseenter','click'].forEach(e=>
     window.addEventListener(e, arm, { once:true, passive:true }));
 
   function teardown(img){
@@ -47,11 +46,12 @@
 
     const v = document.createElement('video');
     v.className = 'goat-clip';
-    v.muted = true;            // muted autoplay is the only kind browsers allow
+    v.muted = true;            // muted autoplay is required by browsers
     v.loop = true;
     v.playsInline = true;
     v.preload = 'metadata';
     v.setAttribute('playsinline','');
+    v.setAttribute('webkit-playsinline','');
     v.setAttribute('aria-hidden','true');
     v.src = src;
 
@@ -76,22 +76,18 @@
   const io = ('IntersectionObserver' in window) ? new IntersectionObserver(entries=>{
     for(const e of entries){
       if(e.isIntersecting && e.intersectionRatio >= VISIBLE) play(e.target);
-      else teardown(e.target);
+      else if(!e.isIntersecting) teardown(e.target);
     }
-  }, { threshold:[0, VISIBLE, 1] }) : null;
+  }, { threshold:[0, VISIBLE, 0.5, 1] }) : null;
 
-  // Find the clip under the pointer. The <video> is layered ON TOP of the
-  // element carrying data-video, and is its sibling rather than its child, so
-  // closest('[data-video]') from the video returns nothing — resolve the video
-  // directly when the pointer is over it, and fall back to the still otherwise.
+  // Find the clip under the pointer
   function clipUnder(target){
     if(!target || !target.closest) return null;
     const v = target.closest('video.goat-clip');
     if(v) return v;
     const el = target.closest('[data-video]');
     if(el) return live.get(el) || null;
-    // Pointer may be over the card padding: check the photo box it belongs to.
-    const box = target.closest('.photo, .person-photo');
+    const box = target.closest('.photo, .person-photo, #photo-wrap');
     if(box){
       const held = box.querySelector('video.goat-clip');
       if(held) return held;
@@ -101,6 +97,13 @@
 
   // Sound follows the pointer, and only where a clip is actually playing.
   document.addEventListener('pointerover', e=>{
+    const box = e.target && e.target.closest ? (e.target.closest('[data-video]') || e.target.closest('.photo, .person-photo, #photo-wrap')) : null;
+    if(box){
+      const targetWithVideo = box.matches('[data-video]') ? box : box.querySelector('[data-video]');
+      if(targetWithVideo && !live.has(targetWithVideo)){
+        play(targetWithVideo);
+      }
+    }
     const v = clipUnder(e.target);
     if(!v || !canUnmute) return;
     v.muted = false;
@@ -114,7 +117,7 @@
     if(v) v.muted = true;
   }, true);
 
-  // A background tab should not keep playing audio.
+  // Background tab should pause videos
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden) for(const img of [...order]) teardown(img);
   });
@@ -128,13 +131,11 @@
     }
   }
 
-  // Cards are rendered asynchronously and re-rendered on filter changes, so
-  // watch the DOM rather than scanning once.
   if('MutationObserver' in window){
     new MutationObserver(()=> scan()).observe(document.documentElement, { childList:true, subtree:true });
   }
   document.addEventListener('DOMContentLoaded', ()=> scan());
   scan();
 
-  window.VideoHover = { scan, teardown: ()=> [...order].forEach(teardown) };
+  window.VideoHover = { scan, play, teardown: ()=> [...order].forEach(teardown) };
 })();

@@ -78,23 +78,31 @@
     img.loading = 'lazy';
     img.decoding = 'async';
     img.referrerPolicy = 'no-referrer';
+
+    const clip = el.dataset.video || (window.PersonMedia ? window.PersonMedia.getVideo(el.dataset.portraitName, el.dataset.portraitSlug) : null);
+    if(clip) {
+      img.dataset.video = clip;
+    }
+
     img.addEventListener('load', ()=>{
       // Drop the initials, keep the portrait, fade it in.
       for(const node of [...el.childNodes]) if(node !== img) el.removeChild(node);
       el.classList.add('has-portrait');
       el.dataset.portraitDone = '1';
+      if(clip && window.VideoHover && window.VideoHover.scan) {
+        window.VideoHover.scan(el.parentElement || el);
+      }
     });
     img.addEventListener('error', ()=>{
       img.remove();
       el.dataset.portraitDone = 'error';
     });
     img.src = url;
-    // The image must be IN the document before it will load: a detached
-    // <img loading="lazy"> is deferred forever, because the browser has no box
-    // to test against the viewport. It sits at opacity 0 over the initials
-    // until it decodes, so nothing flashes and lazy loading still applies.
     el.appendChild(img);
     el.dataset.portraitDone = 'loading';
+    if(clip && window.VideoHover && window.VideoHover.scan) {
+      window.VideoHover.scan(el.parentElement || el);
+    }
   }
 
   let inFlight = false;
@@ -141,29 +149,34 @@
 
   // Single decision point for every contender portrait on the site: use the
   // stored photo when there is one, otherwise emit a placeholder that scan()
-  // can fill in. Previously a null photo_path still produced an <img> pointing
-  // at an empty storage path, which cost a guaranteed 404 per contender.
+  // can fill in.
   function photoHtml(person, size, opts){
     opts = opts || {};
+    const name = (person && person.name) || '';
+    const slug = (person && person.slug) || '';
+    const clip = (person && person.video_path && window.GOAT && window.GOAT.getVideoUrl)
+      ? window.GOAT.getVideoUrl(person.video_path)
+      : ((window.PersonMedia) ? window.PersonMedia.getVideo(name, slug) : null);
+
     if(person && person.photo_path){
       return window.OptimizedImage.render({
-        photoPath: person.photo_path, videoPath: person.video_path,
-        name: person.name, size,
-        priority: opts.eager ? 'eager' : 'lazy', slug: person.slug
+        photoPath: person.photo_path,
+        videoPath: person.video_path || clip,
+        name: person.name,
+        size,
+        priority: opts.eager ? 'eager' : 'lazy',
+        slug: person.slug
       });
     }
-    const name = (person && person.name) || '';
+
     const initials = (window.GOAT && window.GOAT.initials)
       ? window.GOAT.initials(name)
       : (name.slice(0,2).toUpperCase() || '?');
-    // A contender can have a clip but no still. Carry data-video on the
-    // placeholder as well, or everyone without a stored photo silently loses
-    // their video — which is most of them until photo_path is backfilled.
-    const clip = person && person.video_path && window.GOAT && window.GOAT.getVideoUrl
-      ? window.GOAT.getVideoUrl(person.video_path) : null;
+
     const videoAttr = clip ? ' data-video="' + esc(clip) + '"' : '';
     return '<div class="fallback" data-portrait="' + esc(titleFor(person)) +
            '" data-portrait-size="' + size +
+           '" data-portrait-slug="' + esc(slug) +
            '" data-portrait-name="' + esc(name) + '"' + videoAttr + '>' + esc(initials) + '</div>';
   }
 

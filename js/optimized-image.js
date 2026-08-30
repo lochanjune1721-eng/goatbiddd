@@ -57,30 +57,19 @@
     let videoSrc = (enableVideo && window.PersonMedia) ? window.PersonMedia.getVideo(name, slug) : null;
     if (!videoSrc && videoPath && window.GOAT?.getVideoUrl) {
       videoSrc = window.GOAT.getVideoUrl(videoPath);
+    } else if (!videoSrc && videoPath) {
+      videoSrc = videoPath;
     }
     const videoAttr = videoSrc ? ` data-video="${String(videoSrc).replace(/"/g,'&quot;')}"` : '';
 
-    let imgHtml = '';
+    const eagerAttrs = priority === 'eager' ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
+
     if(!resolvedUrl) {
       const initials = window.GOAT?.initials ? window.GOAT.initials(name) : (name ? name.slice(0,2).toUpperCase() : '?');
-      imgHtml = `<div class="fallback"${styleAttr}${videoAttr}>${initials}</div>`;
-    } else {
-      const eagerAttrs = priority === 'eager' ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
-      imgHtml = `<img src="${resolvedUrl}" alt="${safeName}" width="${size}" height="${size}" ${eagerAttrs} decoding="async" referrerpolicy="no-referrer" class="${classAttr}"${styleAttr}${videoAttr} onerror="window.onGoatImgError(this, '${safeName}')">`;
+      return `<div class="fallback"${styleAttr}${videoAttr}>${initials}</div>`;
     }
 
-    if (videoSrc) {
-      const vidHtml = `
-        <video class="goat-video" loop playsinline muted preload="metadata" data-video-src="${videoSrc}"></video>
-        <div class="goat-sound-indicator" title="Hover for sound" aria-label="Audio available">
-          <span class="sound-wave"><span class="sound-bar paused"></span><span class="sound-bar paused"></span></span>
-          <span class="sound-text">HOVER FOR AUDIO</span>
-        </div>
-      `;
-      return imgHtml + vidHtml;
-    }
-
-    return imgHtml;
+    return `<img src="${resolvedUrl}" alt="${safeName}" width="${size}" height="${size}" ${eagerAttrs} decoding="async" referrerpolicy="no-referrer" class="${classAttr}"${styleAttr}${videoAttr} onerror="window.onGoatImgError(this, '${safeName}')">`;
   }
 
   window.OptimizedImage = {
