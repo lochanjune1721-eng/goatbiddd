@@ -107,17 +107,17 @@ a{color:inherit;text-decoration:none}
 .duel-body.crazy .duel-side .photo{width:172px;height:172px;border-radius:16px}
 @media(max-width:640px){.duel-side .photo{width:110px;height:110px}.duel-body.crazy .duel-side .photo{width:122px;height:122px}}
 @media(max-width:380px){.duel-side .photo{width:96px;height:96px}.duel-body.crazy .duel-side .photo{width:106px;height:106px}}
-.photo img, img.goat-photo{width:100%;height:100%;object-fit:cover;object-position:center 22%;filter:saturate(.9) contrast(1.02);display:block}
+.photo img, img.goat-photo{width:100%;height:100%;object-fit:cover;object-position:center center;filter:saturate(.9) contrast(1.02);display:block}
 .photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,.22) 0%, transparent 52%);pointer-events:none}
 /* Clips sit exactly over the still they replace (js/video-hover.js) and fade in
    only once frames exist, so a dead or slow clip never blanks a card. */
-.photo .goat-clip, .person-photo .goat-clip, #photo-wrap .goat-clip{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 22%;display:block;opacity:0;transition:opacity .3s ease;z-index:2;pointer-events:none}
+.photo .goat-clip, .person-photo .goat-clip, #photo-wrap .goat-clip{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block;opacity:0;transition:opacity .3s ease;z-index:2;pointer-events:none}
 .photo .goat-clip.ready, .person-photo .goat-clip.ready, #photo-wrap .goat-clip.ready{opacity:1}
 @media (prefers-reduced-motion:reduce){.photo .goat-clip,.person-photo .goat-clip,#photo-wrap .goat-clip{display:none}}
 /* Portraits resolved at runtime (js/portrait-fallback.js) sit over the
    initials placeholder and fade in once decoded, so nothing flashes. */
 .photo .fallback, .person-photo .fallback{position:relative}
-.photo .fallback img.goat-photo, .person-photo .fallback img.goat-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .25s ease}
+.photo .fallback img.goat-photo, .person-photo .fallback img.goat-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block;opacity:0;transition:opacity .25s ease}
 .photo .fallback.has-portrait, .person-photo .fallback.has-portrait{background:none}
 .photo .fallback.has-portrait img.goat-photo, .person-photo .fallback.has-portrait img.goat-photo{opacity:1}
 .fallback{width:100%;height:100%;display:grid;place-items:center;background:radial-gradient(120% 120% at 50% 30%, #2A241E 0%, #15120F 60%);color:var(--gold);font-family:'Anton',sans-serif;font-size:26px;letter-spacing:.02em}
@@ -219,7 +219,7 @@ a{color:inherit;text-decoration:none}
 .board-row .row-divider{background:var(--border);width:1px;align-self:stretch}
 .board-row .row-left, .board-row .row-right{padding:14px;display:flex;gap:12px;align-items:center;min-width:0}
 .board-row .row-left .person-photo{flex:0 0 auto;border-radius:10px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);aspect-ratio:1/1;object-fit:cover;position:relative}
-.board-row .row-left .person-photo img{width:100%;height:100%;object-fit:cover;object-position:center 22%;display:block}
+.board-row .row-left .person-photo img{width:100%;height:100%;object-fit:cover;object-position:center center;display:block}
 .board-row .row-left .meta{flex:1;min-width:0}
 .board-row .row-left .meta .name{font-family:'Anton',sans-serif;line-height:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .board-row .row-left .meta .blurb{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
@@ -323,6 +323,7 @@ body.preview-only #add-btn{display:none!important}
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center center;
   display: block;
 }
 .goat-video {
@@ -331,6 +332,7 @@ body.preview-only #add-btn{display:none!important}
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center center;
   opacity: 0;
   transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
