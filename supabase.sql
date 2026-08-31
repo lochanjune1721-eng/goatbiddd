@@ -190,6 +190,23 @@ create policy "topups self read" on topups for select using (auth.uid() = user_i
 drop policy if exists "public read people photos" on storage.objects;
 create policy "public read people photos" on storage.objects for select using (bucket_id in ('people','logos'));
 
+-- Fan avatar uploads (wallet.html "Save profile"): a signed-in user may write
+-- only under avatars/<their own uid>_*, in the existing public 'people' bucket.
+-- Without this, sb.storage.from('people').upload(...) is rejected by RLS and
+-- wallet.html's upload silently no-ops (it catches the error and continues).
+drop policy if exists "users upload own avatar" on storage.objects;
+create policy "users upload own avatar" on storage.objects for insert
+  with check (
+    bucket_id = 'people'
+    and name like 'avatars/' || auth.uid()::text || '_%'
+  );
+drop policy if exists "users update own avatar" on storage.objects;
+create policy "users update own avatar" on storage.objects for update
+  using (
+    bucket_id = 'people'
+    and name like 'avatars/' || auth.uid()::text || '_%'
+  );
+
 -- seed categories (~65) — minimal starter, seed script fills people
 insert into categories (slug,name,group_name,sort_order) values
   ('footballers','Footballers','Football',1),('managers','Managers','Football',2),('clubs','Clubs','Football',3),('goalkeepers','Goalkeepers','Football',4),
