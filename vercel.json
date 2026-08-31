@@ -32,6 +32,12 @@
     },
     "api/uropay-webhook.js": {
       "includeFiles": "api/**"
+    },
+    "api/upi-intent.js": {
+      "includeFiles": "api/**"
+    },
+    "api/upi-claim.js": {
+      "includeFiles": "api/**"
     }
   },
   "rewrites": [

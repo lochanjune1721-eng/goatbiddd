@@ -524,3 +524,31 @@ grant execute on function confirm_topup(uuid, uuid, int, text, text) to service_
 -- currency instead of comparing rupees to cents.
 alter table topups add column if not exists provider_amount numeric(12,2);
 alter table topups add column if not exists provider_currency text;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Direct UPI (pay straight to the site's own VPA).
+--
+-- Unlike a gateway, a UPI transfer to a VPA has no callback: nothing can tell
+-- the server the money arrived. So this rail cannot auto-credit. The payer
+-- submits the UTR from their bank app, the top-up parks in 'review', and it is
+-- approved against the bank statement in the admin page. Crediting on an
+-- unverified claim would be free money for anyone who typed twelve digits.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+alter table topups drop constraint if exists topups_status_check;
+alter table topups add constraint topups_status_check
+  check (status in ('pending','review','confirmed','failed'));
+
+alter table topups drop constraint if exists topups_provider_check;
+alter table topups add constraint topups_provider_check
+  check (provider in ('paypal', 'uropay', 'upi', 'test'));
+
+-- The UTR a payer claims is stored in provider_payment_id while the top-up is
+-- still in review, so the (provider, provider_payment_id) unique index does
+-- double duty: it stops the same reference being claimed twice.
+alter table topups add column if not exists claimed_at timestamptz;
+alter table topups add column if not exists reviewed_at timestamptz;
+alter table topups add column if not exists review_note text;
+
+create index if not exists topups_review_idx on topups (status, claimed_at desc)
+  where status = 'review';

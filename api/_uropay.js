@@ -130,13 +130,5 @@ export function verifyWebhook(req, rawBody){
   return { nonce, timestamp };
 }
 
-// Votes to rupees. There is no defensible default exchange rate, so the price
-// is configuration: without it the UPI route refuses rather than inventing one.
-export function rupeesForVotes(votes){
-  const raw = process.env.UROPAY_INR_PER_VOTE;
-  const perVote = Number(raw);
-  if (!raw || !Number.isFinite(perVote) || perVote <= 0) {
-    throw new HttpError(503, 'UPI top-ups are unavailable: UROPAY_INR_PER_VOTE is not set to the rupee price of one vote.');
-  }
-  return Math.round(votes * perVote * 100) / 100;   // rupees, 2dp
-}
+// Both Indian rails price a vote the same way.
+export { rupeesForVotes } from './_pricing.js';

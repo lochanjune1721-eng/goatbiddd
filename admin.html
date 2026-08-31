@@ -17,6 +17,15 @@
     <div id="login-msg" class="notice" style="display:none"></div>
   </div>
   <div id="panel" style="display:none">
+    <div class="job-card" style="margin-top:12px">
+      <h3 class="mono" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase">UPI payments awaiting review <span id="upi-count" class="mono" style="color:var(--gold)"></span></h3>
+      <p class="mono" style="font-size:11px;color:var(--muted);margin:6px 0 10px">
+        A UPI transfer to your VPA has no callback, so these are payer claims, not confirmations.
+        Match the reference and the rupee amount against your bank statement before approving —
+        approving is what creates the votes.
+      </p>
+      <div id="upi-queue"></div>
+    </div>
     <div class="job-card" style="margin-top:12px"><h3 class="mono" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase">Categories</h3><div id="cats"></div></div>
     <div class="job-card" style="margin-top:12px"><h3 class="mono" style="font-size:11px;letter-spacing:.08em;text-transform:uppercase">People in category</h3><select id="cat-select"></select><div id="people" style="margin-top:10px"></div></div>
   </div>
@@ -31,7 +40,62 @@
     const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
     const j=await r.json(); if(r.ok&&j.ok){ document.getElementById('login-card').style.display='none'; document.getElementById('panel').style.display='block'; load(); } else { const m=document.getElementById('login-msg'); m.textContent=j.error||'Unauthorized'; m.className='notice error'; m.style.display='block'; }
   });
+  async function adminCall(action, extra){
+    const r = await fetch('/api/admin', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pw, action, ...(extra||{}) }) });
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error || ('Request failed: ' + r.status));
+    return j;
+  }
+
+  function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  async function loadUpiQueue(){
+    const el = document.getElementById('upi-queue');
+    const count = document.getElementById('upi-count');
+    try {
+      const { topups } = await adminCall('pending_upi');
+      count.textContent = topups.length ? '· ' + topups.length : '';
+      if(!topups.length){ el.innerHTML = '<div class="mono" style="font-size:12px;color:var(--muted)">Nothing waiting.</div>'; return; }
+      el.innerHTML = topups.map(t => {
+        const who = esc(t.users?.display_name || t.users?.email || t.user_id);
+        const when = t.claimed_at ? new Date(t.claimed_at).toLocaleString() : '';
+        return `<div class="job-card" style="margin:8px 0;padding:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px">
+            <div style="font-weight:700">${who}</div>
+            <div class="mono" style="font-size:12px;color:var(--muted)">
+              wants <b style="color:var(--gold)">${Math.floor(t.amount_cents/100)} votes</b> ·
+              paid <b>₹${t.provider_amount}</b> ·
+              ref <b>${esc(t.provider_order_id || '—')}</b>
+            </div>
+            <div class="mono" style="font-size:12px;margin-top:4px">UTR <b style="color:var(--ink)">${esc(t.provider_payment_id)}</b></div>
+            <div class="mono" style="font-size:11px;color:var(--muted)">claimed ${esc(when)}</div>
+          </div>
+          <button class="btn-primary" style="width:auto;padding:8px 16px" data-approve="${t.id}">Approve</button>
+          <button class="btn-ghost" data-reject="${t.id}">Reject</button>
+        </div>`;
+      }).join('');
+
+      el.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', async()=>{
+        if(!confirm('Approve this payment and add the votes? Check your bank statement first — there is no undo.')) return;
+        b.disabled = true;
+        try { await adminCall('approve_upi', { id: b.dataset.approve }); await loadUpiQueue(); }
+        catch(e){ alert(e.message); b.disabled = false; }
+      }));
+      el.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', async()=>{
+        const note = prompt('Reason (optional) — the payer can resubmit their reference afterwards:');
+        if(note === null) return;
+        b.disabled = true;
+        try { await adminCall('reject_upi', { id: b.dataset.reject, note }); await loadUpiQueue(); }
+        catch(e){ alert(e.message); b.disabled = false; }
+      }));
+    } catch(e){
+      el.innerHTML = '<div class="notice error">' + esc(e.message) + '</div>';
+    }
+  }
+
   async function load(){
+    loadUpiQueue();
     const {data: cats}=await sb.from('categories').select('*').order('sort_order');
     document.getElementById('cats').innerHTML=cats.map(c=> `<span class="mono" style="font-size:11px;border:1px solid var(--border);padding:4px 8px;border-radius:999px;margin:2px;display:inline-block">${c.name} (${c.group_name})</span>`).join('');
     const sel=document.getElementById('cat-select'); sel.innerHTML=cats.map(c=> `<option value="${c.id}">${c.group_name} — ${c.name}</option>`).join('');

@@ -9,7 +9,8 @@ import { payPalBase } from './_paypal.js';
 // so say so here rather than letting the first paying visitor discover it.
 const REQUIRED = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID'];
 const OPTIONAL = ['SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET',
-  'UROPAY_API_KEY', 'UROPAY_API_SECRET', 'UROPAY_INR_PER_VOTE'];
+  'UROPAY_API_KEY', 'UROPAY_API_SECRET', 'INR_PER_VOTE', 'UROPAY_INR_PER_VOTE',
+  'UPI_VPA', 'UPI_PAYEE_NAME'];
 
 export default withHandler(async function handler(req, res){
   const present = name => Boolean(process.env[name]);
@@ -34,10 +35,21 @@ export default withHandler(async function handler(req, res){
   // UPI is an additional rail, so its absence is not "unhealthy" — but a
   // half-configured one is worth surfacing, since the checkout refuses without
   // a rupee price and the account's KYC state decides TEST vs PRODUCTION.
+  const inrPerVote = Number(process.env.INR_PER_VOTE || process.env.UROPAY_INR_PER_VOTE) || null;
   const uropay = {
     configured: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET'),
-    inrPerVote: Number(process.env.UROPAY_INR_PER_VOTE) || null,
-    ready: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET') && Number(process.env.UROPAY_INR_PER_VOTE) > 0
+    inrPerVote,
+    ready: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET') && inrPerVote > 0
+  };
+
+  // Direct UPI needs only a VPA and a price. It cannot confirm payments by
+  // itself, so it is always a reviewed rail — see api/upi-intent.js.
+  const upi = {
+    configured: present('UPI_VPA') && present('UPI_PAYEE_NAME'),
+    vpaConfigured: present('UPI_VPA'),
+    inrPerVote,
+    manualReview: true,
+    ready: present('UPI_VPA') && present('UPI_PAYEE_NAME') && inrPerVote > 0
   };
 
   const degraded = missing.length > 0 || Object.values(checks).some(v => v !== 'ok');
@@ -47,6 +59,7 @@ export default withHandler(async function handler(req, res){
     region: process.env.VERCEL_REGION || null,
     paypal,
     uropay,
+    upi,
     env: Object.fromEntries([...REQUIRED, ...OPTIONAL].map(n => [n, present(n)])),
     missingRequired: missing,
     checks
