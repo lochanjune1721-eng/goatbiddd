@@ -452,8 +452,44 @@ end $$;
 
 -- Uniqueness belongs on (provider, id): two providers can legitimately issue
 -- the same transaction id, and a collision must not silently swallow a payment.
-alter table topups drop constraint if exists topups_provider_payment_id_key;
-drop index if exists topups_provider_payment_id_key;
+--
+-- Dropped by shape, not by name. A project that predates the PayPal switch had
+-- this column as dodo_payment_id, and ALTER TABLE ... RENAME COLUMN renames the
+-- column but leaves the constraint called topups_dodo_payment_id_key. Naming it
+-- literally only worked on databases created after the rename; on a migrated
+-- one the old global unique survived, and the first payment whose transaction
+-- id already existed under another provider failed with a duplicate key instead
+-- of crediting the wallet.
+do $$ declare r record; begin
+  for r in
+    select con.conname
+    from pg_constraint con
+    where con.conrelid = 'topups'::regclass
+      and con.contype = 'u'
+      and con.conkey = array[(select attnum from pg_attribute
+                              where attrelid = 'topups'::regclass
+                                and attname = 'provider_payment_id')]
+  loop
+    execute format('alter table topups drop constraint %I', r.conname);
+  end loop;
+end $$;
+
+-- Same again for a bare unique index, which carries no constraint row.
+do $$ declare r record; begin
+  for r in
+    select cls.relname
+    from pg_index idx
+    join pg_class cls on cls.oid = idx.indexrelid
+    where idx.indrelid = 'topups'::regclass
+      and idx.indisunique and not idx.indisprimary
+      and idx.indnatts = 1
+      and idx.indkey[0] = (select attnum from pg_attribute
+                           where attrelid = 'topups'::regclass
+                             and attname = 'provider_payment_id')
+  loop
+    execute format('drop index %I', r.relname);
+  end loop;
+end $$;
 -- Not a partial index: ON CONFLICT cannot infer one without repeating its
 -- predicate, and confirm_topup relies on this constraint for idempotency.
 -- Pending rows are unaffected — provider_payment_id is null until settlement,
