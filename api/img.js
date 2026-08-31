@@ -13,10 +13,10 @@ function generateSvgAvatar(name) {
 }
 
 // Search Wikipedia for a thumbnail on the fly
-async function queryWikiForPortrait(name) {
+async function queryWikiForPortrait(name, size) {
   if (!name) return null;
   try {
-    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages|pageprops&piprop=thumbnail&pithumbsize=800&redirects=1&titles=${encodeURIComponent(name)}&format=json`;
+    const url = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages|pageprops&piprop=thumbnail&pithumbsize=${size}&redirects=1&titles=${encodeURIComponent(name)}&format=json`;
     const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
     if (!res.ok) return null;
     const j = await res.json();
@@ -28,17 +28,24 @@ async function queryWikiForPortrait(name) {
 }
 
 export default async function handler(req, res) {
-  const { url, name } = req.query || {};
+  const { url, name, title, size } = req.query || {};
   let targetUrl = url ? decodeURIComponent(url).trim().split('?')[0] : '';
   const personName = name ? decodeURIComponent(name).trim() : '';
 
-  // Auto-upgrade Wikimedia thumbnail URLs to high-resolution 800px
+  // The Wikipedia article title from the contender's wikipedia_url, when the
+  // caller has one. It resolves far more reliably than a display name — stage
+  // names, accents and disambiguated titles all differ.
+  const lookupTitle = (title ? decodeURIComponent(title).trim() : '') || personName;
+
+  // Every thumbnail used to be fetched at 800px, including the 56px avatars in
+  // a board row. Ask for roughly what will be displayed instead.
+  const requested = Math.round(Number(size));
+  const px = Number.isFinite(requested) ? Math.min(Math.max(requested * 2, 160), 1000) : 800;
+
   if (targetUrl && targetUrl.includes('upload.wikimedia.org') && /\/\d+px-/.test(targetUrl)) {
-    targetUrl = targetUrl.replace(/\/\d+px-/, '/800px-');
+    targetUrl = targetUrl.replace(/\/\d+px-/, `/${px}px-`);
   }
 
-  // Set long-lived cache headers for Vercel Edge Network
-  res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=86400, immutable');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   let imageBuffer = null;
@@ -77,9 +84,9 @@ export default async function handler(req, res) {
   }
 
   // 2. Fallback: Search Wikipedia API on the fly if targetUrl failed or missing
-  if (!imageBuffer && personName) {
+  if (!imageBuffer && lookupTitle) {
     try {
-      const wikiThumb = await queryWikiForPortrait(personName);
+      const wikiThumb = await queryWikiForPortrait(lookupTitle, px);
       if (wikiThumb) {
         const wikiRes = await fetch(wikiThumb, {
           headers: {
@@ -105,12 +112,21 @@ export default async function handler(req, res) {
 
   // 3. Return image or SVG fallback
   res.setHeader('X-Goat-Img', source);
+
   if (imageBuffer) {
+    // A real portrait is worth caching for a year.
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=86400, immutable');
     res.setHeader('Content-Type', contentType);
     return res.status(200).send(imageBuffer);
   }
 
-  // Final fallback: SVG avatar
+  // The failure case must NOT get that header. It used to: the long immutable
+  // cache was set before any fetch was attempted, so one slow minute at
+  // Wikimedia froze a contender's initials into the CDN for a year, with
+  // `immutable` telling it not even to revalidate. That is why missing photos
+  // never came back on their own. Cache the fallback for five minutes so the
+  // next request retries.
+  res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
   if (reason) res.setHeader('X-Goat-Img-Reason', String(reason).slice(0, 180));
   console.warn(`[img] fallback for "${personName || '(no name)'}" url="${targetUrl || '(none)'}": ${reason || 'unknown'}`);
   res.setHeader('Content-Type', 'image/svg+xml');

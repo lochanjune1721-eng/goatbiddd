@@ -41,7 +41,11 @@
     // no URL (it looks the portrait up server-side), and any other host.
     if (fullUrl && isDirectlyLoadable(fullUrl)) return fullUrl;
 
-    return `/img?name=${encodeURIComponent(name || '')}&url=${encodeURIComponent(fullUrl || '')}`;
+    // /api/img is the function's canonical route. The site used to call /img,
+    // which depends on a vercel.json rewrite whose destination ("/api/img.js")
+    // is not how Vercel addresses a function — one more thing between a
+    // portrait and the page, for no benefit.
+    return `/api/img?name=${encodeURIComponent(name || '')}&url=${encodeURIComponent(fullUrl || '')}&size=${size}`;
   }
 
   /**

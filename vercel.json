@@ -28,7 +28,7 @@
   "rewrites": [
     {
       "source": "/img",
-      "destination": "/api/img.js"
+      "destination": "/api/img"
     },
     {
       "source": "/fans",

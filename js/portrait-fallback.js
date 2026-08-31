@@ -191,16 +191,67 @@
       });
     }
 
+    const videoAttr = clip ? ' data-video="' + esc(clip) + '"' : '';
+    const title = titleFor(person);
+
+    // No stored photo. This used to render initials and wait for the batch
+    // Wikipedia call below to fill them in — which depends on the visitor's
+    // browser reaching Wikipedia, on CORS, and on not being rate-limited.
+    //
+    // api/img.js already resolves a portrait from a title server-side and the
+    // result is cached at the edge, so ask it directly. scan() stays as the
+    // second line of defence: if the function itself cannot be reached, the
+    // onerror below hands the element back to it.
+    if(title || name){
+      const q = 'name=' + encodeURIComponent(name) +
+                '&title=' + encodeURIComponent(title) +
+                '&size=' + encodeURIComponent(size);
+      return '<img src="/api/img?' + q + '" class="goat-photo" alt="' + esc(name) +
+             '" width="' + size + '" height="' + size + '"' +
+             (opts.eager ? ' fetchpriority="high" loading="eager"' : ' loading="lazy"') +
+             ' decoding="async" referrerpolicy="no-referrer"' +
+             ' data-portrait="' + esc(title) +
+             '" data-portrait-size="' + size +
+             '" data-portrait-slug="' + esc(slug) +
+             '" data-portrait-name="' + esc(name) + '"' + videoAttr +
+             ' onerror="window.onGoatPortraitError && window.onGoatPortraitError(this)">';
+    }
+
     const initials = (window.GOAT && window.GOAT.initials)
       ? window.GOAT.initials(name)
       : (name.slice(0,2).toUpperCase() || '?');
 
-    const videoAttr = clip ? ' data-video="' + esc(clip) + '"' : '';
-    return '<div class="fallback" data-portrait="' + esc(titleFor(person)) +
+    return '<div class="fallback" data-portrait="' + esc(title) +
            '" data-portrait-size="' + size +
            '" data-portrait-slug="' + esc(slug) +
            '" data-portrait-name="' + esc(name) + '"' + videoAttr + '>' + esc(initials) + '</div>';
   }
 
-  window.PortraitFallback = { scan, titleFor, photoHtml };
+  // The server route was unreachable (not merely out of portraits — it answers
+  // with an initials SVG in that case). Swap in the placeholder scan() knows
+  // how to fill, and let the client-side lookup try.
+  function onGoatPortraitError(img){
+    if(!img || !img.parentElement) return;
+    const d = img.dataset;
+    const name = d.portraitName || '';
+    const initials = (window.GOAT && window.GOAT.initials)
+      ? window.GOAT.initials(name)
+      : (name.slice(0,2).toUpperCase() || '?');
+
+    const div = document.createElement('div');
+    div.className = 'fallback';
+    div.dataset.portrait = d.portrait || '';
+    div.dataset.portraitSize = d.portraitSize || '';
+    div.dataset.portraitSlug = d.portraitSlug || '';
+    div.dataset.portraitName = name;
+    if(d.video) div.dataset.video = d.video;
+    div.textContent = initials;
+
+    const parent = img.parentElement;
+    parent.replaceChild(div, img);
+    scan(parent);
+  }
+  window.onGoatPortraitError = onGoatPortraitError;
+
+  window.PortraitFallback = { scan, titleFor, photoHtml, onGoatPortraitError };
 })();
