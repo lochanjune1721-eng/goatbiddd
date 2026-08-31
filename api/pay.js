@@ -1,10 +1,9 @@
 // api/pay.js — the single browser-facing payment endpoint.
 //
 // Every rail a signed-in visitor can start goes through here, dispatched on
-// `action` in the JSON body. They were six separate routes until Vercel's
-// Hobby plan capped a deployment at twelve serverless functions; splitting them
-// bought nothing at runtime, since they share their auth, their body parsing
-// and their settlement path anyway.
+// `action` in the JSON body. They were six separate routes once; splitting
+// them bought nothing at runtime, since they share their auth, their body
+// parsing and their settlement path anyway.
 //
 // The two provider webhooks stay on their own routes: they are called by
 // PayPal and UroPay at fixed URLs with provider-defined bodies, so they cannot

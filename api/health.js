@@ -57,19 +57,18 @@ export default withHandler(async function handler(req, res){
     ready: Boolean(vpa) && inrPerVote > 0
   };
 
-  // Which host is actually answering. Environment variables are set per
-  // platform, so "I added it and it still says missing" is usually a variable
-  // added to one platform while the domain is served by the other.
-  const platform = process.env.VERCEL || process.env.VERCEL_REGION ? 'vercel'
-    : (typeof navigator !== 'undefined' && /Cloudflare/i.test(navigator.userAgent || '')) ? 'cloudflare-workers'
-    : 'unknown';
+  // Which host is actually answering, and from where. Secrets are set per
+  // platform, so "I added it and it still says missing" is usually a value set
+  // on one host while the domain is served by another.
+  const onWorkers = Boolean(req?.cf) || (typeof navigator !== 'undefined' && /Cloudflare/i.test(navigator.userAgent || ''));
+  const platform = onWorkers ? 'cloudflare-workers' : 'node';
 
   const degraded = missing.length > 0 || Object.values(checks).some(v => v !== 'ok');
   return res.status(degraded ? 503 : 200).json({
     ok: !degraded,
     platform,
-    node: process.version,
-    region: process.env.VERCEL_REGION || null,
+    runtime: typeof process !== 'undefined' ? process.version : null,
+    colo: req?.cf?.colo || null,
     paypal,
     uropay,
     upi,

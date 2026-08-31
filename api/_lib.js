@@ -1,10 +1,10 @@
 // api/_lib.js — shared helpers for the serverless functions.
-// Files prefixed with "_" are not turned into routes by Vercel.
+// Files prefixed with "_" are helpers, not routes.
 //
-// Anything that throws (or rejects) inside a handler surfaces on Vercel as a
-// bare FUNCTION_INVOCATION_FAILED / 500 page with no usable body, so every
-// route goes through withHandler() and every request body through
-// readJsonBody(). That turns a crash into a JSON response you can read.
+// An uncaught throw inside a handler becomes an opaque 500 with no usable
+// body, so every route goes through withHandler() and every request body
+// through readJsonBody(). That turns a crash into a JSON response you can
+// read.
 
 export class HttpError extends Error {
   constructor(status, message){
@@ -23,10 +23,11 @@ async function readRawBody(req){
 // The exact bytes of the request body, which is what a webhook signature is
 // computed over — re-serialising a parsed object does not reproduce them.
 //
-// Order matters: Vercel's Node runtime exposes `req.body` as a lazy getter
-// that consumes the stream to parse it, so whoever looks first wins. Read the
-// stream before touching `body`, and cache the result so a later
-// readJsonBody() on the same request still works.
+// On Workers the adapter in worker.js has already read the body and set
+// __rawBodyText, so this returns it untouched. Running under Node directly
+// (the test suites), it reads the stream before anything touches `req.body` —
+// a lazy body getter would consume the stream first — and caches the result so
+// a later readJsonBody() on the same request still works.
 export async function readRawBodyText(req){
   if (typeof req.__rawBodyText === 'string') return req.__rawBodyText;
 
@@ -46,9 +47,9 @@ export async function readRawBodyText(req){
   return text;
 }
 
-// Vercel pre-parses JSON bodies, but only when Content-Type says so. Callers
-// that omit the header (and webhook senders that use a vendor content type)
-// leave req.body as a string, a Buffer, or undefined — handle all of them.
+// Callers that omit a JSON Content-Type — and webhook senders using a vendor
+// one — can leave the body as a string, a Buffer, or undefined. Handle all of
+// them rather than trusting a pre-parsed req.body.
 export async function readJsonBody(req){
   const raw = (await readRawBodyText(req)).trim();
   if (!raw) return {};
@@ -95,7 +96,7 @@ export function withHandler(handler){
     } catch (err) {
       const status = Number.isInteger(err?.status) ? err.status : 500;
       // Client errors are routine — one line. Server errors get the stack, which
-      // goes to the Vercel log only; the client just gets the message.
+      // goes to the platform log only; the client just gets the message.
       if (status >= 500) console.error('[api] request failed', req.method, req.url, '\n', err?.stack || err);
       else console.warn('[api]', status, req.method, req.url, '-', err?.message);
       if (res.headersSent) { try { res.end(); } catch {} return; }

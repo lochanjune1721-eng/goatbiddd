@@ -13,8 +13,7 @@
   // public/ is assembled by scripts/build-assets.mjs and holds only what the
   // browser fetches — so node_modules can never be swept into the upload.
   // The Worker handles /api/* and hands everything else to ASSETS, whose
-  // html_handling serves /about from about.html, the clean URLs vercel.json
-  // used to configure.
+  // html_handling serves /about from about.html, so the clean URLs survive.
   "assets": {
     "directory": "public",
     "binding": "ASSETS"

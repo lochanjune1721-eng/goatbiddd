@@ -1,10 +1,11 @@
 // worker.js — Cloudflare Workers entry point.
 //
-// The API was written as Vercel-style Node handlers: (req, res) with
+// The API is written as Node-style handlers: (req, res) with
 // res.status().json(). Rather than rewrite eight of them — including the
 // payment code, which is tested — this adapts the two shapes. A Workers
 // Request becomes the `req` object they expect, and their `res` calls resolve
-// a Response.
+// a Response. Keeping that boundary means the handlers stay testable under
+// plain Node, which is how every suite in this repo runs.
 //
 // The seam that makes this cheap already existed: api/_lib.js reads a request
 // body through readRawBodyText(), which returns req.__rawBodyText when it is
@@ -37,8 +38,11 @@ function makeReq(request, url, rawBody){
     method: request.method,
     url: url.pathname + url.search,
     headers,
-    // api/img.js reads req.query, which Vercel supplies and Workers does not.
+    // api/img.js reads req.query, which Workers does not supply.
     query: Object.fromEntries(url.searchParams),
+    // Cloudflare's per-request metadata (colo, country). /api/health reports
+    // the colo so you can see which edge answered.
+    cf: request.cf || null,
     // Signals to readRawBodyText() that the body is already in hand, so it
     // does not try to consume a Node stream that isn't there.
     readable: false,

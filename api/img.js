@@ -1,4 +1,4 @@
-// api/img.js — Vercel Serverless Function for High-Performance Edge-Cached Contender Portraits
+// api/img.js — edge-cached contender portraits
 // Complies with Wikimedia User-Agent Policy and provides auto-healing image fallback
 
 const USER_AGENT = "GOAT-App/1.0 (https://thetruegoat.com; admin@thetruegoat.com)";

@@ -14,4 +14,20 @@ Live at [thetruegoat.com](https://www.thetruegoat.com).
 ## Architecture
 - Vanilla HTML / CSS / JS — clean, lightning-fast, zero-framework overhead.
 - Supabase: Auth, PostgreSQL database, Storage for avatars & portraits, Realtime.
-- Vercel Serverless Functions (`/api/checkout`, `/api/payment-done`).
+- Cloudflare Workers: one Worker (`worker.js`) serves the API and hands
+  everything else to the static assets in `public/`.
+  - `/api/pay` — every top-up a signed-in visitor can start, dispatched on an
+    `action` in the body: PayPal, UroPay (UPI gateway), and direct UPI.
+  - `/api/payment-done` and `/api/uropay-webhook` — the provider webhooks.
+  - `/api/img` — edge-cached contender portraits.
+  - `/api/health` — configuration and platform diagnostics.
+
+## Deploying
+`npm install` runs `scripts/build-assets.mjs`, which assembles `public/` from
+the pages, `css/`, `js/`, `downloads/` and the data files the browser reads.
+`wrangler deploy` then publishes the Worker and those assets.
+
+Secrets are Worker secrets, not repo files — set them under the Worker's
+Settings → Variables and Secrets. `/api/health` lists which are missing and
+reports the colo that answered, so a value set on the wrong host is visible
+rather than a mystery.
