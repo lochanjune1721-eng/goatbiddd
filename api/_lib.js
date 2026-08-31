@@ -77,14 +77,42 @@ export function supabaseUrl(){
 // Returns the requested env vars, or throws a 500 naming exactly which ones
 // are missing — a misconfigured project should say so, not crash.
 //
-// The hint is there because "I added it and it still says missing" has one
-// common cause on Workers: a value added as a plaintext Variable rather than a
-// Secret. `wrangler deploy` treats the config file as the source of truth for
-// plaintext vars and wrangler.jsonc declares none, so those are wiped on every
-// deploy. Secrets are encrypted and survive.
+// "I added it and it still says missing" has two causes, and guessing the wrong
+// one costs an afternoon. So look before advising:
+//
+//   1. The value is there under a near-miss name. VITE_ is the usual culprit:
+//      it is a Vite build-time prefix for values baked into a browser bundle,
+//      this project has no Vite build, and nothing server-side reads it. A
+//      dashboard full of VITE_ secrets looks complete and configures nothing.
+//   2. Nothing resembling it is set at all, and this is a Worker — then the
+//      plaintext-Variable trap is the likely one. `wrangler deploy` treats the
+//      config file as the source of truth for plaintext vars and wrangler.jsonc
+//      declares none, so those are wiped on every deploy. Secrets survive.
+const NAME_PREFIXES = ['VITE_', 'NEXT_PUBLIC_', 'REACT_APP_', 'PUBLIC_'];
+
+function nearMiss(name){
+  const env = process.env;
+  for (const p of NAME_PREFIXES) if (env[p + name]) return p + name;
+  // A prefix the caller already includes, set without it — the mirror image.
+  for (const p of NAME_PREFIXES) {
+    if (name.startsWith(p) && env[name.slice(p.length)]) return name.slice(p.length);
+  }
+  // Case and separator slips: paypal_client_id, PAYPAL-CLIENT-ID.
+  const canon = s => s.replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const want = canon(name);
+  for (const k of Object.keys(env)) if (k !== name && env[k] && canon(k) === want) return k;
+  return null;
+}
+
 export function requireEnv(...names){
   const missing = names.filter(n => !process.env[n]);
   if (!missing.length) return Object.fromEntries(names.map(n => [n, process.env[n]]));
+
+  const renames = missing.map(n => [n, nearMiss(n)]).filter(([, alt]) => alt);
+  if (renames.length) {
+    const list = renames.map(([n, alt]) => `${alt} should be named ${n}`).join('; ');
+    throw new HttpError(500, `Missing environment variable(s): ${missing.join(', ')} — ${list}. Rename it; this project reads the unprefixed name.`);
+  }
 
   const onWorkers = typeof navigator !== 'undefined' && /Cloudflare/i.test(navigator.userAgent || '');
   const hint = onWorkers
