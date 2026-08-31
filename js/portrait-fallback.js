@@ -123,7 +123,11 @@
 
   let inFlight = false;
   async function scan(root){
-    const nodes = (root || document).querySelectorAll('[data-portrait-name]:not([data-portrait-done])');
+    // Only placeholders. The server-resolved <img> elements photoHtml() now
+    // emits also carry data-portrait-name (so onerror can hand them back), and
+    // without the .fallback qualifier this would look every one of them up
+    // again — a Wikipedia round trip per portrait that already loaded.
+    const nodes = (root || document).querySelectorAll('.fallback[data-portrait-name]:not([data-portrait-done])');
     if(!nodes.length) return;
 
     // Look up the Wikipedia article title from the contender's wikipedia_url

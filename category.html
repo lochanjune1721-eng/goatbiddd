@@ -335,7 +335,14 @@
     }catch(e){ alert(e.message); }
   });
 
-  document.getElementById('search').addEventListener('keydown', e=>{ if(e.key==='Enter'){ location.href="/"
+  // Restoring a line the .html-stripping rebrand cut in half: everything after
+  // location.href="/" was lost, which pulled the awaits below into this
+  // non-async arrow function. That made the whole script a syntax error, so
+  // nothing on this page ran and every board came up blank.
+  document.getElementById('search').addEventListener('keydown', e=>{
+    if(e.key==='Enter') location.href = '/?q=' + encodeURIComponent(e.target.value);
+  });
+
   await fetchPeople();
   await render();
 

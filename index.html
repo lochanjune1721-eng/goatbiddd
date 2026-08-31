@@ -767,6 +767,14 @@
   renderGroups(null);
   schedulePortraits();
 
+  // The board pages' search box sends you here as /?q=<term>. Nothing read it,
+  // so arriving here just showed the unfiltered homepage.
+  const incomingQuery = new URLSearchParams(location.search).get('q');
+  if(incomingQuery){
+    qEl.value = incomingQuery;
+    applyFilters();
+  }
+
   qEl.addEventListener('input', debounce(applyFilters, 150));
   sortEl.addEventListener('change', applyFilters);
   clearEl.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; renderChips(); renderCatNav(); applyFilters(); });
