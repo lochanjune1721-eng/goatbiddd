@@ -1,152 +1,111 @@
-import crypto from 'node:crypto';
+// api/payment-done.js — PayPal webhook. The reliable half of settlement: it
+// still credits the wallet when the payer closes the tab before being sent
+// back to the site.
+//
+// Every delivery is verified with PayPal before anything is read from it. An
+// unverified POST to this URL credits nothing, and a missing PAYPAL_WEBHOOK_ID
+// fails the request rather than falling back to trusting the caller.
 import { createClient } from '@supabase/supabase-js';
 import { HttpError, readRawBodyText, requireEnv, requireMethod, withHandler } from './_lib.js';
-
-// Dodo Payments webhook — confirm top-up, add credit to user's wallet.
-//
-// This endpoint mints wallet balance, so it is only ever as trustworthy as the
-// signature check below: without one, anyone who finds the URL can POST a
-// payload and credit themselves for free. It fails closed — no secret
-// configured means no credit, not "credit anyway".
-
-const TOLERANCE_SECONDS = 5 * 60;
-
-function header(req, ...names){
-  for (const name of names){
-    const value = req.headers[name];
-    if (Array.isArray(value)) { if (value.length) return String(value[0]); }
-    else if (value) return String(value);
-  }
-  return '';
-}
-
-// Dodo signs with the Standard Webhooks scheme (standardwebhooks.com): the
-// secret is base64 after a `whsec_` prefix. Dashboards vary in whether they
-// show the prefix, and some integrations use the literal string as the key, so
-// try both derivations of whatever was configured — an attacker knows neither.
-function signingKeys(secret){
-  const body = secret.startsWith('whsec_') ? secret.slice(6) : secret;
-  const keys = [Buffer.from(body, 'utf8')];
-  const decoded = Buffer.from(body, 'base64');
-  if (decoded.length) keys.push(decoded);
-  return keys;
-}
-
-function equals(a, b){
-  const bufA = Buffer.from(a, 'utf8');
-  const bufB = Buffer.from(b, 'utf8');
-  if (bufA.length !== bufB.length) return false;
-  return crypto.timingSafeEqual(bufA, bufB);
-}
-
-// Throws unless the request carries a valid signature over `raw`.
-function verifySignature(req, raw, secret){
-  const id = header(req, 'webhook-id', 'svix-id');
-  const timestamp = header(req, 'webhook-timestamp', 'svix-timestamp');
-  const signature = header(req, 'webhook-signature', 'svix-signature');
-  if (!id || !timestamp || !signature) throw new HttpError(401, 'Missing webhook signature headers');
-
-  // Reject replays of a captured-but-old delivery.
-  const sent = Number(timestamp);
-  if (!Number.isFinite(sent)) throw new HttpError(401, 'Malformed webhook timestamp');
-  if (Math.abs(Date.now() / 1000 - sent) > TOLERANCE_SECONDS) throw new HttpError(401, 'Webhook timestamp outside tolerance');
-
-  const signedPayload = `${id}.${timestamp}.${raw}`;
-  const expected = signingKeys(secret).map(key =>
-    crypto.createHmac('sha256', key).update(signedPayload).digest('base64')
-  );
-
-  // The header holds one or more space-separated "v1,<signature>" entries;
-  // during a secret rotation more than one is present and any may match.
-  const offered = signature.split(' ')
-    .map(part => (part.includes(',') ? part.slice(part.indexOf(',') + 1) : part))
-    .filter(Boolean);
-
-  const ok = offered.some(sig => expected.some(exp => equals(sig, exp)));
-  if (!ok) throw new HttpError(401, 'Invalid webhook signature');
-  return id;
-}
+import { verifyWebhookSignature, payPalFetch, fromPayPalAmount, hasIssue } from './_paypal.js';
+import { settleTopup, readCapture } from './_settle.js';
 
 export default withHandler(async function handler(req, res){
   requireMethod(req, 'POST');
 
-  // Before anything reads req.body — the raw bytes are what was signed.
+  // Read the stream before anything touches req.body — the verification call
+  // sends these bytes back to PayPal unchanged.
   const raw = await readRawBodyText(req);
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DODO_WEBHOOK_SECRET } =
-    requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'DODO_WEBHOOK_SECRET');
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const transmissionId = await verifyWebhookSignature(req, raw);
 
-  const eventId = verifySignature(req, raw, DODO_WEBHOOK_SECRET);
+  let event;
+  try { event = raw.trim() ? JSON.parse(raw) : {}; } catch { throw new HttpError(400, 'Invalid JSON body'); }
 
-  let body;
-  try { body = raw.trim() ? JSON.parse(raw) : {}; } catch { throw new HttpError(400, 'Invalid JSON body'); }
-  if (!body || typeof body !== 'object') body = {};
-
-  // Only a successful payment moves money. Everything else is acknowledged so
-  // Dodo stops retrying, but credits nothing.
-  const eventType = String(body.type || body.event_type || body.event || '').toLowerCase();
-  if (eventType && !/succeed|success|complete|paid/.test(eventType)) {
-    console.log(`[payment-done] ${eventId}: ignoring non-success event "${eventType}"`);
-    return res.status(200).json({ received: true, ignored: eventType });
-  }
-
-  // Extract payment details from Dodo payload (support both root and nested data)
-  const data = body.data || body;
-  const dodoId = data.payment_id || data.paymentId || data.id || data.dodo_payment_id || body.payment_id;
-  const metadata = data.metadata || body.metadata || {};
-  const topupId = metadata.topup_id || data.topup_id;
-  const userId = metadata.user_id || data.user_id || data.customer?.customer_id;
-  const amount = metadata.amount_cents || data.total_amount || data.amount_cents || data.amount || 0;
+  const eventType = String(event?.event_type || '');
+  const resource = event?.resource || {};
+  const log = `payment-done ${transmissionId} ${eventType}`;
 
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  // 1. Find the topup record
-  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  let topup = null;
-  if (topupId && UUID.test(String(topupId))) {
-    const { data: t } = await supa.from('topups').select('*').eq('id', topupId).maybeSingle();
-    topup = t;
-  }
-  if (!topup && dodoId) {
-    const { data: t } = await supa.from('topups').select('*').eq('dodo_payment_id', dodoId).maybeSingle();
-    topup = t;
-  }
-  if (!topup && userId) {
-    const { data: t } = await supa.from('topups').select('*').eq('user_id', userId).eq('status', 'pending').order('created_at', { ascending: false }).limit(1).maybeSingle();
-    topup = t;
+  // A capture completed — the money is ours. This is the event that credits.
+  if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+    const result = await settleTopup(supa, {
+      topupId: resource.custom_id,
+      orderId: orderIdFromCapture(resource),
+      captureId: resource.id,
+      capturedCents: fromPayPalAmount(resource.amount?.value),
+      label: 'paypal-webhook'
+    });
+    return res.status(200).json({ received: true, settled: result.settled, reason: result.reason });
   }
 
-  // The pending row this checkout created is the authority on the amount; the
-  // payload's own figure is the fallback. Never invent one — a default here
-  // would credit the wrong number of votes for every unmatched payment.
-  const parsedAmount = Math.round(Number(amount));
-  const cents = topup?.amount_cents
-    || (Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : null);
-  const targetUserId = topup?.user_id || userId;
+  // The payer approved but was never sent back to finish. Capture it here so
+  // an abandoned tab does not leave a paid-for top-up unsettled.
+  if (eventType === 'CHECKOUT.ORDER.APPROVED') {
+    const orderId = resource.id;
+    if (!orderId) return res.status(200).json({ received: true, ignored: 'no order id' });
 
-  if (!targetUserId || !cents) {
-    console.warn(`[payment-done] ${eventId}: cannot resolve user (${targetUserId}) or amount (${cents}) — crediting nothing`);
-    return res.status(200).json({ received: true, warning: 'Could not resolve user or amount' });
+    let order;
+    try {
+      order = await payPalFetch(`/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {
+        method: 'POST',
+        headers: { 'PayPal-Request-Id': `capture-${orderId}` },
+        body: {}
+      });
+    } catch (err) {
+      if (hasIssue(err, 'ORDER_ALREADY_CAPTURED')) {
+        // The browser return path got there first; PAYMENT.CAPTURE.COMPLETED
+        // will settle it if that somehow did not.
+        return res.status(200).json({ received: true, alreadyCaptured: true });
+      }
+      throw err;
+    }
+
+    const capture = readCapture(order);
+    if (capture?.status !== 'COMPLETED') {
+      console.warn(`[${log}] capture for ${orderId} came back ${capture?.status || 'empty'} — crediting nothing`);
+      return res.status(200).json({ received: true, captureStatus: capture?.status || null });
+    }
+
+    const result = await settleTopup(supa, {
+      topupId: capture.topupId,
+      orderId,
+      captureId: capture.id,
+      capturedCents: fromPayPalAmount(capture.amountValue),
+      label: 'paypal-webhook'
+    });
+    return res.status(200).json({ received: true, settled: result.settled, reason: result.reason });
   }
 
-  if (topup && topup.status === 'confirmed') {
-    return res.status(200).json({ received: true, duplicate: true });
+  // Money went back out. Mark the receipt so the top-up history is not a lie;
+  // the balance is left alone deliberately — clawing back credit the fan has
+  // already spent would drive it negative, and that is a decision for a human.
+  if (eventType === 'PAYMENT.CAPTURE.REFUNDED' || eventType === 'PAYMENT.CAPTURE.REVERSED') {
+    const captureId = resource.links?.find(l => l.rel === 'up')?.href?.split('/').pop() || resource.id;
+    if (captureId) {
+      await supa.from('topups').update({ status: 'failed' }).eq('provider_payment_id', captureId);
+      console.warn(`[${log}] capture ${captureId} was refunded/reversed — receipt marked failed, balance left for manual review`);
+    }
+    return res.status(200).json({ received: true, refunded: true });
   }
 
-  const paymentId = dodoId || `dodo_${eventId}`;
+  if (eventType === 'PAYMENT.CAPTURE.DENIED' || eventType === 'CHECKOUT.ORDER.VOIDED') {
+    const topupId = resource.custom_id;
+    if (topupId) await supa.from('topups').update({ status: 'failed' }).eq('id', topupId);
+    return res.status(200).json({ received: true, failed: true });
+  }
 
-  // 2 + 3. Settle the top-up and credit the wallet in one statement.
-  // confirm_topup() is idempotent on dodo_payment_id and does the balance
-  // update inside the database, so a retried delivery cannot double-credit and
-  // two concurrent ones cannot lose an increment to a read-then-write race.
-  const { data: newBalance, error: creditErr } = await supa.rpc('confirm_topup', {
-    p_topup_id: topup?.id ?? null,
-    p_user_id: targetUserId,
-    p_amount_cents: cents,
-    p_payment_id: paymentId
-  });
-  if (creditErr) throw new HttpError(500, `confirm_topup failed: ${creditErr.message}`);
-
-  console.log(`[payment-done] ${eventId}: credited ${cents} cents (${cents / 100} votes) to ${targetUserId}. New balance: ${newBalance}`);
-  return res.status(200).json({ received: true, credited: cents, newBalance });
+  // Acknowledge everything else so PayPal stops retrying it.
+  console.log(`[${log}] no action for this event type`);
+  return res.status(200).json({ received: true, ignored: eventType });
 });
+
+// A capture resource links back to its order with rel "up".
+function orderIdFromCapture(resource){
+  const up = resource?.links?.find(l => l.rel === 'up')?.href;
+  if (!up) return null;
+  const match = up.match(/\/checkout\/orders\/([^/?#]+)/);
+  return match ? match[1] : null;
+}

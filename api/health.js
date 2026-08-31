@@ -2,12 +2,12 @@
 // Reports only whether each secret is PRESENT, never its value.
 import { withHandler } from './_lib.js';
 
-// Both Dodo values are required, not optional: without the API key a top-up
-// cannot start, and without the signing secret the webhook refuses to credit a
-// wallet. A site that cannot take money is not healthy, so say so here rather
-// than letting the first paying visitor discover it.
-const REQUIRED = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'DODO_API_KEY', 'DODO_WEBHOOK_SECRET'];
-const OPTIONAL = ['SUPABASE_ANON_KEY', 'SITE_URL', 'RESOLVER_SECRET'];
+// All three PayPal values are required, not optional: without the client
+// credentials a top-up cannot start, and without the webhook id the webhook
+// refuses to credit a wallet. A site that cannot take money is not healthy,
+// so say so here rather than letting the first paying visitor discover it.
+const REQUIRED = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID'];
+const OPTIONAL = ['SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET'];
 
 export default withHandler(async function handler(req, res){
   const present = name => Boolean(process.env[name]);

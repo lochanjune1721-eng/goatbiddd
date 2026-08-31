@@ -98,7 +98,7 @@
     
     // handle returnTo after magic link / OAuth
     const rt=getReturnTo();
-    if(rt && rt.startsWith('/') && !rt.includes('localhost') && !rt.includes('payment=success')){
+    if(rt && rt.startsWith('/') && !rt.includes('localhost') && !rt.includes('payment=success') && params.get('paypal') !== 'return'){
       setTimeout(()=> location.href=rt, 900);
       show(document.getElementById('auth-msg')||msg, 'Signed in — returning...','ok');
     }
@@ -172,6 +172,88 @@
     const {data:{user}} = await sb.auth.getUser();
     if(!user) return;
     doTopup(amt);
+  })();
+
+  // PayPal sends the payer back to
+  // /wallet?paypal=return&topup_id=<uuid>&token=<order id>&PayerID=<payer>
+  // ("token" is PayPal's name for the order id). Capturing here is what makes
+  // the votes appear straight away; the webhook settles the same order
+  // independently, so a closed tab still gets credited and a double capture is
+  // a no-op.
+  (async function paypalReturn(){
+    const mode = params.get('paypal');
+    if(!mode) return;
+
+    const clean = () => history.replaceState({}, '', '/wallet');
+
+    if(mode === 'cancel'){
+      paymentStatus.textContent = 'Payment cancelled — nothing was charged.';
+      paymentStatus.style.color = 'var(--muted)';
+      clean();
+      return;
+    }
+    if(mode !== 'return') return;
+
+    const orderId = params.get('token');
+    if(!orderId){
+      paymentStatus.textContent = 'PayPal did not send an order back. If you were charged, contact support.';
+      paymentStatus.style.color = '#e55';
+      return;
+    }
+
+    paymentStatus.textContent = 'Confirming your payment with PayPal…';
+    paymentStatus.style.color = 'var(--muted)';
+
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session){
+      paymentStatus.textContent = 'Sign in again to finish adding your votes — your payment is safe.';
+      paymentStatus.style.color = '#e55';
+      return;
+    }
+
+    try {
+      const r = await fetch('/api/paypal-capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ orderId })
+      });
+      const j = await r.json().catch(()=>({}));
+
+      if(r.status === 202 && j.pending){
+        paymentStatus.textContent = j.message;
+        paymentStatus.style.color = 'var(--muted)';
+        clean();
+        return;
+      }
+      if(!r.ok){
+        paymentStatus.textContent = j.error || 'We could not confirm that payment.';
+        paymentStatus.style.color = '#e55';
+        return;
+      }
+
+      const votes = Math.floor((j.credited || 0) / 100);
+      paymentAlert.textContent = votes
+        ? `Payment confirmed — ${votes} vote${votes === 1 ? '' : 's'} added to your wallet.`
+        : 'Payment confirmed.';
+      paymentAlert.style.display = 'block';
+      paymentStatus.textContent = '';
+
+      if(typeof j.newBalance === 'number') balanceBig.textContent = Math.floor(j.newBalance/100).toLocaleString()+' votes';
+      if(window.refreshBalance) await window.refreshBalance();
+      const {data:{user}} = await sb.auth.getUser();
+      if(user) loadHistory(user.id);
+
+      // Back to whatever they were voting on when they ran out.
+      const back = params.get('returnTo');
+      if(back && back.startsWith('/') && !back.includes('localhost')){
+        setTimeout(()=> location.href = back, 1200);
+      } else {
+        clean();
+      }
+    } catch(err) {
+      paymentStatus.textContent = 'Error confirming payment: ' + err.message;
+      paymentStatus.style.color = '#e55';
+    }
   })();
   const customInput=document.getElementById('custom-topup');
   const customBtn=document.getElementById('custom-btn');

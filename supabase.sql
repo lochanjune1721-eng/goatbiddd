@@ -50,7 +50,7 @@ create table if not exists topups (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id) on delete cascade,
   amount_cents int not null check (amount_cents >= 500),
-  dodo_payment_id text unique,
+  provider_payment_id text unique,
   status text default 'pending' check (status in ('pending','confirmed','failed')),
   created_at timestamptz default now()
 );
@@ -248,14 +248,14 @@ create index if not exists people_category_total_idx on people (category_id, tot
 
 -- storage for fan photos (reuse people bucket, but add policy already exists)
 
--- credit_balance for fake checkout — mirrors production Dodo webhook path
+-- credit_balance — legacy settlement entry point, superseded by confirm_topup below
 create or replace function credit_balance(p_user_id uuid, p_amount_cents int, p_payment_id text)
 returns int language plpgsql security definer set search_path = public as $$
 declare v_new int;
 begin
   if p_amount_cents < 500 then raise exception 'Minimum is 5 votes'; end if;
-  -- idempotency via dodo_payment_id
-  insert into topups (user_id, amount_cents, dodo_payment_id, status) values (p_user_id, p_amount_cents, p_payment_id, 'confirmed') on conflict (dodo_payment_id) do nothing;
+  -- idempotency via provider_payment_id
+  insert into topups (user_id, amount_cents, provider_payment_id, status) values (p_user_id, p_amount_cents, p_payment_id, 'confirmed') on conflict (provider_payment_id) do nothing;
   update users set balance_cents = balance_cents + p_amount_cents where id = p_user_id returning balance_cents into v_new;
   return v_new;
 end $$;
@@ -300,6 +300,21 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 begin
   return place_vote(p_person_id, p_amount_cents / 100);
 end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Payments are PayPal. topups.dodo_payment_id predates that switch; it holds
+-- the provider's id for the settled payment (now a PayPal capture id), so it
+-- is renamed rather than replaced. provider_order_id holds the PayPal order,
+-- which exists from the moment checkout opens and is how a returning payer's
+-- order is matched back to the row.
+do $$ begin
+  if exists (select 1 from information_schema.columns
+             where table_name = 'topups' and column_name = 'dodo_payment_id') then
+    alter table topups rename column dodo_payment_id to provider_payment_id;
+  end if;
+end $$;
+alter table topups add column if not exists provider_order_id text;
+create index if not exists topups_provider_order_idx on topups (provider_order_id);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Money guards. Everything below closes a path that let a signed-in browser,
@@ -350,7 +365,7 @@ create trigger guard_balance_columns
 
 -- confirm_topup — the one way a payment turns into balance.
 --
--- Idempotent on dodo_payment_id, because a webhook is delivered at least once
+-- Idempotent on provider_payment_id, because a webhook is delivered at least once
 -- and a retry must not credit twice. Settles the pending row the checkout
 -- created when there is one, rather than leaving a second row behind.
 create or replace function confirm_topup(p_topup_id uuid, p_user_id uuid, p_amount_cents int, p_payment_id text)
@@ -362,21 +377,21 @@ begin
   if p_payment_id is null or p_payment_id = '' then raise exception 'Missing payment id'; end if;
 
   -- Already settled under this payment id — return the balance, change nothing.
-  if exists (select 1 from topups where dodo_payment_id = p_payment_id and status = 'confirmed') then
+  if exists (select 1 from topups where provider_payment_id = p_payment_id and status = 'confirmed') then
     select balance_cents into v_new from users where id = p_user_id;
     return v_new;
   end if;
 
   if p_topup_id is not null then
-    update topups set status = 'confirmed', dodo_payment_id = p_payment_id
+    update topups set status = 'confirmed', provider_payment_id = p_payment_id
       where id = p_topup_id and status <> 'confirmed'
       returning id into v_id;
   end if;
 
   if v_id is null then
-    insert into topups (user_id, amount_cents, dodo_payment_id, status)
+    insert into topups (user_id, amount_cents, provider_payment_id, status)
       values (p_user_id, p_amount_cents, p_payment_id, 'confirmed')
-      on conflict (dodo_payment_id) do nothing
+      on conflict (provider_payment_id) do nothing
       returning id into v_id;
   end if;
 
