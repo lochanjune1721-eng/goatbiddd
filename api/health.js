@@ -8,7 +8,8 @@ import { payPalBase } from './_paypal.js';
 // refuses to credit a wallet. A site that cannot take money is not healthy,
 // so say so here rather than letting the first paying visitor discover it.
 const REQUIRED = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID'];
-const OPTIONAL = ['SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET'];
+const OPTIONAL = ['SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET',
+  'UROPAY_API_KEY', 'UROPAY_API_SECRET', 'UROPAY_INR_PER_VOTE'];
 
 export default withHandler(async function handler(req, res){
   const present = name => Boolean(process.env[name]);
@@ -30,12 +31,22 @@ export default withHandler(async function handler(req, res){
     webhookConfigured: present('PAYPAL_WEBHOOK_ID')
   };
 
+  // UPI is an additional rail, so its absence is not "unhealthy" — but a
+  // half-configured one is worth surfacing, since the checkout refuses without
+  // a rupee price and the account's KYC state decides TEST vs PRODUCTION.
+  const uropay = {
+    configured: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET'),
+    inrPerVote: Number(process.env.UROPAY_INR_PER_VOTE) || null,
+    ready: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET') && Number(process.env.UROPAY_INR_PER_VOTE) > 0
+  };
+
   const degraded = missing.length > 0 || Object.values(checks).some(v => v !== 'ok');
   return res.status(degraded ? 503 : 200).json({
     ok: !degraded,
     node: process.version,
     region: process.env.VERCEL_REGION || null,
     paypal,
+    uropay,
     env: Object.fromEntries([...REQUIRED, ...OPTIONAL].map(n => [n, present(n)])),
     missingRequired: missing,
     checks

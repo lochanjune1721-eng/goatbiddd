@@ -517,3 +517,10 @@ end $$;
 
 revoke execute on function confirm_topup(uuid, uuid, int, text, text) from public, anon, authenticated;
 grant execute on function confirm_topup(uuid, uuid, int, text, text) to service_role;
+
+-- The wallet is denominated in USD cents (100 cents = 1 vote), but a UPI order
+-- is charged in rupees. Record what the provider was actually asked for, so
+-- settlement can check the captured amount against it in the provider's own
+-- currency instead of comparing rupees to cents.
+alter table topups add column if not exists provider_amount numeric(12,2);
+alter table topups add column if not exists provider_currency text;

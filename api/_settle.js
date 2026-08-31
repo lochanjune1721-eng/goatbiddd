@@ -35,7 +35,7 @@ async function findTopup(supa, { topupId, orderId, captureId }){
  * leaves it unset (PayPal is not a signed-in user); the browser return path
  * sets it, so one signed-in user cannot settle another's order.
  */
-export async function settleTopup(supa, { topupId, orderId, captureId, capturedCents, requireUserId, provider = 'paypal', label = 'settle' }){
+export async function settleTopup(supa, { topupId, orderId, captureId, capturedCents, capturedProviderAmount, requireUserId, provider = 'paypal', label = 'settle' }){
   if (!captureId) return { settled: false, reason: 'no capture id' };
 
   const topup = await findTopup(supa, { topupId, orderId, captureId });
@@ -54,13 +54,23 @@ export async function settleTopup(supa, { topupId, orderId, captureId, capturedC
     return { settled: true, duplicate: true, topup };
   }
 
-  if (Number.isFinite(capturedCents) && capturedCents < topup.amount_cents) {
-    console.error(`[${label}] capture ${captureId} paid ${capturedCents} against an owed ${topup.amount_cents} — refusing to credit`);
-    await supa.from('topups').update({ status: 'failed' }).eq('id', topup.id);
-    return { settled: false, reason: 'captured amount is less than the amount owed' };
-  }
-  if (Number.isFinite(capturedCents) && capturedCents > topup.amount_cents) {
-    console.warn(`[${label}] capture ${captureId} paid ${capturedCents} against an owed ${topup.amount_cents} — crediting the amount owed`);
+  // Underpayment check, done in whatever currency the provider charged. A UPI
+  // order is billed in rupees while the wallet is in USD cents, so comparing
+  // capturedCents against amount_cents would be meaningless there — that path
+  // passes capturedProviderAmount and is checked against provider_amount.
+  const owed = Number.isFinite(capturedProviderAmount)
+    ? { paid: capturedProviderAmount, due: Number(topup.provider_amount), unit: topup.provider_currency || 'provider units' }
+    : (Number.isFinite(capturedCents) ? { paid: capturedCents, due: topup.amount_cents, unit: 'cents' } : null);
+
+  if (owed && Number.isFinite(owed.due)) {
+    if (owed.paid < owed.due) {
+      console.error(`[${label}] payment ${captureId} paid ${owed.paid} ${owed.unit} against an owed ${owed.due} — refusing to credit`);
+      await supa.from('topups').update({ status: 'failed' }).eq('id', topup.id);
+      return { settled: false, reason: 'captured amount is less than the amount owed' };
+    }
+    if (owed.paid > owed.due) {
+      console.warn(`[${label}] payment ${captureId} paid ${owed.paid} ${owed.unit} against an owed ${owed.due} — crediting the votes that were ordered`);
+    }
   }
 
   const { data: newBalance, error } = await supa.rpc('confirm_topup', {

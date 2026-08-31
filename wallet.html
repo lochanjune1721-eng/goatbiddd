@@ -6,6 +6,12 @@
 <meta name="description" content="Top up wallet credit — $1 = 1 vote. Back your GOAT with one tap.">
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+.pay-method{height:34px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:0 14px;font-size:12.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background .15s,border-color .15s,color .15s}
+.pay-method:hover{border-color:var(--border-2);color:var(--ink)}
+.pay-method.active{background:var(--gold);border-color:var(--gold);color:var(--bg)}
+.pay-method:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+</style>
 </head>
 <body>
 <header class="topbar"><div class="topbar-inner">
@@ -45,6 +51,13 @@
       <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;align-items:center">
         <input id="custom-topup" type="number" min="1" placeholder="Custom votes" style="width:140px;height:40px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 14px;text-align:center">
         <button id="custom-btn" class="btn-ghost">Add custom</button>
+      </div>
+      <!-- Hidden until /api/health says UPI is configured, so nobody is offered
+           a rail that would fail. -->
+      <div id="method-row" hidden style="display:flex;gap:8px;justify-content:center;margin-top:16px;align-items:center;flex-wrap:wrap">
+        <span class="mono" style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Pay with</span>
+        <button type="button" class="pay-method active" data-method="paypal">Card / PayPal</button>
+        <button type="button" class="pay-method" data-method="uropay">UPI <span id="upi-rate" class="mono" style="font-size:10.5px;opacity:.75"></span></button>
       </div>
       <div id="payment-status" class="mono" style="font-size:12px;margin-top:10px;min-height:18px"></div>
     </div>
@@ -98,7 +111,7 @@
     
     // handle returnTo after magic link / OAuth
     const rt=getReturnTo();
-    if(rt && rt.startsWith('/') && !rt.includes('localhost') && !rt.includes('payment=success') && params.get('paypal') !== 'return'){
+    if(rt && rt.startsWith('/') && !rt.includes('localhost') && !rt.includes('payment=success') && params.get('paypal') !== 'return' && params.get('uropay') !== 'return'){
       setTimeout(()=> location.href=rt, 900);
       show(document.getElementById('auth-msg')||msg, 'Signed in — returning...','ok');
     }
@@ -123,6 +136,25 @@
     if(error) show(msg, error.message,'error'); else show(msg,'Magic link sent — check your email.','ok');
   });
 
+  // Which rail the next top-up uses. UPI only appears once /api/health
+  // reports it ready — an offered button that 503s is worse than no button.
+  let payMethod = 'paypal';
+  (async function initPaymentMethods(){
+    const row = document.getElementById('method-row');
+    if(!row) return;
+    try {
+      const health = await fetch('/api/health').then(r=>r.json()).catch(()=>null);
+      if(!health?.uropay?.ready) return;
+      row.hidden = false;
+      const rate = document.getElementById('upi-rate');
+      if(rate && health.uropay.inrPerVote) rate.textContent = '· ₹' + health.uropay.inrPerVote + '/vote';
+      row.querySelectorAll('.pay-method').forEach(b => b.addEventListener('click', ()=>{
+        payMethod = b.dataset.method;
+        row.querySelectorAll('.pay-method').forEach(x => x.classList.toggle('active', x === b));
+      }));
+    } catch(e){ /* leave the picker hidden and stay on PayPal */ }
+  })();
+
   async function doTopup(cents){
     const {data:{user}}=await sb.auth.getUser();
     if(!user) return alert('Sign in first.');
@@ -130,7 +162,8 @@
     paymentStatus.style.color='var(--muted)';
     const returnTo = getReturnTo();
     try {
-      const r = await fetch('/api/checkout', {
+      const endpoint = payMethod === 'uropay' ? '/api/uropay-checkout' : '/api/checkout';
+      const r = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amountCents: cents, userId: user.id, email: user.email, returnTo })
@@ -180,6 +213,71 @@
   // the votes appear straight away; the webhook settles the same order
   // independently, so a closed tab still gets credited and a double capture is
   // a no-op.
+  // UroPay sends the payer back to /wallet?uropay=return&topup_id=<uuid>.
+  // Its webhook settles the same order independently, so a closed tab still
+  // credits and a double settle is a no-op.
+  (async function uropayReturn(){
+    if(params.get('uropay') !== 'return') return;
+    const topupId = params.get('topup_id');
+    const clean = () => history.replaceState({}, '', '/wallet');
+
+    if(!topupId){
+      paymentStatus.textContent = 'UroPay did not send an order back. If you were charged, contact support.';
+      paymentStatus.style.color = '#e55';
+      return;
+    }
+
+    paymentStatus.textContent = 'Confirming your UPI payment…';
+    paymentStatus.style.color = 'var(--muted)';
+
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session){
+      paymentStatus.textContent = 'Sign in again to finish adding your votes — your payment is safe.';
+      paymentStatus.style.color = '#e55';
+      return;
+    }
+
+    try {
+      const r = await fetch('/api/uropay-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ topupId })
+      });
+      const j = await r.json().catch(()=>({}));
+
+      if(r.status === 202 && j.pending){
+        paymentStatus.textContent = j.message;
+        paymentStatus.style.color = 'var(--muted)';
+        clean();
+        return;
+      }
+      if(!r.ok){
+        paymentStatus.textContent = j.error || 'We could not confirm that payment.';
+        paymentStatus.style.color = '#e55';
+        return;
+      }
+
+      const votes = Math.floor((j.credited || 0) / 100);
+      paymentAlert.textContent = votes
+        ? `Payment confirmed — ${votes} vote${votes === 1 ? '' : 's'} added to your wallet.`
+        : 'Payment confirmed.';
+      paymentAlert.style.display = 'block';
+      paymentStatus.textContent = '';
+
+      if(typeof j.newBalance === 'number') balanceBig.textContent = Math.floor(j.newBalance/100).toLocaleString()+' votes';
+      if(window.refreshBalance) await window.refreshBalance();
+      const {data:{user}} = await sb.auth.getUser();
+      if(user) loadHistory(user.id);
+
+      const back = params.get('returnTo');
+      if(back && back.startsWith('/') && !back.includes('localhost')) setTimeout(()=> location.href = back, 1200);
+      else clean();
+    } catch(err) {
+      paymentStatus.textContent = 'Error confirming payment: ' + err.message;
+      paymentStatus.style.color = '#e55';
+    }
+  })();
+
   (async function paypalReturn(){
     const mode = params.get('paypal');
     if(!mode) return;
