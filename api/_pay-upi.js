@@ -7,7 +7,9 @@
 // to submit their UTR (upiClaim below), which an admin approves against the
 // bank statement. Crediting on an unverified claim would be free votes for
 // anyone who typed twelve digits.
-import QRCode from 'qrcode';
+// The default entry requires node:fs for its toFile renderers, which does not
+// exist on Workers. The browser build has the same toString(svg).
+import QRCode from 'qrcode/lib/browser.js';
 import { createClient } from '@supabase/supabase-js';
 import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
 import { rupeesForVotes } from './_pricing.js';

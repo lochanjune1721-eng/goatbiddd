@@ -2,12 +2,21 @@
   // Committed so the deploy is deterministic rather than relying on the
   // settings wrangler infers on the build machine.
   "name": "goatbiddd",
+  "main": "worker.js",
   "compatibility_date": "2026-08-28",
+
+  // The API handlers use node:crypto, Buffer and process.env.
+  "compatibility_flags": ["nodejs_compat"],
+
   "observability": { "enabled": true },
 
-  // The site is served from the repo root; .assetsignore decides what of it
-  // actually ships. Note there is no "main" here: this deploys the static
-  // site only. The /api/* routes are Vercel-style Node functions and do not
-  // run on Workers — see the note in README.
-  "assets": { "directory": "." }
+  // public/ is assembled by scripts/build-assets.mjs and holds only what the
+  // browser fetches — so node_modules can never be swept into the upload.
+  // The Worker handles /api/* and hands everything else to ASSETS, whose
+  // html_handling serves /about from about.html, the clean URLs vercel.json
+  // used to configure.
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS"
+  }
 }

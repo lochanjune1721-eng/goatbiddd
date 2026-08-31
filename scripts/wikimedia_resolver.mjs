@@ -2,11 +2,18 @@
 // Resolves high-quality, verified Wikimedia Commons images with disambiguation, license verification, and thumbnail parameterization.
 
 import { createClient } from '@supabase/supabase-js';
-import fs from 'fs';
-import path from 'path';
 
-// Read .env without external dependencies
+// Read .env without external dependencies.
+//
+// The CLI wrappers load .env too, but ESM hoists imports, so this module is
+// evaluated before their loader runs — hence the duplicate. fs and path are
+// imported dynamically and guarded because this file is also bundled into the
+// Cloudflare Worker, where neither exists and a static import would fail the
+// build.
 try {
+  const [{ default: fs }, { default: path }] = await Promise.all([
+    import('node:fs'), import('node:path')
+  ]);
   const envPath = path.resolve(process.cwd(), '.env');
   if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, 'utf8');
@@ -25,10 +32,15 @@ try {
 } catch (e) {}
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://orzcszqpnvicreqvpncu.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('SUPABASE_SERVICE_ROLE_KEY is not set. Put it in .env (see .env.example) or export it before running this script.');
-  process.exit(1);
+
+// The key is only needed by resolveAndSaveContenderImage, and only when no
+// client is passed in. Exiting the process here made the module unimportable
+// without it — which broke api/resolve_image.js's lazy import and would kill
+// the Worker outright.
+function requireServiceKey(){
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. Put it in .env (see .env.example) or export it.');
+  return key;
 }
 const USER_AGENT = "TheTrueGOATImageBot/1.0 (https://thetruegoat.com; contact@thetruegoat.com) NodeFetch/2.0";
 
@@ -259,7 +271,7 @@ export async function resolveWikimediaImage({ name, category = '', blurb = '', w
  * Resolve contender and write to Supabase (caching check included)
  */
 export async function resolveAndSaveContenderImage(supabaseClient, person, categoryName = '', options = {}) {
-  const sb = supabaseClient || createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = supabaseClient || createClient(SUPABASE_URL, requireServiceKey());
   const { force = false } = options;
 
   // 1. Caching check: Check if already resolved and verified

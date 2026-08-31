@@ -16,11 +16,9 @@ export default withHandler(async function handler(req, res){
   const present = name => Boolean(process.env[name]);
   const missing = REQUIRED.filter(n => !present(n));
 
-  const checks = { supabaseClient: 'ok', imageResolver: 'ok' };
+  const checks = { supabaseClient: 'ok' };
   try { await import('@supabase/supabase-js'); }
   catch (err) { checks.supabaseClient = `failed: ${err?.message || err}`; }
-  try { await import('../scripts/wikimedia_resolver.mjs'); }
-  catch (err) { checks.imageResolver = `failed: ${err?.message || err}`; }
 
   // Live credentials do not work against sandbox and vice versa, and the error
   // PayPal returns for the mismatch is an unhelpful 401. Say plainly which one
