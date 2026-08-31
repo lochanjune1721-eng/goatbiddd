@@ -76,10 +76,21 @@ export function supabaseUrl(){
 
 // Returns the requested env vars, or throws a 500 naming exactly which ones
 // are missing — a misconfigured project should say so, not crash.
+//
+// The hint is there because "I added it and it still says missing" has one
+// common cause on Workers: a value added as a plaintext Variable rather than a
+// Secret. `wrangler deploy` treats the config file as the source of truth for
+// plaintext vars and wrangler.jsonc declares none, so those are wiped on every
+// deploy. Secrets are encrypted and survive.
 export function requireEnv(...names){
   const missing = names.filter(n => !process.env[n]);
-  if (missing.length) throw new HttpError(500, `Missing environment variable(s): ${missing.join(', ')}`);
-  return Object.fromEntries(names.map(n => [n, process.env[n]]));
+  if (!missing.length) return Object.fromEntries(names.map(n => [n, process.env[n]]));
+
+  const onWorkers = typeof navigator !== 'undefined' && /Cloudflare/i.test(navigator.userAgent || '');
+  const hint = onWorkers
+    ? ' — set it as a Secret (encrypted) on the Worker, not a plaintext Variable: a plaintext one is wiped on each deploy.'
+    : '';
+  throw new HttpError(500, `Missing environment variable(s): ${missing.join(', ')}${hint}`);
 }
 
 // Supabase client calls return { error } instead of throwing; unwrap them so
