@@ -603,6 +603,31 @@
   clearEl.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; renderChips(); renderCatNav(); applyFilters(); });
 
   // === 1-TAP HOMEPAGE VOTING ===
+  // Out of credit mid-vote: offer the top-up right there instead of a native
+  // confirm() that dumps you on another page and loses what you were doing.
+  // Each amount goes straight to checkout and returns to this exact page.
+  function showTopUpPrompt(pname){
+    document.getElementById('goat-topup-prompt')?.remove();
+    const back = encodeURIComponent(location.pathname + location.search);
+    const el = document.createElement('div');
+    el.id = 'goat-topup-prompt';
+    el.className = 'inline-topup';
+    el.innerHTML = `
+      <div class="inline-topup-card" style="max-width:360px;text-align:center;position:relative">
+        <button data-close style="position:absolute;right:14px;top:12px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">&times;</button>
+        <h3 class="display" style="font-size:20px;margin-bottom:4px">Out of votes</h3>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin-bottom:14px">Top up to back${pname ? ' ' + esc(pname) : ''}. $1 = 1 vote.</p>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <a class="btn-primary" style="width:auto;padding:10px 16px" href="/wallet?topup=500&returnTo=${back}">+$5</a>
+          <a class="btn-primary" style="width:auto;padding:10px 16px" href="/wallet?topup=1000&returnTo=${back}">+$10</a>
+          <a class="btn-primary" style="width:auto;padding:10px 16px" href="/wallet?topup=2500&returnTo=${back}">+$25</a>
+        </div>
+        <a href="/wallet?returnTo=${back}" class="mono" style="display:block;margin-top:12px;font-size:11px;color:var(--muted);text-decoration:underline">Other amounts →</a>
+      </div>`;
+    el.addEventListener('click', e=>{ if(e.target === el || e.target.hasAttribute('data-close')) el.remove(); });
+    document.body.appendChild(el);
+  }
+
   async function handleHomeVote(pid, pname, btn){
     const {data:{user}} = await sb.auth.getUser();
     if(!user){
@@ -633,9 +658,7 @@
       applyFilters();
       const msg = String(err.message||err);
       if(msg.toLowerCase().includes('not enough') || msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('balance')){
-        if(confirm('Not enough votes in your wallet. Top up now?')){
-          location.href = '/wallet';
-        }
+        showTopUpPrompt(pname);
       } else {
         alert(msg);
       }
@@ -658,7 +681,7 @@
       const today = new Date(); today.setHours(0,0,0,0);
       const [todayBidsRes, activityBidsRes, fansRes] = await Promise.all([
         sb.from('bids').select('amount_cents').gte('created_at', today.toISOString()),
-        sb.from('bids').select('amount_cents,created_at,people(name,slug)').order('created_at',{ascending:false}).limit(12),
+        sb.from('bids').select('amount_cents,created_at,people(name,slug),users(display_name,is_anonymous,photo_path)').order('created_at',{ascending:false}).limit(12),
         fetch('/api/fans?t='+Date.now()).then(r => r.json()).catch(()=>({fans:[]}))
       ]);
 
@@ -668,12 +691,39 @@
       if(backedEl) backedEl.textContent = `${backedVotes.toLocaleString()} votes cast today`;
 
       const bids = activityBidsRes.data || [];
+
+      // The feed is only alive if you can see WHO is backing WHOM. A backer who
+      // ticked "stay anonymous" is shown as Anonymous; everyone else gets their
+      // real display name and uploaded picture (falling back to initials).
+      function fanName(b){
+        const u = b.users;
+        if(!u) return 'A backer';
+        if(u.is_anonymous) return 'Anonymous';
+        return u.display_name || 'A backer';
+      }
+      function fanAvatar(b, px){
+        const u = b.users || {};
+        const name = fanName(b);
+        const url = (!u.is_anonymous && u.photo_path && window.GOAT.getPhotoUrl)
+          ? window.GOAT.getPhotoUrl(u.photo_path) : null;
+        const box = `width:${px}px;height:${px}px;border-radius:50%;flex:0 0 auto;overflow:hidden;border:1px solid var(--border)`;
+        if(url) return `<img src="${esc(url)}" alt="" loading="lazy" style="${box};object-fit:cover">`;
+        return `<span style="${box};background:var(--surface-3);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif;font-size:${Math.round(px*0.42)}px">${esc(window.GOAT.initials(name))}</span>`;
+      }
+      // A vote big enough to top that contender's board reads as a takeover.
+      function verb(b){
+        const votes = Math.floor(b.amount_cents/100);
+        return votes >= 50 ? 'just took over' : 'backed';
+      }
+
       if(activityEl){
         if(bids.length){
           activityEl.innerHTML = bids.slice(0, 8).map(b => {
-            return `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-              <span><b>A backer</b> voted <b>${Math.floor(b.amount_cents/100)} votes</b> for <a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${esc(b.people?.name)}</a></span>
-              <span class="mono" style="font-size:11px;color:var(--muted)">${window.GOAT.fmtAgo(b.created_at)}</span>
+            return `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px">
+              <span style="display:flex;align-items:center;gap:8px;min-width:0">${fanAvatar(b,24)}
+                <span style="min-width:0"><b>${esc(fanName(b))}</b> ${verb(b)} <a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${esc(b.people?.name)}</a> with <b>${Math.floor(b.amount_cents/100)} votes</b></span>
+              </span>
+              <span class="mono" style="font-size:11px;color:var(--muted);white-space:nowrap">${window.GOAT.fmtAgo(b.created_at)}</span>
             </div>`;
           }).join('');
         } else {
@@ -685,9 +735,12 @@
       if(liveFeed){
         if(bids.length){
           liveFeed.innerHTML = bids.slice(0, 8).map(b => {
-            return `<div style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;line-height:1.4">
-              <b>A backer</b> put <b>${Math.floor(b.amount_cents/100)} votes</b> on <a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${esc(b.people?.name)}</a>
-              <div class="mono" style="font-size:10px;color:var(--muted)">${window.GOAT.fmtAgo(b.created_at)}</div>
+            return `<div style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;line-height:1.4;display:flex;gap:8px;align-items:flex-start">
+              ${fanAvatar(b,22)}
+              <div style="min-width:0">
+                <b>${esc(fanName(b))}</b> ${verb(b)} <a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${esc(b.people?.name)}</a> with <b>${Math.floor(b.amount_cents/100)} votes</b>
+                <div class="mono" style="font-size:10px;color:var(--muted)">${window.GOAT.fmtAgo(b.created_at)}</div>
+              </div>
             </div>`;
           }).join('');
         } else {
@@ -734,7 +787,7 @@
       items.push(`👑 <b>${esc(top.display_name||'Supporter')}</b> is #1 Leading Fan with <span class="g">${Math.floor(top.total_spent_cents/100).toLocaleString()}</span> votes`);
     }
     (bids||[]).slice(0, 5).forEach(b => {
-      items.push(`⚡ <b>A backer</b> voted <span class="g">${Math.floor(b.amount_cents/100)} votes</span> for <b>${esc(b.people?.name)}</b>`);
+      items.push(`⚡ <b>${esc(b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'A backer'))}</b> voted <span class="g">${Math.floor(b.amount_cents/100)} votes</span> for <b>${esc(b.people?.name)}</b>`);
     });
     items.push(`🏆 <b>151</b> boards · $1 = 1 vote · no judges, no algorithms`);
 
@@ -744,6 +797,31 @@
 
   await refreshActivity();
   setInterval(refreshActivity, 5000);
+
+  // === REAL ONLINE COUNT ===
+  // #online was hardcoded to "42 online". Supabase Realtime Presence gives a
+  // true count: every open tab joins the same channel and tracks itself, so the
+  // number is the actual set of people on the site right now. If realtime can't
+  // connect, say nothing rather than inventing a figure.
+  (function trackPresence(){
+    const onlineEl = document.getElementById('online');
+    if(!onlineEl) return;
+    onlineEl.textContent = '— online';
+    try {
+      const room = sb.channel('goat-presence', { config:{ presence:{ key: (window.getAnonId ? window.getAnonId() : 'anon_'+Math.random().toString(36).slice(2)) } } });
+      room
+        .on('presence', { event:'sync' }, ()=>{
+          const n = Object.keys(room.presenceState() || {}).length;
+          onlineEl.textContent = `${n.toLocaleString()} online`;
+        })
+        .subscribe(async (status)=>{
+          if(status === 'SUBSCRIBED') await room.track({ at: Date.now() });
+        });
+      window.addEventListener('beforeunload', ()=>{ try{ room.untrack(); }catch(e){} });
+    } catch(e){
+      console.warn('presence unavailable', e);
+    }
+  })();
 })();
 </script>
 </body>

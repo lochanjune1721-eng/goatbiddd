@@ -461,3 +461,11 @@ body.preview-only #add-btn{display:none!important}
   }
 }
 
+
+/* Overlay shell for the sign-in modal (js/supabase.js Auth.openAuthModal) and
+   the inline top-up prompt on the homepage. Both set class="inline-topup" and
+   expect a centred card over a dimmed backdrop; without these rules they
+   rendered as plain blocks in normal document flow. */
+.inline-topup{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(13,12,11,.72);backdrop-filter:blur(2px)}
+.inline-topup-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:var(--shadow);width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
+@media(max-width:480px){.inline-topup{padding:12px}.inline-topup-card{padding:18px;border-radius:16px}}

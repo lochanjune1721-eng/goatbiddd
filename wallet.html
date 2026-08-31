@@ -160,6 +160,19 @@
   }
 
   document.querySelectorAll('[data-topup]').forEach(b=> b.addEventListener('click', ()=> doTopup(Number(b.dataset.topup))));
+
+  // The homepage's inline "out of votes" prompt deep-links here as
+  // /wallet?topup=1000&returnTo=/… — fire that top-up straight away so the
+  // visitor doesn't have to pick the amount a second time. Only for a
+  // signed-in user; otherwise the sign-in card is showing and this would be a
+  // dead click.
+  (async function autoTopup(){
+    const amt = Number(new URLSearchParams(location.search).get('topup'));
+    if(!Number.isFinite(amt) || amt < 100) return;
+    const {data:{user}} = await sb.auth.getUser();
+    if(!user) return;
+    doTopup(amt);
+  })();
   const customInput=document.getElementById('custom-topup');
   const customBtn=document.getElementById('custom-btn');
   if(customBtn) customBtn.addEventListener('click', ()=>{ 
