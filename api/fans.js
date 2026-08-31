@@ -1,14 +1,16 @@
 // api/fans.js — Public top fans leaderboard & stats
 import { createClient } from '@supabase/supabase-js';
-import { requireMethod, withHandler } from './_lib.js';
+import { requireEnv, requireMethod, withHandler } from './_lib.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://orzcszqpnvicreqvpncu.supabase.co';
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM';
 
 export default withHandler(async function handler(req, res){
   requireMethod(req, 'GET');
 
-  const supa = createClient(SUPABASE_URL, SERVICE_KEY);
+  // Read inside the handler: an unset key here would otherwise hand
+  // createClient undefined and fail deep in the client with an opaque message.
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const { data: users } = await supa
     .from('users')

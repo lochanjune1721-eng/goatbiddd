@@ -25,8 +25,11 @@ try {
 } catch (e) {}
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://orzcszqpnvicreqvpncu.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM";
-
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('SUPABASE_SERVICE_ROLE_KEY is not set. Put it in .env (see .env.example) or export it before running this script.');
+  process.exit(1);
+}
 const USER_AGENT = "TheTrueGOATImageBot/1.0 (https://thetruegoat.com; contact@thetruegoat.com) NodeFetch/2.0";
 
 // Files to blacklist (icons, maps, flags, logos, audio, book scans, etc.)

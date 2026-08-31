@@ -20,8 +20,11 @@ try {
 } catch (e) {}
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://orzcszqpnvicreqvpncu.supabase.co";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM";
-
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SERVICE_KEY) {
+  console.error('SUPABASE_SERVICE_ROLE_KEY is not set. Put it in .env (see .env.example) or export it before running this script.');
+  process.exit(1);
+}
 const supa = createClient(SUPABASE_URL, SERVICE_KEY);
 const USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36";
 

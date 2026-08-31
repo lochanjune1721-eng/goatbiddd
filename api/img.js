@@ -44,6 +44,13 @@ export default async function handler(req, res) {
   let imageBuffer = null;
   let contentType = 'image/jpeg';
 
+  // This route answers 200 no matter what — an initials SVG is nicer than a
+  // broken image. That also means a dead upstream, an exhausted quota and a
+  // contender who genuinely has no photo all look identical from outside.
+  // These headers are how you tell them apart in DevTools.
+  let source = 'fallback';
+  let reason = targetUrl ? '' : 'no url and no name match';
+
   // 1. Fetch remote image if valid HTTP URL
   if (targetUrl && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://'))) {
     try {
@@ -60,10 +67,12 @@ export default async function handler(req, res) {
           contentType = ct;
           const arrayBuffer = await remoteRes.arrayBuffer();
           imageBuffer = Buffer.from(arrayBuffer);
+          source = 'remote';
         }
       }
+      if (!imageBuffer) reason = `upstream ${remoteRes.status}`;
     } catch (e) {
-      // Fetch failed, proceed to fallback
+      reason = `upstream fetch failed: ${e?.message || e}`;
     }
   }
 
@@ -84,19 +93,26 @@ export default async function handler(req, res) {
             contentType = ct;
             const arrayBuffer = await wikiRes.arrayBuffer();
             imageBuffer = Buffer.from(arrayBuffer);
+            source = 'wiki';
           }
         }
       }
-    } catch (e) {}
+      if (!imageBuffer && !reason) reason = 'no wikipedia thumbnail for that name';
+    } catch (e) {
+      reason = `wikipedia lookup failed: ${e?.message || e}`;
+    }
   }
 
   // 3. Return image or SVG fallback
+  res.setHeader('X-Goat-Img', source);
   if (imageBuffer) {
     res.setHeader('Content-Type', contentType);
     return res.status(200).send(imageBuffer);
   }
 
   // Final fallback: SVG avatar
+  if (reason) res.setHeader('X-Goat-Img-Reason', String(reason).slice(0, 180));
+  console.warn(`[img] fallback for "${personName || '(no name)'}" url="${targetUrl || '(none)'}": ${reason || 'unknown'}`);
   res.setHeader('Content-Type', 'image/svg+xml');
   return res.status(200).send(generateSvgAvatar(personName));
 }

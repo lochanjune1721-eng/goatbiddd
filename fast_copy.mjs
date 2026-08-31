@@ -1,6 +1,14 @@
+// The service-role key used to be hardcoded in this file. It is read from the
+// environment now — see .env.example.
+function mustEnv(name){
+  const v = process.env[name];
+  if(!v){ console.error(name + ' is not set. Put it in .env (see .env.example) or export it before running this script.'); process.exit(1); }
+  return v;
+}
+
 import { createClient } from '@supabase/supabase-js'
-const old = createClient('https://iuvmzlrnbwptgrbkdbbn.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1dm16bHJuYndwdGdyYmtkYmJuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzU5NzcyOSwiZXhwIjoyMTAzMTczNzI5fQ.XX378u9ceV2zf8urOZoHN4wwRwlsEgkb1nJF9TG1DQU')
-const neo = createClient('https://orzcszqpnvicreqvpncu.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM')
+const old = createClient('https://iuvmzlrnbwptgrbkdbbn.supabase.co', mustEnv('OLD_SUPABASE_SERVICE_ROLE_KEY'))
+const neo = createClient('https://orzcszqpnvicreqvpncu.supabase.co', mustEnv('SUPABASE_SERVICE_ROLE_KEY'))
 async function copyFast(){
   console.log('fetch old with photos')
   let allOld=[]

@@ -1,9 +1,17 @@
+// The service-role key used to be hardcoded in this file. It is read from the
+// environment now — see .env.example.
+function mustEnv(name){
+  const v = process.env[name];
+  if(!v){ console.error(name + ' is not set. Put it in .env (see .env.example) or export it before running this script.'); process.exit(1); }
+  return v;
+}
+
 // scripts/seed_realistic_votes_and_fans.mjs
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 
 const SUPABASE_URL = 'https://orzcszqpnvicreqvpncu.supabase.co';
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NzY0MjA0MiwiZXhwIjoyMTAzMjE4MDQyfQ.ox7ew17e3rm4QlNWNeglDJB_b1KFP55S3053B5uAadM';
+const SERVICE_KEY = mustEnv('SUPABASE_SERVICE_ROLE_KEY');
 
 const supa = createClient(SUPABASE_URL, SERVICE_KEY);
 

@@ -8,6 +8,15 @@
   /**
    * Resolve an image URL cleanly
    */
+  // Hosts a browser can load straight from. Wikimedia serves images to browsers
+  // without any User-Agent ceremony, and Supabase public storage is public.
+  const DIRECT_HOSTS = /^(upload\.wikimedia\.org|commons\.wikimedia\.org|[a-z0-9-]+\.supabase\.co)$/i;
+
+  function isDirectlyLoadable(url){
+    try { return DIRECT_HOSTS.test(new URL(url).hostname); }
+    catch(e){ return false; }
+  }
+
   function getThumb(sourceUrl, size = 120, name = '') {
     const clean = (sourceUrl || '').trim().split('?')[0];
     if(!clean && !name) return null;
@@ -18,7 +27,20 @@
       fullUrl = `${baseUrl}/storage/v1/object/public/people/${clean.replace(/^\/+/, '')}`;
     }
 
-    // Always route through caching proxy to guarantee Wikimedia User-Agent compliance & zero 403 blocks
+    if (clean.startsWith('data:')) return clean;
+
+    // Everything used to be proxied through /img "to guarantee User-Agent
+    // compliance". That made a serverless invocation out of every portrait —
+    // around a hundred per homepage view, each pulling a full 800px image —
+    // and it put the whole site's photos behind one function. When that
+    // function is down, throttled, or over quota, every photo on the site
+    // turns into initials at once.
+    //
+    // A browser needs no help with an absolute URL on a public host, so send
+    // it straight there. /img is kept for what actually needs it: a name with
+    // no URL (it looks the portrait up server-side), and any other host.
+    if (fullUrl && isDirectlyLoadable(fullUrl)) return fullUrl;
+
     return `/img?name=${encodeURIComponent(name || '')}&url=${encodeURIComponent(fullUrl || '')}`;
   }
 
