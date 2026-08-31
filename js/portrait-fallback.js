@@ -12,7 +12,9 @@
   const TTL = 14 * 24 * 60 * 60 * 1000;
   const API = 'https://en.wikipedia.org/w/api.php';
   const BATCH = 40;          // the pageimages API takes up to 50 titles per call
-  const MAX_CALLS = 6;       // hard ceiling per page view
+  const MAX_CALLS = 24;      // hard ceiling per page view — the homepage alone
+                             // asks for ~100 contenders, and the old ceiling of
+                             // 6 left everything past the 240th as initials
 
   let cache = {};
   try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') || {}; } catch(e) { cache = {}; }
@@ -43,14 +45,23 @@
     return (person && person.name) || '';
   }
 
-  async function fetchBatch(titles, size){
+  async function fetchBatch(titles, size, attempt){
     const params = new URLSearchParams({
       action:'query', format:'json', origin:'*', formatversion:'2',
       prop:'pageimages', piprop:'thumbnail', pithumbsize:String(size),
       pilicense:'any', redirects:'1', titles:titles.join('|')
     });
     const res = await fetch(API + '?' + params.toString());
-    if(!res.ok) throw new Error('wikipedia ' + res.status);
+    if(!res.ok){
+      // A single rate-limited batch used to abandon every remaining portrait
+      // on the page. Back off once, then let the caller move on to the next
+      // chunk instead of giving up on all of them.
+      if((res.status === 429 || res.status >= 500) && !attempt){
+        await new Promise(r=> setTimeout(r, 1200));
+        return fetchBatch(titles, size, 1);
+      }
+      throw new Error('wikipedia ' + res.status);
+    }
     const j = await res.json();
 
     // Wikipedia normalises and follows redirects, so map the title it answers
@@ -115,15 +126,21 @@
     const nodes = (root || document).querySelectorAll('[data-portrait-name]:not([data-portrait-done])');
     if(!nodes.length) return;
 
+    // Look up the Wikipedia article title from the contender's wikipedia_url
+    // (written into data-portrait), not the display name. They differ often —
+    // stage names, accents, disambiguated titles — and querying the display
+    // name is why so many contenders stayed as initials. The name is only the
+    // fallback for a row with no wikipedia_url.
     const pending = new Map();
     for(const el of nodes){
-      const name = el.dataset.portraitName;
-      const cached = readCache(name);
+      const title = el.dataset.portrait || el.dataset.portraitName;
+      if(!title){ el.dataset.portraitDone = 'none'; continue; }
+      const cached = readCache(title);
       if(cached !== undefined){
         apply(el, cached);
       } else {
-        if(!pending.has(name)) pending.set(name, []);
-        pending.get(name).push(el);
+        if(!pending.has(title)) pending.set(title, []);
+        pending.get(title).push(el);
       }
     }
 
@@ -137,7 +154,7 @@
         const chunk = titles.slice(i, i + BATCH);
         let found;
         try { found = await fetchBatch(chunk, Math.max(size * 2, 700)); }
-        catch(e){ console.warn('portrait lookup failed', e); break; }
+        catch(e){ console.warn('portrait lookup failed for one batch, continuing', e); continue; }
         for(const t of chunk){
           const url = found[t] || null;
           cache[t] = { u:url, t:Date.now() };

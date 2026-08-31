@@ -54,12 +54,22 @@
 .vote-bar-fill.p2{background:var(--border-2)}
 .vote-bar-label{text-align:center;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
 .duel-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
-.duel-vote-row{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface-2);justify-content:center}
-.btn-vote{height:36px;padding:0 16px;border-radius:999px;border:1px solid var(--gold);background:var(--gold);color:var(--bg);font-weight:700;font-size:12.5px;cursor:pointer;transition:opacity .15s;display:inline-flex;align-items:center;gap:4px}
-.btn-vote:hover{opacity:.9}
-.btn-vote:disabled{opacity:.5;cursor:not-allowed}
-.btn-vote.secondary{background:transparent;color:var(--ink);border-color:var(--border-2)}
-.btn-vote.secondary:hover{border-color:var(--gold);color:var(--gold)}
+/* One vote button per contender, sitting directly under that contender —
+   a shared row underneath made you read left-to-right to work out which
+   button belonged to which face. */
+.duel-side .btn-vote{margin-top:10px;width:100%;max-width:260px}
+.btn-vote{height:40px;padding:0 18px;border-radius:999px;border:1px solid var(--border-2);background:transparent;color:var(--ink);font-weight:700;font-size:13px;letter-spacing:.01em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s,color .15s,transform .1s}
+.btn-vote .btn-vote-plus{font-family:var(--mono,ui-monospace,monospace);font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--surface-3);color:var(--muted);transition:background .15s,color .15s}
+.btn-vote:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,175,110,.07)}
+.btn-vote:hover .btn-vote-plus{background:var(--gold);color:var(--bg)}
+.btn-vote:active{transform:translateY(1px)}
+.btn-vote:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn-vote:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* The side that is currently ahead gets the solid button. */
+.duel-side.leader .btn-vote{background:var(--gold);border-color:var(--gold);color:var(--bg)}
+.duel-side.leader .btn-vote .btn-vote-plus{background:rgba(0,0,0,.18);color:var(--bg)}
+.duel-side.leader .btn-vote:hover{background:var(--gold);filter:brightness(1.06)}
+@media(max-width:480px){.duel-side .btn-vote{height:36px;font-size:12px;padding:0 12px;margin-top:8px}}
 
 /* Filter bar */
 .filter-bar{position:sticky;top:53px;z-index:30;background:rgba(15,14,12,.92);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:18px;margin:10px auto 14px;padding:12px;box-shadow:var(--shadow);max-width:760px}
@@ -73,9 +83,34 @@
 .btn-clear{height:42px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:0 16px;font-size:13px;font-weight:600;cursor:pointer}
 .chips{display:flex;gap:8px;overflow:auto;padding:10px 0 2px;scrollbar-width:none;align-items:center}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:0 0 auto;height:32px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:0 13px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;letter-spacing:.01em}
-.chip:hover{border-color:#3A2E14;color:var(--ink)}
+.chip{flex:0 0 auto;height:34px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:0 6px 0 11px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,color .15s;white-space:nowrap;letter-spacing:.01em;display:inline-flex;align-items:center;gap:7px}
+.chip .chip-ico{font-size:13px;line-height:1;opacity:.85}
+/* The count is what makes the row scannable — you can see which groups
+   actually hold boards instead of clicking through empty ones. */
+.chip .chip-count{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--surface-3);border-radius:999px;padding:3px 7px;min-width:22px;text-align:center}
+.chip:hover{border-color:var(--border-2);color:var(--ink);background:var(--surface-2)}
 .chip.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.chip.active .chip-ico{opacity:1}
+.chip.active .chip-count{background:rgba(0,0,0,.18);color:var(--bg)}
+.chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* Country picker — only rendered once country-scoped boards exist
+   (data/country-boards-seed.sql). */
+.country-bar{display:flex;align-items:center;gap:8px;overflow:auto;padding:10px 0 2px;scrollbar-width:none;border-bottom:1px solid var(--border);margin-bottom:2px}
+.country-bar::-webkit-scrollbar{display:none}
+.country-bar-label{flex:0 0 auto;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding-right:2px}
+.country-pill{flex:0 0 auto;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--muted);padding:0 10px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,color .15s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.country-pill .country-flag{font-size:16px;line-height:1}
+.country-pill .country-count{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--surface-3);border-radius:999px;padding:3px 7px;min-width:22px;text-align:center}
+.country-pill:hover{border-color:var(--border-2);color:var(--ink);background:var(--surface-2)}
+.country-pill.active{background:var(--surface-2);border-color:var(--gold);color:var(--ink)}
+.country-pill.active .country-count{background:var(--gold);color:var(--bg)}
+.country-pill:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(max-width:480px){
+  .country-bar-label{display:none}
+  .country-pill{height:34px;padding:0 8px;font-size:12px}
+  .country-pill .country-name{max-width:88px;overflow:hidden;text-overflow:ellipsis}
+}
 
 /* Skeletons */
 .skeleton{position:relative;overflow:hidden;background:var(--surface-2);border-radius:8px}
@@ -168,7 +203,7 @@
   </aside>
 
   <div class="container">
-    <div class="live-pill" style="max-width:760px;margin:0 auto 10px"><span class="live-dot"></span> <span id="online">42 online</span> · <span id="backed-today">0 votes cast today</span></div>
+    <div class="live-pill" style="max-width:760px;margin:0 auto 10px"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">0 votes cast today</span></div>
 
     <div class="hero" style="max-width:760px;margin:0 auto 16px">
       <div class="hero-copy">
@@ -176,7 +211,7 @@
         <p>Anyone can argue. <span style="color:var(--ink);font-weight:700">Can you put your money where your mouth is?</span> <b>$1 = 1 vote.</b> No judges. No algorithms. Just votes. Talk is cheap — <span style="color:var(--gold)">prove it.</span></p>
       </div>
       <div class="hero-stats">
-        <div class="hero-stat"><strong id="hero-boards">151</strong><span>Boards</span></div>
+        <div class="hero-stat"><strong id="hero-boards">—</strong><span>Boards</span></div>
         <div class="hero-stat"><strong id="hero-votes">0</strong><span>Total votes</span></div>
       </div>
     </div>
@@ -193,14 +228,15 @@
           <button id="clear" class="btn-clear" type="button">Clear</button>
         </div>
       </div>
+      <div class="country-bar" id="country-bar" hidden role="tablist" aria-label="Filter by country"></div>
       <div class="chips" id="chips" role="tablist" aria-label="Filter by group"></div>
     </div>
 
     <!-- FEATURED DUELS — PREMIER GLOBAL TOP 50 FIGHTS -->
     <div class="featured-wrap" id="featured-wrap">
       <div class="section-head">
-        <h2>Top 50 Fights <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span></h2>
-        <p>The 50 biggest debates of all time • #1 vs #2, vote with one tap</p>
+        <h2 id="featured-title">Top 50 Fights <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span></h2>
+        <p id="featured-sub">The 50 biggest debates of all time • #1 vs #2, vote with one tap</p>
       </div>
       <div id="featured" class="featured-grid">
         <div class="skeleton skel-duel"></div>
@@ -271,6 +307,7 @@
   let peopleByCat = {};
   let groupMap = {};
   let activeGroup = 'All';
+  let activeCountry = 'Global';
 
   // CLEAN PREMIER GLOBAL TOP 50 FIGHTS (NO REGIONAL MIXING IN TOP FIGHTS)
   const GLOBAL_TOP_50_FIGHTS = [
@@ -352,7 +389,7 @@
   // Fetch categories and people
   try {
     const [catsRes, p0, p1, p2, p3, p4] = await Promise.all([
-      sb.from('categories').select('id,slug,name,group_name,sort_order').order('sort_order'),
+      sb.from('categories').select('id,slug,name,group_name,sort_order,country,country_code').order('sort_order'),
       sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(0, 999),
       sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(1000, 1999),
       sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(2000, 2999),
@@ -360,42 +397,138 @@
       sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(4000, 4999)
     ]);
     cats = catsRes?.data || [];
+    // data/country-boards-seed.sql adds categories.country. Until it is run the
+    // column does not exist and the select above errors, so retry without it
+    // rather than rendering an empty site.
+    if(!cats.length && catsRes?.error){
+      const retry = await sb.from('categories').select('id,slug,name,group_name,sort_order').order('sort_order');
+      cats = retry?.data || [];
+    }
     people = [...(p0?.data||[]), ...(p1?.data||[]), ...(p2?.data||[]), ...(p3?.data||[]), ...(p4?.data||[])];
   } catch(e) { console.warn('DB fetch error:', e); }
 
   function buildIndices(){
     peopleByCat = {};
+    // The five paged fetches above overlap at their boundaries if a row shifts
+    // between requests, and a duplicate here puts the same contender on both
+    // sides of a duel. Cheap to rule out.
+    const seen = new Set();
     for(const p of people){
       if(!p || !p.name || !p.category_id) continue;
+      if(seen.has(p.id)) continue;
+      seen.add(p.id);
       if(!peopleByCat[p.category_id]) peopleByCat[p.category_id] = [];
       peopleByCat[p.category_id].push(p);
     }
     for(const k in peopleByCat) peopleByCat[k].sort((a,b)=> (b.total_cents||0)-(a.total_cents||0));
     groupMap = {};
-    cats.forEach(c=>{ const g = c.group_name || 'Other'; if(!groupMap[g]) groupMap[g] = []; groupMap[g].push(c); });
+    catsInScope().forEach(c=>{ const g = c.group_name || 'Other'; if(!groupMap[g]) groupMap[g] = []; groupMap[g].push(c); });
   }
   buildIndices();
 
   // Populate hero stats with actual database values
   const hb = document.getElementById('hero-boards'), hv = document.getElementById('hero-votes');
-  if(hb) hb.textContent = cats.length || 151;
+  if(hb) hb.textContent = (cats.length || 0).toLocaleString();
   const totalVotesCast = Math.floor(people.reduce((s,p)=> s + (p.total_cents||0), 0) / 100);
   if(hv) hv.textContent = totalVotesCast.toLocaleString();
 
+  // ── Countries ────────────────────────────────────────────────────────────
+  // Boards seeded by data/country-boards-seed.sql carry a country; the global
+  // boards do not. The picker only appears once those rows exist, so the page
+  // looks the same as before until the seed is applied.
+  const COUNTRY_FLAGS = { IN:'🇮🇳', US:'🇺🇸', GB:'🇬🇧', UK:'🇬🇧', EU:'🇪🇺' };
+
+  function countryOf(cat){
+    return (cat && cat.country) ? cat.country : null;
+  }
+
+  function countryList(){
+    const counts = new Map();
+    for(const c of cats){
+      const country = countryOf(c);
+      if(country) counts.set(country, (counts.get(country) || 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }
+
+  function codeFor(country){
+    const cat = cats.find(c => countryOf(c) === country && c.country_code);
+    return cat ? cat.country_code : '';
+  }
+
+  function renderCountries(){
+    const bar = document.getElementById('country-bar');
+    if(!bar) return;
+    const list = countryList();
+    if(!list.length){ bar.hidden = true; return; }
+    bar.hidden = false;
+
+    const globalCount = cats.filter(c => !countryOf(c)).length;
+    const mk = (label, key, flag, count)=>{
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'country-pill' + (activeCountry === key ? ' active' : '');
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', activeCountry === key ? 'true' : 'false');
+      b.innerHTML = `<span class="country-flag">${flag}</span><span class="country-name">${esc(label)}</span><span class="country-count mono">${count}</span>`;
+      b.addEventListener('click', ()=> setCountry(key));
+      bar.appendChild(b);
+    };
+
+    bar.innerHTML = '<span class="country-bar-label">Boards for</span>';
+    mk('Global', 'Global', '🌍', globalCount);
+    for(const [country, count] of list) mk(country, country, COUNTRY_FLAGS[codeFor(country)] || '🏳', count);
+  }
+
+  function setCountry(country){
+    activeCountry = country;
+    activeGroup = 'All';   // groups differ between countries; a stale one shows nothing
+    buildIndices();
+    renderCountries();
+    renderChips();
+    renderCatNav();
+    applyFilters();
+  }
+
+  // Boards visible under the current country. Everything downstream — chips,
+  // sidebar counts, featured fights, search — filters from this.
+  function catsInScope(){
+    return activeCountry === 'Global'
+      ? cats.filter(c => !countryOf(c))
+      : cats.filter(c => countryOf(c) === activeCountry);
+  }
+
   // Category navigation & chips
   function renderChips(){
-    const groups = ['All', ...Object.keys(groupMap).sort()];
+    const scoped = catsInScope();
+    const counts = new Map();
+    for(const c of scoped){
+      const g = c.group_name || 'Other';
+      counts.set(g, (counts.get(g) || 0) + 1);
+    }
+    const groups = [...counts.keys()].sort();
     chipsEl.innerHTML = '';
-    groups.forEach(g=>{
+
+    const mk = (label, key, count)=>{
       const b = document.createElement('button');
-      b.className = 'chip' + (activeGroup === g ? ' active' : '');
-      b.textContent = g === 'All' ? 'All categories' : g;
-      b.addEventListener('click', ()=> setGroup(g));
+      b.type = 'button';
+      b.className = 'chip' + (activeGroup === key ? ' active' : '');
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', activeGroup === key ? 'true' : 'false');
+      // The count is what makes a chip row scannable — you can see where the
+      // boards actually are instead of clicking through empty groups.
+      b.innerHTML = `<span class="chip-ico">${key === 'All' ? '★' : catIcon(key)}</span><span>${esc(label)}</span><span class="chip-count mono">${count}</span>`;
+      b.addEventListener('click', ()=> setGroup(key));
       chipsEl.appendChild(b);
-    });
+    };
+
+    mk('All', 'All', scoped.length);
+    groups.forEach(g => mk(g, g, counts.get(g)));
   }
 
   const CAT_ICONS = [
+    [/^sport|athlet/i,'🏆'], [/^film|cinema/i,'🎬'], [/^music/i,'🎵'],
+    [/^science|tech/i,'🔬'], [/^histor|politic/i,'📜'], [/^art|literat/i,'🎨'],
     [/football|soccer/i,'⚽'], [/basket/i,'🏀'], [/cricket/i,'🏏'], [/tennis/i,'🎾'],
     [/box|combat|martial/i,'🥊'], [/mma|fighter|wrestl/i,'🥋'], [/f1|motorsport|driver/i,'🏎'],
     [/chess/i,'♟'], [/music|singer|band|rapper/i,'🎵'], [/movie|film|director|actor|screen/i,'🎬'],
@@ -421,7 +554,7 @@
       b.addEventListener('click', ()=> setGroup(key));
       nav.appendChild(b);
     };
-    mk('All categories', 'All', '★', cats.length);
+    mk('All categories', 'All', '★', catsInScope().length);
     groups.forEach(g => mk(g, g, catIcon(g), (groupMap[g]||[]).length));
   }
 
@@ -432,6 +565,7 @@
     applyFilters();
   }
 
+  renderCountries();
   renderChips();
   renderCatNav();
 
@@ -443,6 +577,20 @@
   function schedulePortraits(){
     if(!window.PortraitFallback) return;
     setTimeout(()=> window.PortraitFallback.scan(), 100);
+  }
+
+  // "Vote Ronaldo" reads better than "Vote Cristiano Ronaldo" on a button, but
+  // taking the last word alone turns "Leonardo da Vinci" into "Vinci". Walk
+  // back over the particles, and fall back to the given name when the surname
+  // is too long to fit.
+  function firstName(full){
+    const parts = String(full || '').trim().split(/\s+/).filter(Boolean);
+    if(parts.length < 2) return parts[0] || '';
+    const particles = new Set(['de','da','del','della','van','von','di','du','la','le','bin','ibn','al','dos','das','st','san']);
+    let i = parts.length - 1;
+    while(i > 1 && particles.has(parts[i-1].toLowerCase())) i--;
+    const surname = parts.slice(i).join(' ');
+    return surname.length > 14 ? parts[0] : surname;
   }
 
   function duelHtml(cat, catPeople, opts={}){
@@ -477,27 +625,46 @@
           <div class="photo">${p1Photo}</div>
           <div class="name display"><a href="/person?slug=${p1?p1.slug:''}">${p1 ? esc(p1.name) : 'Contender 1'}</a></div>
           <div class="total display">${v1.toLocaleString()} <span>votes</span></div>
+          ${p1 ? `<button class="btn-vote" data-vote="${p1.id}" data-name="${esc(p1.name)}"><span class="btn-vote-label">Vote ${esc(firstName(p1.name))}</span><span class="btn-vote-plus">+1</span></button>` : ''}
         </div>
         <div class="duel-vs">VS</div>
         <div class="duel-side ${v2>v1?'leader':''}">
           <div class="photo">${p2Photo}</div>
           <div class="name display"><a href="/person?slug=${p2?p2.slug:''}">${p2 ? esc(p2.name) : 'Contender 2'}</a></div>
           <div class="total display">${v2.toLocaleString()} <span>votes</span></div>
+          ${p2 ? `<button class="btn-vote" data-vote="${p2.id}" data-name="${esc(p2.name)}"><span class="btn-vote-label">Vote ${esc(firstName(p2.name))}</span><span class="btn-vote-plus">+1</span></button>` : ''}
         </div>
         <div class="duel-gap"><b style="color:var(--gold)">${esc(gapText)}</b></div>
         ${bar}
-      </div>
-      <div class="duel-vote-row">
-        ${p1 ? `<button class="btn-vote" data-vote="${p1.id}" data-name="${esc(p1.name)}">Vote ${esc(p1.name.split(' ').pop())} +1</button>` : ''}
-        ${p2 ? `<button class="btn-vote secondary" data-vote="${p2.id}" data-name="${esc(p2.name)}">Vote ${esc(p2.name.split(' ').pop())} +1</button>` : ''}
       </div>`;
   }
 
   function renderFeatured(){
     featuredEl.innerHTML = '';
+
+    const title = document.getElementById('featured-title');
+    const sub = document.getElementById('featured-sub');
+    if(title && sub){
+      const tag = '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span>';
+      if(activeCountry === 'Global'){
+        title.innerHTML = 'Top 50 Fights ' + tag;
+        sub.textContent = 'The 50 biggest debates of all time • #1 vs #2, vote with one tap';
+      } else {
+        title.innerHTML = esc(activeCountry) + ' Fights ' + tag;
+        sub.textContent = `The biggest debates in ${activeCountry} • #1 vs #2, vote with one tap`;
+      }
+    }
     let idx = 0;
-    for(const slug of GLOBAL_TOP_50_FIGHTS){
-      const cat = cats.find(c => c.slug === slug || (c.slug.includes(slug) || slug.includes(c.slug)));
+    // The Top 50 are the global fights; under a country tab the featured strip
+    // becomes that country's biggest boards instead of showing nothing.
+    const scoped = catsInScope();
+    const featuredSlugs = activeCountry === 'Global'
+      ? GLOBAL_TOP_50_FIGHTS
+      : scoped.slice(0, 50).map(c => c.slug);
+
+    for(const slug of featuredSlugs){
+      const cat = scoped.find(c => c.slug === slug)
+        || (activeCountry === 'Global' ? cats.find(c => c.slug === slug || c.slug.includes(slug) || slug.includes(c.slug)) : null);
       if(!cat) continue;
       if(activeGroup !== 'All' && cat.group_name !== activeGroup) continue;
       const catPeople = duoForCat(cat);
@@ -510,7 +677,7 @@
   }
 
   function renderGroups(filteredCats){
-    const list = filteredCats || cats;
+    const list = filteredCats || catsInScope();
     const visible = activeGroup === 'All' ? list : list.filter(c => c.group_name === activeGroup);
 
     const sort = sortEl.value;
@@ -571,6 +738,8 @@
     if(q.length >= 1){
       const low = q.toLowerCase();
       const filteredCats = cats.filter(c => c.name.toLowerCase().includes(low) || c.slug.includes(low.replace(/\s+/g,'-')));
+      // Search reaches across every country deliberately: someone typing
+      // "Sachin" wants him found whichever tab happens to be open.
       srWrap.style.display = 'block';
       srTitle.textContent = `“${q}” — ${filteredCats.length} boards`;
       srCats.innerHTML = '';
@@ -789,7 +958,7 @@
     (bids||[]).slice(0, 5).forEach(b => {
       items.push(`⚡ <b>${esc(b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'A backer'))}</b> voted <span class="g">${Math.floor(b.amount_cents/100)} votes</span> for <b>${esc(b.people?.name)}</b>`);
     });
-    items.push(`🏆 <b>151</b> boards · $1 = 1 vote · no judges, no algorithms`);
+    items.push(`🏆 <b>${cats.length.toLocaleString()}</b> boards · $1 = 1 vote · no judges, no algorithms`);
 
     const seq = items.map(t => `<span class="goat-ticker-item">${t}</span><span class="goat-ticker-sep">•</span>`).join('');
     track.innerHTML = `<div class="goat-ticker-seq">${seq}</div><div class="goat-ticker-seq" aria-hidden="true">${seq}</div>`;
