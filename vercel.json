@@ -3,9 +3,6 @@
   "buildCommand": null,
   "cleanUrls": true,
   "functions": {
-    "api/checkout.js": {
-      "includeFiles": "api/**"
-    },
     "api/payment-done.js": {
       "includeFiles": "api/**"
     },
@@ -21,22 +18,10 @@
     "api/img.js": {
       "maxDuration": 15
     },
-    "api/paypal-capture.js": {
-      "includeFiles": "api/**"
-    },
-    "api/uropay-checkout.js": {
-      "includeFiles": "api/**"
-    },
-    "api/uropay-confirm.js": {
-      "includeFiles": "api/**"
-    },
     "api/uropay-webhook.js": {
       "includeFiles": "api/**"
     },
-    "api/upi-intent.js": {
-      "includeFiles": "api/**"
-    },
-    "api/upi-claim.js": {
+    "api/pay.js": {
       "includeFiles": "api/**"
     }
   },

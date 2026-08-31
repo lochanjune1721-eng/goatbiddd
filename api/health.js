@@ -43,7 +43,7 @@ export default withHandler(async function handler(req, res){
   };
 
   // Direct UPI needs only a VPA and a price. It cannot confirm payments by
-  // itself, so it is always a reviewed rail — see api/upi-intent.js.
+  // itself, so it is always a reviewed rail — see api/_pay-upi.js.
   const upi = {
     configured: present('UPI_VPA') && present('UPI_PAYEE_NAME'),
     vpaConfigured: present('UPI_VPA'),

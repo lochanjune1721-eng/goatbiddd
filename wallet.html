@@ -196,10 +196,10 @@
     if(!session){ paymentStatus.textContent = 'Sign in first.'; paymentStatus.style.color = '#e55'; return; }
 
     try {
-      const r = await fetch('/api/upi-intent', {
+      const r = await fetch('/api/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ amountCents: cents })
+        body: JSON.stringify({ action: 'upi-intent', amountCents: cents })
       });
       const j = await r.json().catch(()=>({}));
       if(!r.ok){ paymentStatus.textContent = j.error || 'Could not start a UPI payment.'; paymentStatus.style.color = '#e55'; return; }
@@ -231,10 +231,10 @@
     paymentStatus.textContent = 'Submitting…';
     paymentStatus.style.color = 'var(--muted)';
     try {
-      const r = await fetch('/api/upi-claim', {
+      const r = await fetch('/api/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ topupId: upiTopupId, utr })
+        body: JSON.stringify({ action: 'upi-claim', topupId: upiTopupId, utr })
       });
       const j = await r.json().catch(()=>({}));
       if(!r.ok){ paymentStatus.textContent = j.error || 'Could not submit that reference.'; paymentStatus.style.color = '#e55'; return; }
@@ -258,11 +258,11 @@
     const returnTo = getReturnTo();
     try {
       if(payMethod === 'upi') return startDirectUpi(cents);
-      const endpoint = payMethod === 'uropay' ? '/api/uropay-checkout' : '/api/checkout';
-      const r = await fetch(endpoint, {
+      const action = payMethod === 'uropay' ? 'uropay-checkout' : 'paypal-checkout';
+      const r = await fetch('/api/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amountCents: cents, userId: user.id, email: user.email, returnTo })
+        body: JSON.stringify({ action, amountCents: cents, userId: user.id, email: user.email, returnTo })
       });
       const j = await r.json().catch(()=>({}));
       if(!r.ok){
@@ -334,10 +334,10 @@
     }
 
     try {
-      const r = await fetch('/api/uropay-confirm', {
+      const r = await fetch('/api/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ topupId })
+        body: JSON.stringify({ action: 'uropay-confirm', topupId })
       });
       const j = await r.json().catch(()=>({}));
 
@@ -406,10 +406,10 @@
     }
 
     try {
-      const r = await fetch('/api/paypal-capture', {
+      const r = await fetch('/api/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ orderId })
+        body: JSON.stringify({ action: 'paypal-capture', orderId })
       });
       const j = await r.json().catch(()=>({}));
 

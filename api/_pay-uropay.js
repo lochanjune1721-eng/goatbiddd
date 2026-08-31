@@ -1,18 +1,16 @@
-// api/uropay-checkout.js — opens a UroPay (UPI) order for a wallet top-up.
+// api/_pay-uropay.js — UroPay: opens a UroPay (UPI) order for a wallet top-up.
 //
-// Mirrors api/checkout.js: this route moves no money. It records what is owed
+// Mirrors the PayPal rail: this route moves no money. It records what is owed
 // and returns the URL to send the payer to. Credit is granted later, and only
 // against an order UroPay itself confirms as PAID.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler, supabaseUrl } from './_lib.js';
+import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
 import { createOrder, rupeesForVotes, isConfigured } from './_uropay.js';
-
-export default withHandler(async function handler(req, res){
-  requireMethod(req, 'POST');
+import { settleUroPayOrder } from './_uropay-settle.js';
+export async function uroPayCheckout(req, res, body){
 
   if (!isConfigured()) throw new HttpError(503, 'UPI top-ups are not configured yet. Nothing has been charged.');
 
-  const body = await readJsonBody(req);
   const { userId, amountCents, amount_cents, returnTo } = body;
   const cents = Number(amountCents ?? amount_cents);
   if (!Number.isInteger(cents) || cents < 100) throw new HttpError(400, 'Minimum top-up is $1 (1 vote)');
@@ -83,4 +81,56 @@ export default withHandler(async function handler(req, res){
   await supa.from('topups').update({ provider_order_id: order.id }).eq('id', topupId);
 
   return res.status(200).json({ ok: true, url: order.openUrl, orderId: order.id, topupId, amountInr: rupees });
-});
+}
+
+// uroPayConfirm — called by the wallet when UroPay sends the payer back.
+//
+// Confirms immediately so the votes appear while they are still looking at the
+// page. The webhook settles the same order independently; whichever arrives
+// first wins and the other is a no-op.
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function uroPayConfirm(req, res, body){
+
+  const { topupId } = body;
+  if (!topupId || !UUID.test(String(topupId))) throw new HttpError(400, 'Missing topupId');
+
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
+  const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) throw new HttpError(401, 'Sign in to finish your top-up');
+  const { data: authData } = await supa.auth.getUser(token);
+  const uid = authData?.user?.id;
+  if (!uid) throw new HttpError(401, 'Your session has expired — sign in again');
+
+  const { data: topup } = await supa.from('topups')
+    .select('id,user_id,provider_order_id,status').eq('id', topupId).maybeSingle();
+  if (!topup) throw new HttpError(404, 'That top-up could not be found');
+  if (topup.user_id !== uid) throw new HttpError(403, 'That payment belongs to a different account');
+  if (!topup.provider_order_id) throw new HttpError(409, 'That top-up never reached UroPay');
+
+  const result = await settleUroPayOrder(supa, {
+    orderId: topup.provider_order_id,
+    topupId: topup.id,
+    requireUserId: uid,
+    label: 'uropay-confirm'
+  });
+
+  if (!result.settled) {
+    if (result.pending) {
+      return res.status(202).json({ ok: false, pending: true, message: 'UroPay has not confirmed this payment yet. Your votes will appear as soon as it clears.' });
+    }
+    throw new HttpError(402, `Payment not completed: ${result.reason}. Nothing has been charged.`);
+  }
+
+  const { data: user } = await supa.from('users').select('balance_cents').eq('id', uid).maybeSingle();
+  return res.status(200).json({
+    ok: true,
+    duplicate: !!result.duplicate,
+    credited: result.credited ?? 0,
+    newBalance: user?.balance_cents ?? null
+  });
+}
