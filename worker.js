@@ -107,6 +107,25 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // A Supabase magic link can land on a path that does not exist. If the
+    // project's Site URL is set to the wildcard pattern that belongs in the
+    // Redirect URLs allow-list (".../**"), Supabase builds the callback from it
+    // literally and the visitor arrives at https://host/**#access_token=...
+    // The page 404s, no script runs, and a valid session is thrown away.
+    //
+    // "*" is never part of a real asset path here, so treat it as that
+    // misconfiguration and send the visitor to the page the magic link was
+    // meant for. The token rides along on its own: a redirect response carries
+    // no fragment of its own, so the browser reattaches the original
+    // "#access_token=..." to the new location and supabase-js consumes it
+    // there. This does not fix the dashboard setting — it stops it from
+    // costing someone their sign-in.
+    if (!url.pathname.startsWith('/api/') && url.pathname.includes('*')) {
+      const target = '/wallet' + url.search;
+      return new Response(null, { status: 302, headers: { location: target, 'cache-control': 'no-store' } });
+    }
+
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
 
     const name = url.pathname.slice('/api/'.length).replace(/\.js$/, '').replace(/\/+$/, '');
