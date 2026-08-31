@@ -468,3 +468,89 @@ body.preview-only #add-btn{display:none!important}
 .inline-topup{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(13,12,11,.72);backdrop-filter:blur(2px)}
 .inline-topup-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:var(--shadow);width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
 @media(max-width:480px){.inline-topup{padding:12px}.inline-topup-card{padding:18px;border-radius:16px}}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Classes the markup has always used but nothing ever defined. Until now a
+   .notice rendered as raw red monospace text and .btn-ghost as the browser's
+   default grey button — which is why the wallet looked unfinished.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Status messages. .ok / .error tint the same shape. */
+.notice{display:block;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);
+  border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.5;margin:10px 0}
+.notice.ok{border-color:rgba(46,204,113,.35);background:rgba(46,204,113,.08);color:#8FE3B4}
+.notice.error{border-color:rgba(226,90,90,.38);background:rgba(226,90,90,.08);color:#F0A9A9}
+
+/* The quiet sibling of .btn-primary. */
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--border-2);border-radius:999px;
+  padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;
+  transition:border-color .15s,color .15s,background .15s}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,106,.07)}
+.btn-ghost:active{transform:translateY(1px)}
+.btn-ghost:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-primary:focus-visible,.btn-ghost:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* Empty states — "no bids yet", "nothing waiting". */
+.empty{color:var(--muted);font-size:13px;line-height:1.6;padding:18px 16px;text-align:center;
+  border:1px dashed var(--border-2);border-radius:var(--radius-card);background:var(--surface)}
+
+/* Loading placeholders. */
+.skeleton{position:relative;overflow:hidden;background:var(--surface-2);border-radius:10px;min-height:14px}
+.skeleton::after{content:'';position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);animation:skeleton-sweep 1.4s infinite}
+@keyframes skeleton-sweep{100%{transform:translateX(100%)}}
+@media (prefers-reduced-motion:reduce){.skeleton::after{animation:none}}
+
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);
+  border-radius:999px;padding:0 14px;height:42px}
+.search input{flex:1;background:transparent;border:0;outline:0;color:var(--ink);font-size:13px;height:100%}
+.search input::placeholder{color:var(--muted-2)}
+
+.pagination{display:flex;gap:8px;justify-content:center;align-items:center;margin:18px 0;
+  font-size:12px;color:var(--muted)}
+
+.side-title{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--muted);margin:0 0 10px}
+.hit-meta{font-size:11px;color:var(--muted)}
+.btn-vote .btn-vote-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Wallet: the top-up card ──────────────────────────────────────────────
+   Was a centred stack of five gold pills, a bare number box and an unstyled
+   button. Same information, given a hierarchy: the balance leads, the amounts
+   are an even grid, and the secondary controls stop competing with them. */
+.wallet-card{max-width:520px;margin:0 auto;background:
+  radial-gradient(120% 100% at 50% 0%, rgba(201,168,106,.10), transparent 62%), var(--surface);
+  border:1px solid var(--border);border-radius:22px;padding:28px 24px;box-shadow:var(--shadow);text-align:center}
+.wallet-label{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.wallet-balance{font-family:Anton,sans-serif;font-size:clamp(44px,9vw,64px);line-height:1;color:var(--gold);
+  margin:8px 0 6px;letter-spacing:.01em}
+.wallet-sub{font-size:12.5px;color:var(--muted)}
+.wallet-sub b{color:var(--ink);font-weight:700}
+
+.amount-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:22px 0 0}
+@media(max-width:560px){.amount-grid{grid-template-columns:repeat(3,1fr)}}
+.amount{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  height:60px;border-radius:14px;border:1px solid var(--border-2);background:var(--surface-2);
+  color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.amount:hover{border-color:var(--gold);background:rgba(201,168,106,.08)}
+.amount:active{transform:translateY(1px)}
+.amount:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.amount .amount-usd{font-family:Anton,sans-serif;font-size:19px;letter-spacing:.02em}
+.amount .amount-votes{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.amount:hover .amount-votes{color:var(--gold-2)}
+
+.wallet-divider{display:flex;align-items:center;gap:12px;margin:20px 0 16px;
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2)}
+.wallet-divider::before,.wallet-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.custom-row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
+.custom-row input{width:150px;height:42px;border-radius:999px;border:1px solid var(--border);
+  background:var(--bg);color:var(--ink);padding:0 16px;text-align:center;font-size:14px;font-weight:600}
+.custom-row input:focus{outline:none;border-color:var(--gold)}
+.custom-row input::placeholder{color:var(--muted-2);font-weight:400}
+
+/* File inputs render as a raw OS control otherwise. */
+.file-field input[type=file]{width:100%;font-size:12.5px;color:var(--muted)}
+.file-field input[type=file]::file-selector-button{background:var(--surface-3);color:var(--ink);
+  border:1px solid var(--border-2);border-radius:999px;padding:8px 14px;margin-right:12px;
+  font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+.file-field input[type=file]::file-selector-button:hover{border-color:var(--gold);color:var(--gold)}
