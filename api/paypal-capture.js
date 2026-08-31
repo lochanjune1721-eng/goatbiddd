@@ -5,7 +5,7 @@
 // correctness: whichever arrives first settles, and confirm_topup makes the
 // second a no-op.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler } from './_lib.js';
+import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler, supabaseUrl } from './_lib.js';
 import { payPalFetch, fromPayPalAmount, hasIssue } from './_paypal.js';
 import { settleTopup, readCapture } from './_settle.js';
 
@@ -15,7 +15,8 @@ export default withHandler(async function handler(req, res){
   const { orderId } = await readJsonBody(req);
   if (!orderId || typeof orderId !== 'string') throw new HttpError(400, 'Missing orderId');
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // Must be the signed-in payer: settleTopup checks this id against the row's

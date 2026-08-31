@@ -6,7 +6,7 @@
 // unverified POST to this URL credits nothing, and a missing PAYPAL_WEBHOOK_ID
 // fails the request rather than falling back to trusting the caller.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readRawBodyText, requireEnv, requireMethod, withHandler } from './_lib.js';
+import { HttpError, readRawBodyText, requireEnv, requireMethod, withHandler, supabaseUrl } from './_lib.js';
 import { verifyWebhookSignature, payPalFetch, fromPayPalAmount, hasIssue } from './_paypal.js';
 import { settleTopup, readCapture } from './_settle.js';
 
@@ -17,7 +17,8 @@ export default withHandler(async function handler(req, res){
   // sends these bytes back to PayPal unchanged.
   const raw = await readRawBodyText(req);
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
   const transmissionId = await verifyWebhookSignature(req, raw);
 
   let event;

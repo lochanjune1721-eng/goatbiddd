@@ -7,8 +7,8 @@ import { payPalBase } from './_paypal.js';
 // credentials a top-up cannot start, and without the webhook id the webhook
 // refuses to credit a wallet. A site that cannot take money is not healthy,
 // so say so here rather than letting the first paying visitor discover it.
-const REQUIRED = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID'];
-const OPTIONAL = ['SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET',
+const REQUIRED = ['SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID'];
+const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET',
   'UROPAY_API_KEY', 'UROPAY_API_SECRET', 'INR_PER_VOTE', 'UROPAY_INR_PER_VOTE',
   'UPI_VPA', 'UPI_PAYEE_NAME'];
 

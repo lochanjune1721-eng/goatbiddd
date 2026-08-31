@@ -4,7 +4,7 @@
 // and returns the URL to send the payer to. Credit is granted later, and only
 // against an order UroPay itself confirms as PAID.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler } from './_lib.js';
+import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler, supabaseUrl } from './_lib.js';
 import { createOrder, rupeesForVotes, isConfigured } from './_uropay.js';
 
 export default withHandler(async function handler(req, res){
@@ -18,7 +18,8 @@ export default withHandler(async function handler(req, res){
   if (!Number.isInteger(cents) || cents < 100) throw new HttpError(400, 'Minimum top-up is $1 (1 vote)');
   if (cents > 500000) throw new HttpError(400, 'Maximum top-up is $5,000');
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   let uid = userId;

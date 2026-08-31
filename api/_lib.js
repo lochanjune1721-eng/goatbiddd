@@ -64,6 +64,15 @@ export function requireMethod(req, method){
   if (req.method !== method) throw new HttpError(405, 'Method not allowed');
 }
 
+// The Supabase project URL is not a secret — it already ships to every browser
+// in js/supabase.js — so it falls back rather than being required. Only the
+// service-role key, which bypasses row-level security, has to come from the
+// environment.
+const DEFAULT_SUPABASE_URL = 'https://orzcszqpnvicreqvpncu.supabase.co';
+export function supabaseUrl(){
+  return process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+}
+
 // Returns the requested env vars, or throws a 500 naming exactly which ones
 // are missing — a misconfigured project should say so, not crash.
 export function requireEnv(...names){

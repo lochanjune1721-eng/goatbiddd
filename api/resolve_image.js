@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readJsonBody, requireEnv, requireMethod, unwrap, withHandler } from './_lib.js';
+import { HttpError, readJsonBody, requireEnv, requireMethod, unwrap, withHandler, supabaseUrl } from './_lib.js';
 
 // This route writes people.photo_path with the service-role key, so an
 // unauthenticated caller could repoint any contender's portrait at any image
@@ -18,7 +18,8 @@ export default withHandler(async function handler(req, res){
   requireMethod(req, 'POST');
   requireResolverSecret(req);
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
 
   const body = await readJsonBody(req);
   const { name, category, entity_id } = body;

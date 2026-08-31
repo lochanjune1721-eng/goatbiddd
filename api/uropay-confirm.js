@@ -4,7 +4,7 @@
 // page. The webhook settles the same order independently; whichever arrives
 // first wins and the other is a no-op.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler } from './_lib.js';
+import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler, supabaseUrl } from './_lib.js';
 import { settleUroPayOrder } from './_uropay-settle.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -15,7 +15,8 @@ export default withHandler(async function handler(req, res){
   const { topupId } = await readJsonBody(req);
   if (!topupId || !UUID.test(String(topupId))) throw new HttpError(400, 'Missing topupId');
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const token = (req.headers.authorization || '').replace('Bearer ', '');

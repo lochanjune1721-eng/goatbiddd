@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readJsonBody, requireEnv, requireMethod, unwrap, withHandler } from './_lib.js';
+import { HttpError, readJsonBody, requireEnv, requireMethod, unwrap, withHandler, supabaseUrl } from './_lib.js';
 
 export default withHandler(async function handler(req, res){
   requireMethod(req, 'POST');
@@ -14,7 +14,8 @@ export default withHandler(async function handler(req, res){
   if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) throw new HttpError(401, 'Unauthorized');
   if (!action) return res.status(200).json({ ok: true });
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   // 30-min grace: list confirmed donations with no matching payment (donation_confirmed true, payment_confirmed false, created >30m ago)

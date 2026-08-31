@@ -5,7 +5,7 @@
 // order and settles on what GET /v1/orders says. Duplicate deliveries are
 // expected — confirm_topup makes the second one a no-op.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readRawBodyText, requireEnv, requireMethod, withHandler } from './_lib.js';
+import { HttpError, readRawBodyText, requireEnv, requireMethod, withHandler, supabaseUrl } from './_lib.js';
 import { verifyWebhook } from './_uropay.js';
 import { settleUroPayOrder } from './_uropay-settle.js';
 
@@ -15,7 +15,8 @@ export default withHandler(async function handler(req, res){
   // Before anything reads req.body — the signature covers these exact bytes.
   const raw = await readRawBodyText(req);
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
   verifyWebhook(req, raw);
 
   let event;

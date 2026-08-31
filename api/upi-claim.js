@@ -5,7 +5,7 @@
 // lands in provider_payment_id, whose (provider, provider_payment_id) unique
 // index means the same reference cannot be claimed twice, by anyone.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler } from './_lib.js';
+import { HttpError, readJsonBody, requireMethod, requireEnv, withHandler, supabaseUrl } from './_lib.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // A UPI UTR is twelve digits; allow a little either side for bank variations.
@@ -20,7 +20,8 @@ export default withHandler(async function handler(req, res){
   const reference = String(utr || '').trim().replace(/\s+/g, '');
   if (!UTR.test(reference)) throw new HttpError(400, 'Enter the UPI reference number from your payment app (usually 12 digits).');
 
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
+  const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_URL = supabaseUrl();
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const token = (req.headers.authorization || '').replace('Bearer ', '');
