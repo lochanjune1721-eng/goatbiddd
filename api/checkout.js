@@ -14,7 +14,9 @@ export default withHandler(async function handler(req, res){
 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) {
-    return res.status(200).json({ ok: true, fake: true, message: 'Local mode — balance credited optimistically' });
+    // This used to answer ok:true, which reads as success in the wallet UI
+    // while no credit was ever recorded.
+    throw new HttpError(503, 'Top-ups are unavailable: the server is missing SUPABASE_SERVICE_ROLE_KEY.');
   }
 
   const supabaseAdmin = createClient(SUPABASE_URL, serviceKey);
@@ -41,15 +43,17 @@ export default withHandler(async function handler(req, res){
   // If real Dodo Payments API key is provided, create real checkout session
   if (isDodoConfigured) {
     try {
-      const topupId = `topup_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      
-      // Record pending topup in database
-      await supabaseAdmin.from('topups').insert({
-        id: topupId,
-        user_id: uid,
-        amount_cents: cents,
-        status: 'pending'
-      });
+      // topups.id is a uuid; let the database mint it and carry that value in
+      // the payment metadata. The old `topup_<timestamp>` string failed the
+      // column type, so no pending row was ever written — which left the
+      // webhook with no record of how much had actually been paid.
+      const { data: pending, error: pendingErr } = await supabaseAdmin
+        .from('topups')
+        .insert({ user_id: uid, amount_cents: cents, status: 'pending' })
+        .select('id')
+        .single();
+      if (pendingErr) throw new HttpError(500, `Could not open a top-up: ${pendingErr.message}`);
+      const topupId = pending.id;
 
       const dodoRes = await fetch('https://live.dodopayments.com/checkouts', {
         method: 'POST',
@@ -86,36 +90,33 @@ export default withHandler(async function handler(req, res){
           return res.status(200).json({ ok: true, url: checkoutUrl, topupId });
         }
       }
-      console.warn('[checkout] Dodo checkout call returned non-200, falling back to direct credit:', await dodoRes.text());
+      const detail = await dodoRes.text().catch(() => '');
+      console.error('[checkout] Dodo checkout call returned non-200:', dodoRes.status, detail.slice(0, 500));
+      throw new HttpError(502, 'The payment provider could not start a checkout. Nothing has been charged — please try again.');
     } catch(err) {
+      if (err instanceof HttpError) throw err;
       console.error('[checkout] Dodo checkout creation failed:', err);
+      throw new HttpError(502, 'The payment provider is unreachable. Nothing has been charged — please try again.');
     }
   }
 
-  // Instant credit fallback (when in test/demo or Dodo not configured)
-  const paymentId = `pay_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  let newBalance = 0;
-  try {
-    const { data: balData, error: balErr } = await supabaseAdmin.rpc('credit_balance', {
-      p_user_id: uid,
-      p_amount_cents: cents,
-      p_payment_id: paymentId
-    });
-    if (balErr) throw balErr;
-    newBalance = balData;
-  } catch(rpcErr) {
-    // If credit_balance fails, manual insert/update
-    await supabaseAdmin.from('topups').insert({
-      user_id: uid,
-      amount_cents: cents,
-      dodo_payment_id: paymentId,
-      status: 'confirmed'
-    });
-    const { data: u } = await supabaseAdmin.from('users').select('balance_cents').eq('id', uid).maybeSingle();
-    const updatedBal = (u?.balance_cents || 0) + cents;
-    await supabaseAdmin.from('users').update({ balance_cents: updatedBal }).eq('id', uid);
-    newBalance = updatedBal;
+  // Below here no payment has been made. Crediting the wallet anyway is free
+  // money, so it happens only when the project is explicitly put in test mode.
+  // Failing a top-up is the correct outcome of an unconfigured payment
+  // provider; silently granting votes is not.
+  if (process.env.ALLOW_TEST_TOPUPS !== '1') {
+    throw new HttpError(503, 'Payments are not configured yet, so top-ups are unavailable. Nothing has been charged.');
   }
 
-  return res.status(200).json({ ok: true, newBalance, votesAdded: cents/100 });
+  const paymentId = `test_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const { data: newBalance, error: creditErr } = await supabaseAdmin.rpc('confirm_topup', {
+    p_topup_id: null,
+    p_user_id: uid,
+    p_amount_cents: cents,
+    p_payment_id: paymentId
+  });
+  if (creditErr) throw new HttpError(500, `Test top-up failed: ${creditErr.message}`);
+
+  console.warn(`[checkout] TEST MODE: credited ${cents} cents to ${uid} with no payment (ALLOW_TEST_TOPUPS=1)`);
+  return res.status(200).json({ ok: true, test: true, newBalance, votesAdded: cents/100 });
 });

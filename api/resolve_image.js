@@ -1,8 +1,22 @@
+import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { HttpError, readJsonBody, requireEnv, requireMethod, unwrap, withHandler } from './_lib.js';
 
+// This route writes people.photo_path with the service-role key, so an
+// unauthenticated caller could repoint any contender's portrait at any image
+// Wikimedia returns for a name they choose. It is a maintenance endpoint with
+// no callers in the site, so it is gated on a shared secret and fails closed.
+function requireResolverSecret(req){
+  const { RESOLVER_SECRET } = requireEnv('RESOLVER_SECRET');
+  const offered = String(req.headers['x-resolver-secret'] || '');
+  const a = Buffer.from(offered, 'utf8');
+  const b = Buffer.from(RESOLVER_SECRET, 'utf8');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) throw new HttpError(401, 'Unauthorized');
+}
+
 export default withHandler(async function handler(req, res){
   requireMethod(req, 'POST');
+  requireResolverSecret(req);
 
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY');
 

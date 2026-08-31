@@ -300,3 +300,119 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 begin
   return place_vote(p_person_id, p_amount_cents / 100);
 end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Money guards. Everything below closes a path that let a signed-in browser,
+-- or an unauthenticated POST, give itself credit for free.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- The $1 minimum the checkout advertises has to be a legal row: the old
+-- >= 500 check rejected every top-up under five votes at the database.
+alter table topups drop constraint if exists topups_amount_cents_check;
+alter table topups add constraint topups_amount_cents_check check (amount_cents >= 100);
+
+-- RLS is row-level, not column-level, so "users self update" let any signed-in
+-- caller PATCH /rest/v1/users and set their own balance_cents to anything they
+-- liked. This trigger is the column-level half of that policy.
+--
+-- It keys off current_user, not auth.uid(): PostgREST executes a browser's
+-- request as the `authenticated` (or `anon`) role, while the SECURITY DEFINER
+-- money functions below run as the function owner. So votes and settled
+-- payments still move the balance; a direct table write never does.
+create or replace function guard_balance_columns()
+returns trigger language plpgsql as $$
+begin
+  if current_user not in ('anon', 'authenticated') then
+    return new;
+  end if;
+
+  -- "users self insert" is equally column-blind, so a brand-new row could be
+  -- created with a balance already in it. Force the opening balance to zero
+  -- rather than rejecting the insert, since ensureUserRow() runs on every
+  -- first sign-in and must keep working.
+  if tg_op = 'INSERT' then
+    new.balance_cents := 0;
+    new.total_spent_cents := 0;
+    return new;
+  end if;
+
+  if new.balance_cents is distinct from old.balance_cents
+     or new.total_spent_cents is distinct from old.total_spent_cents then
+    raise exception 'balance_cents and total_spent_cents can only change through a payment or a vote';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists guard_balance_columns on users;
+create trigger guard_balance_columns
+  before insert or update on users
+  for each row execute function guard_balance_columns();
+
+-- confirm_topup — the one way a payment turns into balance.
+--
+-- Idempotent on dodo_payment_id, because a webhook is delivered at least once
+-- and a retry must not credit twice. Settles the pending row the checkout
+-- created when there is one, rather than leaving a second row behind.
+create or replace function confirm_topup(p_topup_id uuid, p_user_id uuid, p_amount_cents int, p_payment_id text)
+returns int language plpgsql security definer set search_path = public as $$
+declare v_new int; v_id uuid;
+begin
+  if p_user_id is null then raise exception 'Missing user'; end if;
+  if p_amount_cents is null or p_amount_cents < 100 then raise exception 'Invalid top-up amount'; end if;
+  if p_payment_id is null or p_payment_id = '' then raise exception 'Missing payment id'; end if;
+
+  -- Already settled under this payment id — return the balance, change nothing.
+  if exists (select 1 from topups where dodo_payment_id = p_payment_id and status = 'confirmed') then
+    select balance_cents into v_new from users where id = p_user_id;
+    return v_new;
+  end if;
+
+  if p_topup_id is not null then
+    update topups set status = 'confirmed', dodo_payment_id = p_payment_id
+      where id = p_topup_id and status <> 'confirmed'
+      returning id into v_id;
+  end if;
+
+  if v_id is null then
+    insert into topups (user_id, amount_cents, dodo_payment_id, status)
+      values (p_user_id, p_amount_cents, p_payment_id, 'confirmed')
+      on conflict (dodo_payment_id) do nothing
+      returning id into v_id;
+  end if;
+
+  -- Lost the race to a concurrent delivery of the same payment.
+  if v_id is null then
+    select balance_cents into v_new from users where id = p_user_id;
+    return v_new;
+  end if;
+
+  update users set balance_cents = balance_cents + p_amount_cents
+    where id = p_user_id returning balance_cents into v_new;
+  return v_new;
+end $$;
+
+-- credit_balance() minted balance for an arbitrary user id, and its insert was
+-- idempotent while its balance update was not — a replayed payment id deduped
+-- the receipt and credited the wallet again. Delegate to confirm_topup so
+-- there is a single settlement path.
+create or replace function credit_balance(p_user_id uuid, p_amount_cents int, p_payment_id text)
+returns int language plpgsql security definer set search_path = public as $$
+begin
+  return confirm_topup(null, p_user_id, p_amount_cents, p_payment_id);
+end $$;
+
+-- PostgREST publishes every function in `public` as an RPC, and Supabase grants
+-- EXECUTE to anon/authenticated by default. Both of these take the user id as
+-- an argument, so leaving that grant in place meant any visitor holding the
+-- (public) anon key could POST /rest/v1/rpc/credit_balance and top up their own
+-- wallet. Only the service role — the webhook — may settle a payment.
+revoke execute on function confirm_topup(uuid, uuid, int, text) from public, anon, authenticated;
+revoke execute on function credit_balance(uuid, int, text) from public, anon, authenticated;
+grant execute on function confirm_topup(uuid, uuid, int, text) to service_role;
+grant execute on function credit_balance(uuid, int, text) to service_role;
+
+-- place_vote reads auth.uid() and can only spend the caller's own balance, so
+-- it stays callable from the browser. Restated here so a future default-grant
+-- sweep does not quietly take it away.
+grant execute on function place_vote(uuid, int) to authenticated;
+grant execute on function place_bid(uuid, int) to authenticated;

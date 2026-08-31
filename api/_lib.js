@@ -20,18 +20,37 @@ async function readRawBody(req){
   return Buffer.concat(chunks).toString('utf8');
 }
 
+// The exact bytes of the request body, which is what a webhook signature is
+// computed over — re-serialising a parsed object does not reproduce them.
+//
+// Order matters: Vercel's Node runtime exposes `req.body` as a lazy getter
+// that consumes the stream to parse it, so whoever looks first wins. Read the
+// stream before touching `body`, and cache the result so a later
+// readJsonBody() on the same request still works.
+export async function readRawBodyText(req){
+  if (typeof req.__rawBodyText === 'string') return req.__rawBodyText;
+
+  let text = null;
+  if (req.readable) {
+    try { text = await readRawBody(req); } catch { text = null; }
+  }
+  if (text === null) {
+    const raw = req.rawBody ?? req.body;
+    if (Buffer.isBuffer(raw)) text = raw.toString('utf8');
+    else if (typeof raw === 'string') text = raw;
+    else if (raw && typeof raw === 'object') text = JSON.stringify(raw);
+    else text = '';
+  }
+
+  req.__rawBodyText = text;
+  return text;
+}
+
 // Vercel pre-parses JSON bodies, but only when Content-Type says so. Callers
 // that omit the header (and webhook senders that use a vendor content type)
 // leave req.body as a string, a Buffer, or undefined — handle all of them.
 export async function readJsonBody(req){
-  let body = req.body;
-  if (body === undefined && req.readable) {
-    try { body = await readRawBody(req); } catch { body = ''; }
-  }
-  if (body === undefined || body === null) return {};
-  if (Buffer.isBuffer(body)) body = body.toString('utf8');
-  if (typeof body === 'object') return body;
-  const raw = String(body).trim();
+  const raw = (await readRawBodyText(req)).trim();
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
