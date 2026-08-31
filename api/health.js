@@ -14,6 +14,25 @@ const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV',
   'INR_PER_VOTE', 'UROPAY_INR_PER_VOTE',
   'UROPAY_VPA', 'UPI_VPA', 'UPI_PAYEE_NAME'];
 
+// India pays in rupees, everyone else pays by card. Splitting it here means
+// the wallet page renders one list and never has to hold the policy itself.
+// A rail that is not configured is never offered, whatever the country: an
+// offered button that 503s is worse than a button that was never there.
+export function railsFor(country, ready){
+  const inIndia = country === 'IN';
+  const offer = [];
+  if (inIndia) {
+    if (ready.upiReady) offer.push('upi');
+    if (ready.uropayReady) offer.push('uropay');
+    // Nothing rupee-denominated is configured — fall back rather than leaving
+    // an Indian visitor with no way to pay at all.
+    if (!offer.length && ready.paypalReady) offer.push('paypal');
+  } else {
+    if (ready.paypalReady) offer.push('paypal');
+  }
+  return { country: country || null, inIndia, offer, currency: inIndia && offer[0] !== 'paypal' ? 'INR' : 'USD' };
+}
+
 export default withHandler(async function handler(req, res){
   const present = name => Boolean(process.env[name]);
   const missing = REQUIRED.filter(n => !present(n));
@@ -63,6 +82,14 @@ export default withHandler(async function handler(req, res){
   const onWorkers = Boolean(req?.cf) || (typeof navigator !== 'undefined' && /Cloudflare/i.test(navigator.userAgent || ''));
   const platform = onWorkers ? 'cloudflare-workers' : 'node';
 
+  // Where the visitor is, as Cloudflare sees them (ISO-3166-1 alpha-2). The
+  // wallet uses this to decide which rails to offer: a UPI deep link is
+  // useless outside India, and a rupee price is meaningless to someone paying
+  // in dollars. Presentational only — it decides what is shown, never what is
+  // allowed, so a VPN or a null here degrades to the international rail rather
+  // than locking anyone out.
+  const country = req?.cf?.country || null;
+
   // A variable can be set correctly and still read as missing because it is
   // under a near-miss name — VITE_PAYPAL_CLIENT_ID rather than
   // PAYPAL_CLIENT_ID, say. Reporting only `false` sends you to re-check a
@@ -81,6 +108,11 @@ export default withHandler(async function handler(req, res){
     platform,
     runtime: typeof process !== 'undefined' ? process.version : null,
     colo: req?.cf?.colo || null,
+    country,
+    // Which rails to offer this visitor, decided server-side so the page does
+    // not have to know the rule. India gets the rupee rails; everyone else
+    // gets the card rail.
+    rails: railsFor(country, { upiReady: upi.ready, uropayReady: uropay.ready, paypalReady: paypal.credentialsConfigured }),
     paypal,
     uropay,
     upi,
