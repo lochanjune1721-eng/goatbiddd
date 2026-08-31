@@ -90,7 +90,7 @@ export function supabaseUrl(){
 //      declares none, so those are wiped on every deploy. Secrets survive.
 const NAME_PREFIXES = ['VITE_', 'NEXT_PUBLIC_', 'REACT_APP_', 'PUBLIC_'];
 
-function nearMiss(name){
+export function nearMiss(name){
   const env = process.env;
   for (const p of NAME_PREFIXES) if (env[p + name]) return p + name;
   // A prefix the caller already includes, set without it — the mirror image.

@@ -1,6 +1,6 @@
 // /api/health.js — deployment diagnostics.
 // Reports only whether each secret is PRESENT, never its value.
-import { withHandler } from './_lib.js';
+import { withHandler, nearMiss } from './_lib.js';
 import { payPalBase } from './_paypal.js';
 import { upiVpa, upiPayeeName } from './_pay-upi.js';
 
@@ -63,6 +63,18 @@ export default withHandler(async function handler(req, res){
   const onWorkers = Boolean(req?.cf) || (typeof navigator !== 'undefined' && /Cloudflare/i.test(navigator.userAgent || ''));
   const platform = onWorkers ? 'cloudflare-workers' : 'node';
 
+  // A variable can be set correctly and still read as missing because it is
+  // under a near-miss name — VITE_PAYPAL_CLIENT_ID rather than
+  // PAYPAL_CLIENT_ID, say. Reporting only `false` sends you to re-check a
+  // dashboard that already looks right, so name the value that is actually
+  // there. Only names, never values.
+  const renameTo = {};
+  for (const name of [...REQUIRED, ...OPTIONAL]) {
+    if (present(name)) continue;
+    const alt = nearMiss(name);
+    if (alt) renameTo[alt] = name;
+  }
+
   const degraded = missing.length > 0 || Object.values(checks).some(v => v !== 'ok');
   return res.status(degraded ? 503 : 200).json({
     ok: !degraded,
@@ -74,6 +86,8 @@ export default withHandler(async function handler(req, res){
     upi,
     env: Object.fromEntries([...REQUIRED, ...OPTIONAL].map(n => [n, present(n)])),
     missingRequired: missing,
+    // { nameYouSet: nameTheCodeReads } — rename these and they take effect.
+    renameTo,
     checks
   });
 });
