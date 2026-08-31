@@ -2,6 +2,7 @@
 // Reports only whether each secret is PRESENT, never its value.
 import { withHandler } from './_lib.js';
 import { payPalBase } from './_paypal.js';
+import { upiVpa, upiPayeeName } from './_pay-upi.js';
 
 // All three PayPal values are required, not optional: without the client
 // credentials a top-up cannot start, and without the webhook id the webhook
@@ -9,8 +10,9 @@ import { payPalBase } from './_paypal.js';
 // so say so here rather than letting the first paying visitor discover it.
 const REQUIRED = ['SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID'];
 const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET',
-  'UROPAY_API_KEY', 'UROPAY_API_SECRET', 'INR_PER_VOTE', 'UROPAY_INR_PER_VOTE',
-  'UPI_VPA', 'UPI_PAYEE_NAME'];
+  'UROPAY_API_KEY', 'UROPAY_API_SECRET', 'UROPAY_WEBHOOK_SECRET',
+  'INR_PER_VOTE', 'UROPAY_INR_PER_VOTE',
+  'UROPAY_VPA', 'UPI_VPA', 'UPI_PAYEE_NAME'];
 
 export default withHandler(async function handler(req, res){
   const present = name => Boolean(process.env[name]);
@@ -37,17 +39,22 @@ export default withHandler(async function handler(req, res){
   const uropay = {
     configured: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET'),
     inrPerVote,
+    // Which secret verifies inbound webhooks, so a mismatch is visible.
+    webhookSecret: present('UROPAY_WEBHOOK_SECRET') ? 'UROPAY_WEBHOOK_SECRET' : 'UROPAY_API_SECRET',
     ready: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET') && inrPerVote > 0
   };
 
   // Direct UPI needs only a VPA and a price. It cannot confirm payments by
   // itself, so it is always a reviewed rail — see api/_pay-upi.js.
+  // UROPAY_VPA and UPI_VPA are the same setting under two names.
+  const vpa = upiVpa();
   const upi = {
-    configured: present('UPI_VPA') && present('UPI_PAYEE_NAME'),
-    vpaConfigured: present('UPI_VPA'),
+    configured: Boolean(vpa),
+    vpa: vpa ? vpa.replace(/^(.{2}).*(@.*)$/, '$1***$2') : null,
+    payeeName: upiPayeeName(),
     inrPerVote,
     manualReview: true,
-    ready: present('UPI_VPA') && present('UPI_PAYEE_NAME') && inrPerVote > 0
+    ready: Boolean(vpa) && inrPerVote > 0
   };
 
   const degraded = missing.length > 0 || Object.values(checks).some(v => v !== 'ok');

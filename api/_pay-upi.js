@@ -13,14 +13,24 @@ import QRCode from 'qrcode/lib/browser.js';
 import { createClient } from '@supabase/supabase-js';
 import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
 import { rupeesForVotes } from './_pricing.js';
+// UroPay's dashboard calls the payee address UROPAY_VPA; accept either name so
+// the variables it hands you work without being renamed. The payee name is the
+// site's own, so it defaults rather than being a fifth thing to configure.
+export function upiVpa(){
+  return process.env.UPI_VPA || process.env.UROPAY_VPA || '';
+}
+export function upiPayeeName(){
+  return process.env.UPI_PAYEE_NAME || 'The True GOAT';
+}
 export function isConfigured(){
-  return Boolean(process.env.UPI_VPA && process.env.UPI_PAYEE_NAME);
+  return Boolean(upiVpa());
 }
 
 export async function upiIntent(req, res, body){
 
-  if (!isConfigured()) throw new HttpError(503, 'UPI is not configured yet. Nothing has been charged.');
-  const { UPI_VPA, UPI_PAYEE_NAME } = requireEnv('UPI_VPA', 'UPI_PAYEE_NAME');
+  const UPI_VPA = upiVpa();
+  const UPI_PAYEE_NAME = upiPayeeName();
+  if (!UPI_VPA) throw new HttpError(503, 'UPI is not configured yet: set UROPAY_VPA (or UPI_VPA) to the UPI address payments should go to. Nothing has been charged.');
 
   const { userId, amountCents, amount_cents } = body;
   const cents = Number(amountCents ?? amount_cents);

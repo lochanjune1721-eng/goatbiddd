@@ -19,6 +19,18 @@ function credentials(){
   return { key: UROPAY_API_KEY, secret: UROPAY_API_SECRET };
 }
 
+// The docs sign webhooks with the same merchant secret as outbound requests,
+// but the dashboard issues a separate UROPAY_WEBHOOK_SECRET. Prefer that when
+// it is set — if the two ever differ, the dedicated one is the truth for
+// inbound deliveries — and fall back to the API secret, which is what the
+// documented example uses.
+function webhookSecret(){
+  const dedicated = process.env.UROPAY_WEBHOOK_SECRET;
+  if (dedicated) return dedicated;
+  const { UROPAY_API_SECRET } = requireEnv('UROPAY_API_SECRET');
+  return UROPAY_API_SECRET;
+}
+
 export function isConfigured(){
   return Boolean(process.env.UROPAY_API_KEY && process.env.UROPAY_API_SECRET);
 }
@@ -96,7 +108,8 @@ function header(req, name){
 // Verifies an inbound order-status webhook. Same HMAC construction as our own
 // requests, with path '/tenant-webhook' and an empty query string.
 export function verifyWebhook(req, rawBody){
-  const { key, secret } = credentials();
+  const { key } = credentials();
+  const secret = webhookSecret();
 
   const apiKey = header(req, 'x-api-key');
   const timestamp = header(req, 'x-timestamp');
