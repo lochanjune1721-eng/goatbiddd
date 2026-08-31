@@ -35,7 +35,7 @@ async function findTopup(supa, { topupId, orderId, captureId }){
  * leaves it unset (PayPal is not a signed-in user); the browser return path
  * sets it, so one signed-in user cannot settle another's order.
  */
-export async function settleTopup(supa, { topupId, orderId, captureId, capturedCents, requireUserId, label = 'settle' }){
+export async function settleTopup(supa, { topupId, orderId, captureId, capturedCents, requireUserId, provider = 'paypal', label = 'settle' }){
   if (!captureId) return { settled: false, reason: 'no capture id' };
 
   const topup = await findTopup(supa, { topupId, orderId, captureId });
@@ -67,7 +67,8 @@ export async function settleTopup(supa, { topupId, orderId, captureId, capturedC
     p_topup_id: topup.id,
     p_user_id: topup.user_id,
     p_amount_cents: topup.amount_cents,
-    p_payment_id: captureId
+    p_payment_id: captureId,
+    p_provider: provider
   });
   if (error) throw new HttpError(500, `confirm_topup failed: ${error.message}`);
 

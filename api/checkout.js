@@ -36,7 +36,7 @@ export default withHandler(async function handler(req, res){
   // payer cannot decide their own credit.
   const { data: pending, error: pendingErr } = await supabaseAdmin
     .from('topups')
-    .insert({ user_id: uid, amount_cents: cents, status: 'pending' })
+    .insert({ user_id: uid, amount_cents: cents, status: 'pending', provider: 'paypal' })
     .select('id')
     .single();
   if (pendingErr) throw new HttpError(500, `Could not open a top-up: ${pendingErr.message}`);

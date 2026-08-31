@@ -431,3 +431,89 @@ grant execute on function credit_balance(uuid, int, text) to service_role;
 -- sweep does not quietly take it away.
 grant execute on function place_vote(uuid, int) to authenticated;
 grant execute on function place_bid(uuid, int) to authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Multiple payment providers.
+--
+-- topups recorded provider_payment_id but never which provider issued it, so a
+-- receipt could not say whether it was a card or a UPI transfer, and the
+-- idempotency key was globally unique across providers rather than per
+-- provider. Both matter as soon as there is more than one.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+alter table topups add column if not exists provider text not null default 'paypal';
+
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'topups_provider_check') then
+    alter table topups add constraint topups_provider_check
+      check (provider in ('paypal', 'uropay', 'test'));
+  end if;
+end $$;
+
+-- Uniqueness belongs on (provider, id): two providers can legitimately issue
+-- the same transaction id, and a collision must not silently swallow a payment.
+alter table topups drop constraint if exists topups_provider_payment_id_key;
+drop index if exists topups_provider_payment_id_key;
+-- Not a partial index: ON CONFLICT cannot infer one without repeating its
+-- predicate, and confirm_topup relies on this constraint for idempotency.
+-- Pending rows are unaffected — provider_payment_id is null until settlement,
+-- and Postgres treats nulls as distinct, so any number of them coexist.
+drop index if exists topups_provider_payment_idx;
+create unique index if not exists topups_provider_payment_idx
+  on topups (provider, provider_payment_id);
+
+create index if not exists topups_provider_idx on topups (provider, created_at desc);
+
+-- confirm_topup gains the provider. The four-argument version is dropped rather
+-- than left in place: an overload that still resolves would let a caller settle
+-- a payment without saying where it came from.
+drop function if exists confirm_topup(uuid, uuid, int, text);
+
+create or replace function confirm_topup(p_topup_id uuid, p_user_id uuid, p_amount_cents int, p_payment_id text, p_provider text)
+returns int language plpgsql security definer set search_path = public as $$
+declare v_new int; v_id uuid;
+begin
+  if p_user_id is null then raise exception 'Missing user'; end if;
+  if p_amount_cents is null or p_amount_cents < 100 then raise exception 'Invalid top-up amount'; end if;
+  if p_payment_id is null or p_payment_id = '' then raise exception 'Missing payment id'; end if;
+  if p_provider is null or p_provider = '' then raise exception 'Missing provider'; end if;
+
+  -- Already settled under this provider's payment id — change nothing.
+  if exists (select 1 from topups
+             where provider = p_provider and provider_payment_id = p_payment_id and status = 'confirmed') then
+    select balance_cents into v_new from users where id = p_user_id;
+    return v_new;
+  end if;
+
+  if p_topup_id is not null then
+    update topups set status = 'confirmed', provider_payment_id = p_payment_id, provider = p_provider
+      where id = p_topup_id and status <> 'confirmed'
+      returning id into v_id;
+  end if;
+
+  if v_id is null then
+    insert into topups (user_id, amount_cents, provider_payment_id, provider, status)
+      values (p_user_id, p_amount_cents, p_payment_id, p_provider, 'confirmed')
+      on conflict (provider, provider_payment_id) do nothing
+      returning id into v_id;
+  end if;
+
+  -- Lost the race to a concurrent delivery of the same payment.
+  if v_id is null then
+    select balance_cents into v_new from users where id = p_user_id;
+    return v_new;
+  end if;
+
+  update users set balance_cents = balance_cents + p_amount_cents
+    where id = p_user_id returning balance_cents into v_new;
+  return v_new;
+end $$;
+
+create or replace function credit_balance(p_user_id uuid, p_amount_cents int, p_payment_id text)
+returns int language plpgsql security definer set search_path = public as $$
+begin
+  return confirm_topup(null, p_user_id, p_amount_cents, p_payment_id, 'test');
+end $$;
+
+revoke execute on function confirm_topup(uuid, uuid, int, text, text) from public, anon, authenticated;
+grant execute on function confirm_topup(uuid, uuid, int, text, text) to service_role;
