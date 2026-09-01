@@ -61,10 +61,18 @@ is never mistaken for one a provider confirmed, and each credit carries the
 reference that matches it to a statement.
 
 ```
-supabase-offline-rail.sql     -- once per database; adds the rail
 data/offline-payments.sql     -- the credits; put the real references in first
 ```
 
-Both are idempotent. The credit goes through `confirm_topup`, the same function
-the PayPal and UPI webhooks settle through, so the receipt and the balance move
-together and a re-run credits nothing.
+That is the whole procedure — the file carries its own schema changes, so there
+is nothing to run before it, and every one of them is guarded. It is idempotent:
+a reference already confirmed is skipped rather than credited again, so it can be
+re-run safely after a fifth account signs in or a reference is corrected.
+
+The credit goes through `confirm_topup` where it exists — the same function the
+PayPal and UPI webhooks settle through, so the receipt and the balance move
+together and cannot drift. On an older project without it, the file does the same
+two writes inline and stays idempotent by checking the reference first.
+
+`supabase-offline-rail.sql` is the schema change on its own, for a database that
+wants the rail without the credits.
