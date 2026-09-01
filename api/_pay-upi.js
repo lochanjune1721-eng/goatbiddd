@@ -11,7 +11,7 @@
 // exist on Workers. The browser build has the same toString(svg).
 import QRCode from 'qrcode/lib/browser.js';
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
+import { HttpError, requireEnv, supabaseUrl, refuseInDemoMode } from './_lib.js';
 import { rupeesForCents, votesForCents, creditCentsForCents } from './_pricing.js';
 import { userCountry, assertRail } from './_country.js';
 // UroPay's dashboard calls the payee address UROPAY_VPA; accept either name so
@@ -28,6 +28,9 @@ export function isConfigured(){
 }
 
 export async function upiIntent(req, res, body){
+
+  // Nothing below this line can run in a demonstration build.
+  refuseInDemoMode();
 
   const UPI_VPA = upiVpa();
   const UPI_PAYEE_NAME = upiPayeeName();

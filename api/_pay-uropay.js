@@ -4,12 +4,15 @@
 // and returns the URL to send the payer to. Credit is granted later, and only
 // against an order UroPay itself confirms as PAID.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
+import { HttpError, requireEnv, supabaseUrl, refuseInDemoMode } from './_lib.js';
 import { createOrder, isConfigured } from './_uropay.js';
 import { creditCentsForCents, votesForCents, rupeesForCents } from './_pricing.js';
 import { userCountry, assertRail } from './_country.js';
 import { settleUroPayOrder } from './_uropay-settle.js';
 export async function uroPayCheckout(req, res, body){
+
+  // Nothing below this line can run in a demonstration build.
+  refuseInDemoMode();
 
   if (!isConfigured()) throw new HttpError(503, 'UPI top-ups are not configured yet. Nothing has been charged.');
 

@@ -1,6 +1,6 @@
 // /api/health.js — deployment diagnostics.
 // Reports only whether each secret is PRESENT, never its value.
-import { withHandler, nearMiss } from './_lib.js';
+import { withHandler, nearMiss, demoMode } from './_lib.js';
 import { payPalBase } from './_paypal.js';
 import { upiVpa, upiPayeeName } from './_pay-upi.js';
 import { publicTiers } from './_pricing.js';
@@ -133,7 +133,15 @@ export default withHandler(async function handler(req, res){
     // Which rails to offer this visitor, decided server-side so the page does
     // not have to know the rule. India gets the rupee rails; everyone else
     // gets the card rail.
-    rails: railsFor(country, { upiReady: upi.ready, uropayReady: uropay.ready, paypalReady: paypal.credentialsConfigured }),
+    demo: demoMode(),
+    // In a demonstration build no rail is offered at all, whatever is
+    // configured — the checkout then says payments are unavailable rather than
+    // opening an order nothing can settle.
+    rails: demoMode()
+      ? { country, inIndia: country === 'IN', offer: [], preferred: null, upiProvider: null,
+          upiAutoConfirms: false, currency: country === 'IN' ? 'INR' : 'USD',
+          blocked: 'This is a demonstration build — payments are disabled.' }
+      : railsFor(country, { upiReady: upi.ready, uropayReady: uropay.ready, paypalReady: paypal.credentialsConfigured }),
     // The price list the checkout draws its buttons from, so the page can never
     // advertise a bonus the server will not honour.
     tiers: publicTiers(),

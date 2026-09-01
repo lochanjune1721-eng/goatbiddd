@@ -128,6 +128,24 @@ export function unwrap(result, context){
   return result?.data;
 }
 
+// DEMO_MODE turns the site into a showcase: the boards, the fights and the
+// backing history all work, and nothing can take a payment. It is a var in
+// wrangler.jsonc rather than a secret so it deploys with the code and is
+// visible in a diff.
+//
+// It is checked in the payment handlers themselves, not only in the UI, so it
+// holds against a hand-made POST as well as against a button.
+export function demoMode(){
+  const v = String(process.env.DEMO_MODE || '').toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
+export function refuseInDemoMode(){
+  if (demoMode()) {
+    throw new HttpError(503, 'This is a demonstration build — payments are disabled and nothing can be charged.');
+  }
+}
+
 export function withHandler(handler){
   return async function wrapped(req, res){
     try {

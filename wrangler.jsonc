@@ -23,6 +23,11 @@
   //
   // Change INR_PER_VOTE here to reprice the Indian rails; both read it.
   "vars": {
+    // A demonstration build: the boards and their backing history are seeded,
+    // and no payment can be taken. Set to "0" to run this for real, and only
+    // then do the payment secrets mean anything.
+    "DEMO_MODE": "1",
+
     "INR_PER_VOTE": "60",
     "UPI_PAYEE_NAME": "The True GOAT",
     "SITE_URL": "https://www.thetruegoat.com"

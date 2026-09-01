@@ -4,12 +4,15 @@
 // PayPal URL to send the payer to; credit is only ever granted later, by
 // the capture below or the webhook, and only against a completed capture.
 import { createClient } from '@supabase/supabase-js';
-import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
+import { HttpError, requireEnv, supabaseUrl, refuseInDemoMode } from './_lib.js';
 import { payPalFetch, toPayPalAmount, fromPayPalAmount, hasIssue } from './_paypal.js';
 import { settleTopup, readCapture } from './_settle.js';
 import { creditCentsForCents, votesForCents } from './_pricing.js';
 import { userCountry, assertRail } from './_country.js';
 export async function payPalCheckout(req, res, body){
+
+  // Nothing below this line can run in a demonstration build.
+  refuseInDemoMode();
 
   const { userId, amountCents, amount_cents, returnTo, personId } = body;
   const cents = Number(amountCents ?? amount_cents);
