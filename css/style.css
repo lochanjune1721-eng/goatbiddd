@@ -820,3 +820,38 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 .hero-fight .skel-duel{min-height:420px;border-radius:16px}
 .hero-under{padding-top:4px}
 @media(max-width:640px){ .hero-fight{margin-bottom:14px} .hero-fight .skel-duel{min-height:320px} }
+
+/* ── backing control: $1, any amount, or the #1 fan spot ────────────────────
+   One control on every page that shows a contender. The Greatest Fan button
+   carries its own price so it reads as a purchase rather than a dare, and it
+   is gold because it is the one action on the page that changes a name. */
+.back-control{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.back-control .back-row{margin-top:0}
+.stepper input[data-back-amount]{font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;-moz-appearance:textfield}
+.stepper input[data-back-amount]::-webkit-outer-spin-button,
+.stepper input[data-back-amount]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+.goat-fan-btn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;
+  background:linear-gradient(180deg,var(--gold-lo),var(--surface));border:1px solid var(--gold);
+  border-radius:var(--radius-card);padding:10px 14px;color:var(--ink);font:inherit;transition:border-color .15s,transform .1s}
+.goat-fan-btn:hover{border-color:var(--gold-hover)}
+.goat-fan-btn:active{transform:translateY(1px)}
+.goat-fan-btn:disabled{opacity:.6;cursor:default}
+.goat-fan-card{display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,var(--gold-lo),var(--surface));
+  border:1px solid var(--gold);border-radius:var(--radius-card);padding:10px 14px}
+.goat-fan-crown{font-size:20px;flex:0 0 auto}
+.goat-fan-copy{display:flex;flex-direction:column;min-width:0;flex:1}
+.goat-fan-title{font-weight:700;font-size:14px;line-height:1.2}
+.goat-fan-sub{font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.goat-fan-price{margin-left:auto;flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-weight:700;
+  color:var(--gold);font-size:16px;letter-spacing:-.02em}
+@media(max-width:480px){
+  .goat-fan-btn,.goat-fan-card{padding:9px 11px;gap:9px}
+  .goat-fan-title{font-size:13px}
+  .goat-fan-sub{font-size:10px}
+  .goat-fan-price{font-size:14px}
+}
+
+/* The crown on a board row, under the amount controls it shares a price with. */
+.row-goat{grid-column:1/-1;margin-top:8px}
+.row-goat:empty{display:none}

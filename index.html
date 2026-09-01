@@ -58,6 +58,14 @@
    a shared row underneath made you read left-to-right to work out which
    button belonged to which face. */
 .duel-side .btn-vote{margin-top:10px;width:100%;max-width:260px}
+/* The second way in: any amount, or the crown at its current price. Quieter
+   than the $1 button on purpose — that one is the default, this one is the
+   deliberate choice. */
+.duel-more{margin-top:6px;width:100%;max-width:260px;background:transparent;border:1px solid var(--gold);
+  color:var(--gold);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.duel-more:hover{background:var(--gold-lo)}
+@media(max-width:480px){.duel-more{font-size:10px;padding:6px 8px;margin-top:5px}}
 .btn-vote{height:40px;padding:0 18px;border-radius:999px;border:1px solid var(--border-2);background:transparent;color:var(--ink);font-weight:700;font-size:13px;letter-spacing:.01em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s,color .15s,transform .1s}
 .btn-vote .btn-vote-plus{font-family:var(--mono,ui-monospace,monospace);font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--surface-3);color:var(--muted);transition:background .15s,color .15s}
 .btn-vote:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,175,110,.07)}
@@ -292,6 +300,8 @@
 
 <script src="js/supabase.js"></script>
 <script src="js/checkout.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/back-control.js"></script>
 <script src="js/canonical-top2.js"></script>
 <script src="js/video-manager.js"></script>
 <script src="js/optimized-image.js"></script>
@@ -693,7 +703,8 @@
           </div>
           <div class="duel-count display">$${votes.toLocaleString('en-US')}</div>
           <div class="duel-share">${pct}% of the money</div>
-          ${p ? `<button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back ${esc(firstName(p.name))} · $1</button>` : ''}
+          ${p ? `<button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back ${esc(firstName(p.name))} · $1</button>
+          <button class="duel-more" data-back-more="${p.id}" data-name="${esc(p.name)}">👑 Any amount · take the crown</button>` : ''}
         </div>`;
 
     return `
@@ -912,6 +923,10 @@
       window.Auth.openAuthModal();
       return;
     }
+    // A name and an email before any money moves. place_vote refuses without
+    // them anyway; asking here turns that into a form rather than an error.
+    if(window.GoatProfile && !(await window.GoatProfile.require())) return;
+
     btn.disabled = true; 
     const orig = btn.textContent;
     btn.textContent = '…';
@@ -969,6 +984,28 @@
   }
 
   document.addEventListener('click', e => {
+    // Any amount, or the #1 fan spot at its current price. Opened rather than
+    // rendered inline: a homepage carries around a hundred duels, and pricing
+    // the crown on every side up front would be two hundred queries before the
+    // page painted. This costs one, when someone asks for it.
+    const more = e.target.closest('[data-back-more]');
+    if(more){
+      e.preventDefault(); e.stopPropagation();
+      if(!window.GoatBack) return;
+      const pid = more.dataset.backMore;
+      window.GoatBack.sheet(pid, {
+        personName: more.dataset.name || '',
+        getTotal(){ const p = people.find(x => x.id === pid); return p ? (p.total_cents||0) : 0; },
+        onBacked(data){
+          const p = people.find(x => x.id === pid);
+          if(p && data && typeof data.new_total === 'number') p.total_cents = data.new_total;
+          applyFilters();
+          refreshActivity();
+        }
+      });
+      return;
+    }
+
     const btn = e.target.closest('[data-vote]');
     if(!btn) return;
     e.preventDefault(); e.stopPropagation();
