@@ -31,8 +31,8 @@
 
 .duel{border:1px solid var(--border);overflow:hidden;background:var(--surface);border-radius:16px;width:100%;transition:border-color .15s}
 .duel:hover{border-color:var(--border-2)}
-.duel-head{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface-2)}
-.duel-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted);line-height:1.2}
+.duel-head{padding:7px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.duel-head strong{font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ── The duel: face, board, face ─────────────────────────────────────────────
    Three columns, and all three the same height. The portraits fill their column
    top to bottom rather than sitting as a fixed square in the middle of it.
@@ -47,7 +47,7 @@
    Both media are cropped high (object-position keeps faces in frame) because a
    16:9 frame cropped to a tall box loses the top and bottom, and the top is
    where the head is. */
-.duel-body{display:grid;grid-template-columns:minmax(0,0.92fr) minmax(0,1.75fr) minmax(0,0.92fr);
+.duel-body{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.34fr) minmax(0,1.3fr);
   gap:14px;align-items:stretch;padding:14px}
 .duel-body.crazy{gap:16px;padding:16px}
 .duel-side{min-width:0;display:flex;flex-direction:column;align-items:stretch}
@@ -765,7 +765,7 @@
           </div>
           <div class="poll-acts">
             ${[p1,p2].map((p,i)=> p ? `<div class="poll-act ${i?'b':'a'}">
-              <button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back ${esc(firstName(p.name))} · $1</button>
+              <button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back · $1</button>
               <button class="duel-more" data-back-more="${p.id}" data-name="${esc(p.name)}">👑 Any amount</button>
             </div>` : '<div class="poll-act"></div>').join('')}
           </div>

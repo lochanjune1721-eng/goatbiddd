@@ -113,6 +113,12 @@ a{color:inherit;text-decoration:none}
    heads were cut off. The clip is cropped into the square instead, biased
    upward so faces stay in frame. */
 .photo .goat-clip{object-position:center 25%}
+/* A <video> defaults to object-fit: contain, which letterboxes a 16:9 clip
+   inside a taller frame — black bands above and below the picture. The rules
+   below cover .goat-clip, but a clip that has not had its class applied yet, or
+   any other video that lands in a frame, letterboxes until it does. Cover
+   everything in a photo frame rather than only the elements we named. */
+.photo video, .person-photo video, #photo-wrap video{object-fit:cover}
 .photo img, img.goat-photo{width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:saturate(.9) contrast(1.02);display:block}
 .photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,.22) 0%, transparent 52%);pointer-events:none}
 /* Clips sit exactly over the still they replace (js/video-hover.js) and fade in
@@ -760,7 +766,7 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 
 .poll-tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .poll-tile{--accent:var(--muted);--accent-glow:transparent;
-  display:flex;flex-direction:column;gap:1px;min-width:0;border-radius:12px;padding:9px 10px;
+  display:flex;flex-direction:column;gap:1px;min-width:0;border-radius:12px;padding:8px 9px;
   background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 88%,#000),
                                     color-mix(in srgb,var(--accent) 55%,#000));
   color:#fff;border:1px solid color-mix(in srgb,var(--accent) 70%,transparent)}
@@ -768,17 +774,20 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 .poll-tile.b{--accent:var(--side-b);--accent-glow:var(--side-b-glow)}
 .poll-tile.empty{opacity:.45}
 .poll-team{font-size:9.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;opacity:.8}
-.poll-name{font-family:'Anton',sans-serif;font-size:clamp(15px,2.2vw,21px);line-height:1.05;
+.poll-name{font-family:'Anton',sans-serif;font-size:clamp(14px,1.9vw,19px);line-height:1.05;
   letter-spacing:.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.poll-pct{font-family:'Anton',sans-serif;font-size:clamp(20px,3.2vw,30px);line-height:1.02;
+.poll-pct{font-family:'Anton',sans-serif;font-size:clamp(18px,2.6vw,26px);line-height:1.02;
   font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin-top:1px}
 .poll-money{font-size:11px;opacity:.85;font-variant-numeric:tabular-nums}
 
 /* The Greatest Fan of All Time, on the tile of the contender they lead. The
    face is the point — a name alone reads as a caption, a face reads as a
    person who is winning something. */
-.poll-gfoat{display:flex;align-items:center;gap:6px;margin-top:7px;padding-top:7px;
-  border-top:1px solid rgba(255,255,255,.22);min-height:26px}
+.poll-gfoat{display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;
+  border-top:1px solid rgba(255,255,255,.22);min-height:0}
+/* Empty until paintGfoat fills it, and permanently empty on a contender with no
+   backers. Either way an empty band under a rule is worse than no band. */
+.poll-gfoat:empty{display:none}
 .poll-gfoat img,.poll-gfoat .poll-gfoat-initials{width:22px;height:22px;border-radius:50%;
   object-fit:cover;flex:0 0 auto;border:1.5px solid rgba(255,255,255,.75);
   background:rgba(0,0,0,.28);display:grid;place-items:center;
@@ -798,7 +807,7 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 .poll-act{--accent:var(--muted);display:flex;flex-direction:column;gap:5px;min-width:0}
 .poll-act.a{--accent:var(--side-a);--accent-glow:var(--side-a-glow)}
 .poll-act.b{--accent:var(--side-b);--accent-glow:var(--side-b-glow)}
-.poll-act .btn-vote{width:100%;height:36px;border:0;border-radius:10px;background:var(--accent);
+.poll-act .btn-vote{width:100%;height:34px;min-width:0;border:0;border-radius:10px;background:var(--accent);
   color:#0b0b0e;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
   letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;padding:0 8px;
