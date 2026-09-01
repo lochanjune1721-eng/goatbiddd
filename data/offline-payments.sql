@@ -13,7 +13,12 @@
 --
 -- ── Before running ──────────────────────────────────────────────────────────
 --
--- 1. Put the real reference for each payment in the `reference` column below:
+-- 1. Run supabase-offline-rail.sql once against this database. It is four
+--    statements and it is what makes 'offline' a legal rail; without it every
+--    credit below is refused by a check constraint. The block after this header
+--    stops with that instruction rather than letting it fail halfway.
+--
+-- 2. Put the real reference for each payment in the `reference` column below:
 --    the bank transaction id, the UPI UTR, the receipt number. That is what
 --    lets anyone check the credit against a statement afterwards, and it is
 --    also what stops a re-run paying twice — settlement is idempotent on
@@ -21,7 +26,7 @@
 --    than credited again. The file runs unedited, but then the references
 --    record only when the payments were entered, not what they were.
 --
--- 2. Do not run this and data/demo-credit.sql against the same database. They
+-- 3. Do not run this and data/demo-credit.sql against the same database. They
 --    put the same $50,000 on the same five addresses — one as a payment
 --    received, one as demo credit — and together they leave $100,000 against
 --    two receipts for one payment. This file stops rather than stacking on top
@@ -54,17 +59,40 @@ insert into offline_payments (email, reference, amount_cents) values
   ('lochanmaheshwari23@gmail.com', 'offline-2026-09-01-lochanmaheshwari23', 5000000),
   ('santoshmaru57@gmail.com',      'offline-2026-09-01-santoshmaru57',      5000000);
 
--- The 'offline' rail has to be a legal provider value before any of this can be
--- written. Checked here so a database that has not had the migration says which
--- file to run, rather than failing on a raw check-constraint violation.
+-- Everything this file needs from the schema, checked up front and named
+-- individually, so a database that is missing a piece says which one and which
+-- file supplies it — rather than failing halfway on a raw constraint violation
+-- or a "function does not exist".
+--
+-- All three come from supabase-offline-rail.sql, which is the small paste-in
+-- slice for exactly this. supabase.sql and supabase-payments-migration.sql also
+-- carry them, if you would rather run one of those in full.
 do $$
 begin
+  -- The rail. Without it every insert below violates topups_provider_check.
   if exists (select 1 from pg_constraint
               where conrelid = 'topups'::regclass
                 and conname = 'topups_provider_check'
                 and pg_get_constraintdef(oid) not like '%''offline''%') then
     raise exception 'the topups provider check does not allow ''offline'' yet'
-      using hint = 'Run supabase-payments-migration.sql first (or supabase.sql) — it adds the offline rail.';
+      using hint = 'Run supabase-offline-rail.sql first — it is four statements and adds the offline rail.';
+  end if;
+
+  -- The settlement function, in its five-argument form. The four-argument
+  -- version settled a payment without saying which rail it came from, which is
+  -- the one thing this file exists to record.
+  if to_regprocedure('public.confirm_topup(uuid, uuid, int, text, text)') is null then
+    raise exception 'confirm_topup(uuid, uuid, int, text, text) is not in this database'
+      using hint = 'Run supabase-payments-migration.sql — it installs the settlement function this file credits through.';
+  end if;
+
+  -- What was granted, as opposed to what was charged. The closing report reads
+  -- it back.
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'topups'
+                    and column_name = 'credit_cents') then
+    raise exception 'topups.credit_cents does not exist in this database'
+      using hint = 'Run supabase-offline-rail.sql — it adds the column.';
   end if;
 end $$;
 
