@@ -311,6 +311,11 @@
   let activeCountry = 'Global';
 
   // CLEAN PREMIER GLOBAL TOP 50 FIGHTS (NO REGIONAL MIXING IN TOP FIGHTS)
+  // How many fights the strip shows. The curated set is 100 boards.
+  const FEATURED_LIMIT = 100;
+
+  // Kept only as the fallback for a database with no sort_order to offer —
+  // see renderFeatured(). Not the source of the fights any more.
   const GLOBAL_TOP_50_FIGHTS = [
     'footballers', 'basketball-players', 'tennis-men', 'tennis-women',
     'hollywood-actors', 'hollywood-actresses', 'directors', 'films', 'tv-shows',
@@ -353,10 +358,15 @@
 
   function duoForCat(cat){
     const list = peopleByCat[cat.id] || [];
-    const hasVotes = list.some(p => (p.total_cents||0) > 0);
-    if (hasVotes && list.length >= 2) {
-      return list.slice(0, 2);
-    }
+    // Whatever the board itself says, in the board's own order: money first,
+    // then who got there first, then seed_rank — the curated order from the
+    // CSV. It used to defer to CANONICAL_TOP2 for any board with no money on
+    // it, which meant a freshly seeded board showed the hardcoded pair instead
+    // of the one that was seeded.
+    if (list.length >= 2) return list.slice(0, 2);
+
+    // Only a board the database cannot supply two contenders for falls through
+    // to the hardcoded map, which then synthesises the pair.
     const canonNames = getCanonicalTop2(cat);
     if (canonNames && canonNames.length >= 2) {
       const byNameLower = {};
@@ -710,9 +720,20 @@
     // The Top 50 are the global fights; under a country tab the featured strip
     // becomes that country's biggest boards instead of showing nothing.
     const scoped = catsInScope();
-    const featuredSlugs = activeCountry === 'Global'
-      ? GLOBAL_TOP_50_FIGHTS
-      : scoped.slice(0, 50).map(c => c.slug);
+    // The fights come from the database, ordered by sort_order — which is what
+    // data/top-100-battles.sql sets from the curated CSV. This used to iterate a
+    // hardcoded array of fifty slugs, so seeding new boards changed nothing on
+    // this page: their slugs were simply not in the list.
+    //
+    // GLOBAL_TOP_50_FIGHTS survives only as the fallback for a database that
+    // has no ordering to offer, so an unseeded deployment still shows fights
+    // rather than an empty strip.
+    const ordered = scoped
+      .filter(c => Number.isFinite(Number(c.sort_order)))
+      .sort((a, b) => Number(a.sort_order) - Number(b.sort_order));
+    const featuredSlugs = ordered.length
+      ? ordered.slice(0, FEATURED_LIMIT).map(c => c.slug)
+      : (activeCountry === 'Global' ? GLOBAL_TOP_50_FIGHTS : scoped.slice(0, FEATURED_LIMIT).map(c => c.slug));
 
     for(const slug of featuredSlugs){
       const cat = scoped.find(c => c.slug === slug)

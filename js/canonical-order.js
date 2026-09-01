@@ -83,6 +83,24 @@
 
   // Convenience: resolve + filter + order + trim in one call.
   async function apply(people, cat, size){
+    // A board carrying seed_rank has an explicit editorial order in the
+    // database, set by data/top-100-battles.sql. That beats this bundled JSON,
+    // which predates it and covers a different set of boards — without this,
+    // a seeded board whose NAME happens to match an old one ("Greatest
+    // Footballer" against "Footballers") would be re-sorted by the old ranking
+    // and, worse, have every contender outside the old top 20 filtered out.
+    if (Array.isArray(people) && people.some(p => p && p.seed_rank != null)) {
+      const sorted = people.slice().sort((a,b)=>{
+        const money = (b.total_cents||0) - (a.total_cents||0);
+        if(money) return money;
+        const at = a.first_backed_at ? Date.parse(a.first_backed_at) : Infinity;
+        const bt = b.first_backed_at ? Date.parse(b.first_backed_at) : Infinity;
+        if(at !== bt) return at - bt;
+        return (a.seed_rank ?? Infinity) - (b.seed_rank ?? Infinity);
+      });
+      return size ? sorted.slice(0, size) : sorted;
+    }
+
     const top20 = await listFor(cat);
     if(!top20) return size ? (people||[]).slice(0, size) : (people||[]);
     const sorted = order(keepActual(people, top20), top20);
