@@ -585,9 +585,14 @@ alter table topups drop constraint if exists topups_status_check;
 alter table topups add constraint topups_status_check
   check (status in ('pending','review','confirmed','failed'));
 
+-- 'offline' is money settled directly with the operator — a bank transfer, a
+-- UPI payment, cash — and credited by hand from data/offline-payments.sql. It
+-- is its own rail rather than being filed under 'test' because the two are
+-- opposite claims: 'test' says no money moved, 'offline' says it moved somewhere
+-- this database cannot see. Only the second is checkable against a statement.
 alter table topups drop constraint if exists topups_provider_check;
 alter table topups add constraint topups_provider_check
-  check (provider in ('paypal', 'uropay', 'upi', 'test'));
+  check (provider in ('paypal', 'uropay', 'upi', 'test', 'offline'));
 
 -- The UTR a payer claims is stored in provider_payment_id while the top-up is
 -- still in review, so the (provider, provider_payment_id) unique index does

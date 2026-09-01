@@ -55,9 +55,12 @@ alter table topups drop constraint if exists topups_status_check;
 alter table topups add constraint topups_status_check
   check (status in ('pending','review','confirmed','failed'));
 
+-- 'offline' is money settled directly with the operator and credited by hand
+-- from data/offline-payments.sql, as distinct from 'test', which says no money
+-- moved at all.
 alter table topups drop constraint if exists topups_provider_check;
 alter table topups add constraint topups_provider_check
-  check (provider in ('paypal','uropay','upi','test'));
+  check (provider in ('paypal','uropay','upi','test','offline'));
 
 -- ── idempotency key: (provider, payment id), not payment id alone ────────────
 --
