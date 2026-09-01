@@ -27,32 +27,36 @@
 .duel-head{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface-2)}
 .duel-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted);line-height:1.2}
 /* ── The duel: face, board, face ─────────────────────────────────────────────
-   Three columns. The portraits are the poster; everything countable lives in
-   the card between them. The card used to be a stack under each face — name,
-   dollars, share, two buttons, then a bar across the bottom — which made every
-   duel about 400px tall for six numbers. This is nearer 230px and says more.
+   Three columns, and all three the same height. The portraits fill their column
+   top to bottom rather than sitting as a fixed square in the middle of it.
 
-   The photo columns are fluid and the portrait is sized by aspect-ratio rather
-   than by pixels, so the 1:1 portrait and the 16:9 clip that replaces it on
-   hover occupy the same column at the same width. Only the height moves, and
-   the grid does not reflow around it. */
-.duel-body{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1.62fr) minmax(0,1.12fr);
-  gap:16px;align-items:center;padding:16px}
-.duel-body.crazy{gap:18px;padding:18px}
+   The clip used to shrink the frame to 16:9 when it played, which left a short
+   letterbox floating in a tall empty column against a full-height square on the
+   other side — small, lopsided, and the worst version of the thing it was
+   trying to show off. The frame no longer changes shape at all: the clip fills
+   the same box the portrait did, so playing one makes the video BIGGER, not
+   shorter, and the card never reflows around it.
+
+   Both media are cropped high (object-position keeps faces in frame) because a
+   16:9 frame cropped to a tall box loses the top and bottom, and the top is
+   where the head is. */
+.duel-body{display:grid;grid-template-columns:minmax(0,0.92fr) minmax(0,1.75fr) minmax(0,0.92fr);
+  gap:14px;align-items:stretch;padding:14px}
+.duel-body.crazy{gap:16px;padding:16px}
 .duel-side{min-width:0;display:flex;flex-direction:column;align-items:stretch}
-.duel-side .photo{width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;
+.duel-side .photo{width:100%;flex:1 1 auto;min-height:170px;border-radius:14px;overflow:hidden;
   background:var(--surface-3);border:1px solid var(--border);position:relative;
-  transition:aspect-ratio .35s ease,border-color .2s,box-shadow .2s}
+  transition:border-color .2s,box-shadow .2s}
 .duel-body.crazy .duel-side .photo{border-radius:16px}
-/* A clip is 16:9. Same column, same width — the card keeps its shape. */
-.duel-side.video-playing .photo,.duel-side .photo.video-playing{aspect-ratio:16/9}
 
 @media(max-width:700px){
   /* The wrap is 760px, so three columns hold on any viewport that can show it
-     in full. Below that the card drops under the two faces rather than being
-     squeezed between them. */
-  .duel-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:14px}
+     in full. Below that the card drops under the two faces. The photos go back
+     to a square there, because side by side on a phone they have no card
+     height to match. */
+  .duel-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:12px;align-items:start}
   .duel-poll{grid-column:1 / -1;order:3}
+  .duel-side .photo{aspect-ratio:1/1;flex:0 0 auto;min-height:0}
 }
 @media(max-width:480px){
   .duel-body{gap:9px;padding:10px}
@@ -1055,7 +1059,7 @@
       const down = '$' + Math.floor((f.total_cents||0)/100).toLocaleString('en-US');
       el.title = `${name} — ${down} on this contender`;
       el.innerHTML = `${face}<span class="poll-gfoat-copy">
-          <span class="poll-gfoat-label">Greatest fan · ${esc(down)}</span>
+          <span class="poll-gfoat-label">GOAT fan · ${esc(down)}</span>
           <span class="poll-gfoat-name">${esc(name)}</span>
         </span>`;
     }
