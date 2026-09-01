@@ -45,6 +45,7 @@
 <footer class="footer">The True GOAT — pay to rank. <a href="/rules">Rules</a> · <a href="/wallet">Wallet</a> · <a href="/fans">Fans</a></footer>
 
 <script src="js/supabase.js"></script>
+<script src="js/checkout.js"></script>
 <script src="js/video-manager.js"></script>
 <script src="js/optimized-image.js"></script>
 <script src="js/portrait-fallback.js"></script>
@@ -183,9 +184,10 @@
         }catch(e){
           const m=String(e.message||e);
           if(m.toLowerCase().includes('not enough')||m.toLowerCase().includes('insufficient')||m.toLowerCase().includes('balance')){
-            if(confirm(`You need ${need} votes ($${need}) to outbid. Top up your wallet now?`)){
-              location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search);
-            }
+            if(window.GoatCheckout) window.GoatCheckout.open({
+              personId: person.id, personName: person.name,
+              personPhoto: window.GOAT?.getPhotoUrl?.(person.photo_path) });
+            else location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search);
           } else {
             alert(m);
           }
@@ -243,9 +245,10 @@
       document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
       const m=String(e.message||e);
       if(m.toLowerCase().includes('not enough')||m.toLowerCase().includes('insufficient')||m.toLowerCase().includes('balance')){
-        if(confirm(`Not enough votes in wallet. Top up now?`)){
-          location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search);
-        }
+        if(window.GoatCheckout) window.GoatCheckout.open({
+          personId: person.id, personName: person.name,
+          personPhoto: window.GOAT?.getPhotoUrl?.(person.photo_path) });
+        else location.href='/wallet?returnTo='+encodeURIComponent(location.pathname+location.search);
       } else {
         alert(m);
       }

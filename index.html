@@ -288,6 +288,7 @@
 <footer class="footer">The True GOAT — pay to rank. <a href="/rules">Rules</a> · <a href="/wallet">Wallet</a> · <a href="/fans">Fans</a></footer>
 
 <script src="js/supabase.js"></script>
+<script src="js/checkout.js"></script>
 <script src="js/canonical-top2.js"></script>
 <script src="js/video-manager.js"></script>
 <script src="js/optimized-image.js"></script>
@@ -835,7 +836,10 @@
       applyFilters();
       const msg = String(err.message||err);
       if(msg.toLowerCase().includes('not enough') || msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('balance')){
-        showTopUpPrompt(pname);
+        // Open the checkout on this contender rather than sending them to the
+        // wallet to buy an abstraction and find their way back.
+        if(window.GoatCheckout) window.GoatCheckout.open({ personId: pid, personName: pname });
+        else showTopUpPrompt(pname);
       } else {
         alert(msg);
       }

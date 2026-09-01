@@ -261,18 +261,16 @@ begin
 end $$;
 
 -- place_vote — new canonical name, keeps cents internally, 1 vote = 100 cents. Wrapper keeps place_bid for back-compat.
-create or replace function place_vote(p_person_id uuid, p_votes int)
+-- place_vote_for — the core. Takes the voter explicitly so a settled payment can
+-- spend on someone's behalf: a webhook has no auth.uid(), and pay-to-vote has
+-- to place the vote the payer already paid for.
+create or replace function place_vote_for(p_user uuid, p_person_id uuid, p_votes int)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
-  v_user uuid := auth.uid();
+  v_user uuid := p_user;
   v_cents int := p_votes * 100;
   v_balance int;
   v_new_total int;
-  v_leader_total int;
-  v_leader_first timestamptz;
-  v_my_first timestamptz;
-  v_now_first boolean;
-  v_was_first boolean;
 begin
   if p_votes is null or p_votes < 1 then raise exception 'Minimum 1 vote'; end if;
   if v_user is null then raise exception 'not authenticated'; end if;
@@ -288,46 +286,23 @@ begin
   update people set total_cents = total_cents + v_cents, first_backed_at = coalesce(first_backed_at, now()) where id = p_person_id returning total_cents into v_new_total;
   insert into fan_totals (person_id, user_id, total_cents) values (p_person_id, v_user, v_cents) on conflict (person_id, user_id) do update set total_cents = fan_totals.total_cents + v_cents;
 
-  -- Taking #1 costs at least 5 votes (500 cents) more than the current leader.
-  --
-  -- This used to test `v_new_total > v_leader_total`, which let a tie straight
-  -- through — and a tie is not second place. Boards are ordered
-  -- (total_cents desc, first_backed_at asc), so matching the leader's total
-  -- puts you FIRST when you were backed earlier. #1 could therefore be taken
-  -- for nothing over the leader, which is exactly what the error message
-  -- promised was impossible.
-  --
-  -- So the test is now "would this vote put them top of the board", evaluated
-  -- with the board's own ordering, rather than a total comparison that ignores
-  -- the tiebreak.
-  select total_cents, coalesce(first_backed_at, 'infinity'::timestamptz)
-    into v_leader_total, v_leader_first
-    from people
-    where category_id = (select category_id from people where id = p_person_id)
-      and id <> p_person_id
-    order by total_cents desc, first_backed_at asc nulls last
-    limit 1;
-
-  if v_leader_total is not null then
-    select coalesce(first_backed_at, 'infinity'::timestamptz) into v_my_first
-      from people where id = p_person_id;
-
-    -- Rank after this vote, and rank before it. The gap is only charged for
-    -- *taking* the top spot: a contender already at #1 can be topped up by a
-    -- single vote, which the old rule also blocked.
-    v_now_first := v_new_total > v_leader_total
-      or (v_new_total = v_leader_total and v_my_first < v_leader_first);
-    v_was_first := (v_new_total - v_cents) > v_leader_total
-      or ((v_new_total - v_cents) = v_leader_total and v_my_first < v_leader_first);
-
-    if v_now_first and not v_was_first and v_new_total < v_leader_total + 500 then
-      raise exception 'taking #1 costs at least 5 votes more than the current leader';
-    end if;
-  end if;
-
   return jsonb_build_object('ok', true, 'new_total', v_new_total, 'balance', v_balance - v_cents);
 exception when others then raise;
 end $$;
+
+-- What the browser calls. Spends the caller's own balance and nobody else's:
+-- the user id comes from the JWT, never from an argument.
+create or replace function place_vote(p_person_id uuid, p_votes int)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  return place_vote_for(auth.uid(), p_person_id, p_votes);
+end $$;
+
+-- place_vote_for takes the voter as an argument, so a browser holding the
+-- public anon key must never reach it. Only the settlement path may.
+revoke execute on function place_vote_for(uuid, uuid, int) from public, anon, authenticated;
+grant execute on function place_vote_for(uuid, uuid, int) to service_role;
 
 -- keep place_bid as wrapper for old callers
 create or replace function place_bid(p_person_id uuid, p_amount_cents int)
@@ -623,3 +598,83 @@ alter table topups add column if not exists review_note text;
 
 create index if not exists topups_review_idx on topups (status, claimed_at desc)
   where status = 'review';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Bonus votes, and paying for a vote without keeping a balance.
+--
+-- amount_cents is what the payer is charged. It used to double as what they
+-- were credited, which stops being true the moment $5 buys 6 votes — so the
+-- credit is now its own column. The server computes it from the tier table in
+-- api/_pricing.js when the checkout opens and writes it here; settlement grants
+-- exactly this and never recomputes, so a repriced tier cannot change what an
+-- already-open order pays out.
+--
+-- vote_person_id is the pay-to-vote half: someone who just wants to back Messi
+-- should not have to understand a wallet first. When it is set, settlement
+-- credits the votes and immediately spends them on that contender, so the money
+-- lands as a vote rather than as a balance the payer never asked for.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+alter table topups add column if not exists credit_cents int;
+alter table topups add column if not exists vote_person_id uuid references people(id) on delete set null;
+create index if not exists topups_vote_person_idx on topups (vote_person_id) where vote_person_id is not null;
+
+create or replace function confirm_topup(p_topup_id uuid, p_user_id uuid, p_amount_cents int, p_payment_id text, p_provider text)
+returns int language plpgsql security definer set search_path = public as $$
+declare v_new int; v_id uuid; v_credit int; v_person uuid;
+begin
+  if p_user_id is null then raise exception 'Missing user'; end if;
+  if p_amount_cents is null or p_amount_cents < 100 then raise exception 'Invalid top-up amount'; end if;
+  if p_payment_id is null or p_payment_id = '' then raise exception 'Missing payment id'; end if;
+  if p_provider is null or p_provider = '' then raise exception 'Missing provider'; end if;
+
+  -- Already settled under this provider's payment id — change nothing. A
+  -- webhook is delivered at least once and a retry must not credit twice, nor
+  -- cast the pay-to-vote vote a second time.
+  if exists (select 1 from topups
+             where provider = p_provider and provider_payment_id = p_payment_id and status = 'confirmed') then
+    select balance_cents into v_new from users where id = p_user_id;
+    return v_new;
+  end if;
+
+  if p_topup_id is not null then
+    update topups set status = 'confirmed', provider_payment_id = p_payment_id, provider = p_provider
+      where id = p_topup_id and status <> 'confirmed'
+      returning id, coalesce(credit_cents, amount_cents), vote_person_id
+      into v_id, v_credit, v_person;
+  end if;
+
+  if v_id is null then
+    insert into topups (user_id, amount_cents, credit_cents, provider_payment_id, provider, status)
+      values (p_user_id, p_amount_cents, p_amount_cents, p_payment_id, p_provider, 'confirmed')
+      on conflict (provider, provider_payment_id) do nothing
+      returning id, coalesce(credit_cents, amount_cents), vote_person_id
+      into v_id, v_credit, v_person;
+  end if;
+
+  -- Lost the race to a concurrent delivery of the same payment.
+  if v_id is null then
+    select balance_cents into v_new from users where id = p_user_id;
+    return v_new;
+  end if;
+
+  -- Never grant less than was paid, whatever is in credit_cents.
+  v_credit := greatest(coalesce(v_credit, p_amount_cents), p_amount_cents);
+
+  update users set balance_cents = balance_cents + v_credit
+    where id = p_user_id returning balance_cents into v_new;
+
+  -- Pay-to-vote: spend it now, on the contender the payer chose. Inside the
+  -- same transaction as the credit, so there is no window where the money is a
+  -- balance the payer never wanted. If the contender has since been deleted the
+  -- credit simply stays in their wallet rather than the payment failing.
+  if v_person is not null and exists (select 1 from people where id = v_person) then
+    perform place_vote_for(p_user_id, v_person, v_credit / 100);
+    select balance_cents into v_new from users where id = p_user_id;
+  end if;
+
+  return v_new;
+end $$;
+
+revoke execute on function confirm_topup(uuid, uuid, int, text, text) from public, anon, authenticated;
+grant execute on function confirm_topup(uuid, uuid, int, text, text) to service_role;

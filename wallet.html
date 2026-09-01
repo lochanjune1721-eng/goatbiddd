@@ -13,62 +13,10 @@
    this rule keeps the attribute authoritative for everything on the page. */
 [hidden]{display:none !important}
 
-/* ── Pay-with picker ─────────────────────────────────────────────────────── */
-.method-row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;
-  margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
-.method-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2)}
-.method-buttons{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.pay-method{height:34px;border-radius:999px;border:1px solid var(--border);background:var(--surface);
-  color:var(--muted);padding:0 14px;font-size:12.5px;font-weight:700;cursor:pointer;
-  display:inline-flex;align-items:center;gap:6px;transition:background .15s,border-color .15s,color .15s}
-.pay-method:hover{border-color:var(--border-2);color:var(--ink)}
-.pay-method.active{background:var(--gold);border-color:var(--gold);color:var(--bg)}
-.pay-method:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.pay-method-rate{font-size:10.5px;opacity:.75;font-weight:600}
-/* One rail is a fact, not a choice — don't dress it as a button to press. */
-.method-row.single .pay-method{cursor:default;background:transparent;border-color:var(--border);color:var(--ink)}
-.method-row.single .pay-method.active{background:transparent;color:var(--gold);border-color:var(--gold)}
-.method-note{text-align:center;font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5}
-
-/* ── Direct-UPI panel ────────────────────────────────────────────────────── */
-.upi-panel{margin-top:16px;border:1px solid var(--border);border-radius:16px;
-  padding:18px 16px;background:var(--surface-2)}
-.upi-head{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
-  font-size:11.5px;color:var(--muted);text-align:center;margin-bottom:12px}
-.upi-step{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--bg);
-  background:var(--gold);border-radius:999px;padding:3px 8px;font-weight:800}
-.upi-qr{display:flex;justify-content:center;margin-bottom:14px}
-.upi-qr svg{width:200px;height:200px;background:#fff;border-radius:12px;padding:8px;display:block}
-.upi-amount-line{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-bottom:14px}
-.upi-amount-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2)}
-.upi-amount{font-size:26px;color:var(--gold);font-family:Anton,sans-serif;letter-spacing:.5px}
-
-.upi-copy-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-/* A VPA is one unbroken token. Two columns on a phone forces it to wrap
-   mid-address ("thetruegoat@okax / is"), which is exactly the string someone
-   is about to retype into their bank app — so give it the full width. */
-@media (max-width:560px){.upi-copy-row{grid-template-columns:1fr}}
-.upi-copy{display:flex;flex-direction:column;align-items:flex-start;gap:2px;position:relative;
-  border:1px solid var(--border);border-radius:12px;background:var(--bg);cursor:pointer;
-  padding:9px 11px;text-align:left;transition:border-color .15s,background .15s}
-.upi-copy:hover{border-color:var(--gold)}
-.upi-copy.copied{border-color:var(--live,#3c9)}
-.upi-copy-label{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)}
-.upi-copy-value{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;
-  color:var(--ink);overflow-wrap:anywhere;line-height:1.35;padding-right:34px}
-.upi-copy-hint{position:absolute;top:8px;right:10px;font-size:9.5px;color:var(--gold);
-  letter-spacing:.1em;text-transform:uppercase}
-.upi-copy.copied .upi-copy-hint{color:var(--live,#3c9)}
-
-.upi-open{width:auto;padding:10px 20px;display:block;margin:14px auto 0;max-width:240px;text-align:center}
-.upi-claim{margin-top:18px;border-top:1px solid var(--border);padding-top:14px}
-.upi-claim-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.upi-claim-row input{width:190px;height:42px;border-radius:999px;border:1px solid var(--border);
-  background:var(--bg);color:var(--ink);padding:0 16px;text-align:center;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1px}
-.upi-claim-row input:focus{outline:none;border-color:var(--gold)}
-.upi-claim-row .btn-primary{width:auto;padding:11px 20px}
-.upi-fineprint{font-size:11px;color:var(--muted);margin-top:11px;text-align:center;line-height:1.55}
+/* The payment UI that used to live here now lives in js/checkout.js, shared
+   with every board, so there is only one gateway to keep good. */
+.wallet-cta{width:100%;height:52px;font-size:15.5px;margin-top:4px}
+.wallet-cta-sub{text-align:center;font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.55}
 
 /* ── Top-up history ──────────────────────────────────────────────────────── */
 .topup-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -116,70 +64,9 @@
 
       <!-- One even row rather than five pills of different widths; each says
            the price and what it buys, so no button is a bare number. -->
-      <div class="amount-grid">
-        <button class="amount" data-topup="500"><span class="amount-price">$5</span><span class="amount-votes mono">5 votes</span></button>
-        <button class="amount" data-topup="1000"><span class="amount-price">$10</span><span class="amount-votes mono">10 votes</span></button>
-        <button class="amount" data-topup="2500"><span class="amount-price">$25</span><span class="amount-votes mono">25 votes</span></button>
-        <button class="amount" data-topup="5000"><span class="amount-price">$50</span><span class="amount-votes mono">50 votes</span></button>
-        <button class="amount" data-topup="10000"><span class="amount-price">$100</span><span class="amount-votes mono">100 votes</span></button>
-      </div>
+      <button id="add-votes" class="btn-primary wallet-cta">Add votes</button>
+      <div class="wallet-cta-sub mono" id="wallet-cta-sub">Bonus votes on every tier — $5 buys 6, $100 buys 150.</div>
 
-      <div class="wallet-divider mono">or choose an amount</div>
-      <div class="custom-row">
-        <input id="custom-topup" type="number" min="1" placeholder="Votes">
-        <button id="custom-btn" class="btn-ghost">Add custom</button>
-      </div>
-      <!-- Every button here is rendered from what /api/health says this
-           visitor can actually pay with, so a rail that would 503 is never
-           drawn at all. Nothing is hard-coded in the markup. -->
-      <div id="method-row" class="method-row" hidden>
-        <span class="method-label mono">Pay with</span>
-        <div id="method-buttons" class="method-buttons"></div>
-      </div>
-      <div id="method-note" class="method-note mono" hidden></div>
-
-      <div id="upi-panel" class="upi-panel" hidden>
-        <div class="upi-head">
-          <span class="upi-step mono">Step 1</span>
-          <span class="mono">Scan, or copy the UPI ID below</span>
-        </div>
-        <div id="upi-qr" class="upi-qr"></div>
-
-        <div class="upi-amount-line">
-          <span class="mono upi-amount-label">Amount</span>
-          <b id="upi-amount" class="upi-amount"></b>
-        </div>
-
-        <div class="upi-copy-row">
-          <button type="button" class="upi-copy" data-copy="upi-vpa">
-            <span class="mono upi-copy-label">UPI ID</span>
-            <span id="upi-vpa" class="upi-copy-value"></span>
-            <span class="upi-copy-hint mono">Copy</span>
-          </button>
-          <button type="button" class="upi-copy" data-copy="upi-ref">
-            <span class="mono upi-copy-label">Reference</span>
-            <span id="upi-ref" class="upi-copy-value"></span>
-            <span class="upi-copy-hint mono">Copy</span>
-          </button>
-        </div>
-
-        <a id="upi-open" class="btn-primary upi-open" href="#">Open UPI app</a>
-
-        <div class="upi-claim">
-          <div class="upi-head">
-            <span class="upi-step mono">Step 2</span>
-            <span class="mono">Paid? Enter the UTR from your payment app</span>
-          </div>
-          <div class="upi-claim-row">
-            <input id="upi-utr" placeholder="12-digit UTR" autocomplete="off" inputmode="numeric">
-            <button id="upi-submit" class="btn-primary">Submit</button>
-          </div>
-          <div class="mono upi-fineprint">
-            Nothing is added automatically. We match your reference against our bank
-            statement and credit the votes — usually within a few hours.
-          </div>
-        </div>
-      </div>
       <div id="payment-status" class="mono" style="font-size:12.5px;margin-top:14px;line-height:1.5"></div>
     </div>
 
@@ -206,6 +93,7 @@
   </div>
 </div>
 <script src="js/supabase.js"></script>
+<script src="js/checkout.js"></script>
 <script>
 (async function(){
   const sb=window.supabaseClient;
@@ -261,256 +149,22 @@
     if(error) show(msg, error.message,'error'); else show(msg,'Magic link sent — check your email.','ok');
   });
 
-  // ── Which rails this visitor gets ────────────────────────────────────────
-  //
-  // /api/health decides, from the Cloudflare-reported country and from which
-  // providers are actually configured. India is offered the rupee rails; the
-  // rest of the world is offered the card rail. Every button below is drawn
-  // from that answer, so a rail the server could not complete is never a
-  // button at all — which is the bug this replaces: the old markup hard-coded
-  // three buttons, hid the row with `hidden` that its own inline display:flex
-  // overrode, and attached the click handlers only on a code path that an
-  // unconfigured deployment never reached. All three were visible and two of
-  // them did nothing.
-  const LABELS = {
-    paypal: { name: 'Card / PayPal', note: 'Visa, Mastercard, Amex or a PayPal balance.' },
-    upi:    { name: 'UPI',           note: 'Pay any UPI app. Votes are added after we match your reference.' },
-    uropay: { name: 'UroPay',        note: 'UPI through UroPay — votes are added automatically.' }
-  };
-
-  let payMethod = null;
-  let inrPerVote = null;
-  let currency = 'USD';
-
-  function priceFor(cents){
-    const votes = cents / 100;
-    return currency === 'INR' && inrPerVote
-      ? '₹' + Math.round(votes * inrPerVote).toLocaleString('en-IN')
-      : '$' + votes.toLocaleString('en-US');
+  // The checkout overlay is the only place a payment starts. It reads the
+  // tiers and the available rails from /api/health itself, so this page does
+  // not hold a second, drifting copy of either.
+  function openCheckout(){
+    if(window.GoatCheckout) return window.GoatCheckout.open();
+    location.href = '/wallet';
   }
+  document.getElementById('add-votes')?.addEventListener('click', openCheckout);
 
-  // Repaint every price when the rail changes, so nobody is shown $5 and then
-  // charged ₹300 on the next screen.
-  function repaintPrices(){
-    document.querySelectorAll('[data-topup]').forEach(b => {
-      const cents = Number(b.dataset.topup);
-      const price = b.querySelector('.amount-price');
-      const votes = b.querySelector('.amount-votes');
-      if(price) price.textContent = priceFor(cents);
-      if(votes) votes.textContent = (cents/100) + ' vote' + (cents === 100 ? '' : 's');
-    });
-    const rate = document.getElementById('wallet-rate');
-    if(rate){
-      rate.innerHTML = currency === 'INR' && inrPerVote
-        ? '<b>₹' + inrPerVote + ' = 1 vote</b> · top up once, then vote with one tap'
-        : '<b>$1 = 1 vote</b> · top up once, then vote with one tap';
-    }
-    const custom = document.getElementById('custom-btn');
-    if(custom) custom.textContent = 'Add custom';
-  }
-
-  function selectMethod(method){
-    payMethod = method;
-    currency = (method === 'upi' || method === 'uropay') && inrPerVote ? 'INR' : 'USD';
-    document.querySelectorAll('.pay-method').forEach(b =>
-      b.classList.toggle('active', b.dataset.method === method));
-    const note = document.getElementById('method-note');
-    if(note){
-      note.textContent = LABELS[method]?.note || '';
-      note.hidden = !note.textContent;
-    }
-    if(method !== 'upi') upiPanel.hidden = true;
-    repaintPrices();
-  }
-
-  (async function initPaymentMethods(){
-    const row = document.getElementById('method-row');
-    const holder = document.getElementById('method-buttons');
-    if(!row || !holder) return;
-
-    let health = null;
-    try { health = await fetch('/api/health').then(r => r.json()); } catch(e){ health = null; }
-
-    inrPerVote = health?.upi?.inrPerVote || health?.uropay?.inrPerVote || null;
-
-    // An older deployment has no `rails` key. Fall back to offering whatever
-    // reports ready rather than showing nothing.
-    let offer = health?.rails?.offer;
-    if(!Array.isArray(offer)){
-      offer = [];
-      if(health?.paypal?.credentialsConfigured) offer.push('paypal');
-      if(health?.upi?.ready) offer.push('upi');
-      if(health?.uropay?.ready) offer.push('uropay');
-    }
-
-    if(!offer.length){
-      // Say so plainly and stop, rather than leaving buttons that fail.
-      document.querySelectorAll('[data-topup], #custom-btn').forEach(b => b.disabled = true);
-      show(paymentAlert, health?.rails?.inIndia
-        ? 'UPI top-ups are being set up and are not available right now. Nothing has been charged.'
-        : 'Card payments are being set up and are not available right now. Nothing has been charged.', 'error');
-      return;
-    }
-
-    holder.innerHTML = offer.map(m => {
-      const suffix = (m === 'upi' || m === 'uropay') && inrPerVote
-        ? ' <span class="pay-method-rate mono">₹' + inrPerVote + '/vote</span>' : '';
-      return '<button type="button" class="pay-method" data-method="' + m + '">' +
-             (LABELS[m]?.name || m) + suffix + '</button>';
-    }).join('');
-
-    holder.querySelectorAll('.pay-method').forEach(b =>
-      b.addEventListener('click', () => selectMethod(b.dataset.method)));
-
-    // With one rail there is no choice to make — show it as a statement, not
-    // as a picker with a single option.
-    row.hidden = false;
-    row.classList.toggle('single', offer.length === 1);
-    row.querySelector('.method-label').textContent = offer.length === 1 ? 'Paying with' : 'Pay with';
-
-    selectMethod(offer[0]);
-  })();
-
-  // ── Direct UPI ───────────────────────────────────────────────────────────
-  // Paying a VPA produces no callback, so this deliberately never claims the
-  // votes have arrived. It shows the QR, takes the payer's UTR, and says
-  // plainly that a human matches it before the votes appear.
-  const upiPanel = document.getElementById('upi-panel');
-  let upiTopupId = null;
-
-  async function startDirectUpi(cents){
-    paymentStatus.textContent = 'Preparing your UPI payment…';
-    paymentStatus.style.color = 'var(--muted)';
-    const {data:{session}} = await sb.auth.getSession();
-    if(!session){ paymentStatus.textContent = 'Sign in first.'; paymentStatus.style.color = '#e55'; return; }
-
-    try {
-      const r = await fetch('/api/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ action: 'upi-intent', amountCents: cents })
-      });
-      const j = await r.json().catch(()=>({}));
-      if(!r.ok){ paymentStatus.textContent = j.error || 'Could not start a UPI payment.'; paymentStatus.style.color = '#e55'; return; }
-
-      upiTopupId = j.topupId;
-      document.getElementById('upi-qr').innerHTML = j.qrSvg || '';
-      document.getElementById('upi-amount').textContent = '₹' + j.amountInr;
-      document.getElementById('upi-vpa').textContent = j.vpa;
-      document.getElementById('upi-ref').textContent = j.reference;
-      document.getElementById('upi-open').href = j.upiUrl;
-      document.getElementById('upi-utr').value = '';
-      upiPanel.hidden = false;
-      paymentStatus.textContent = '';
-      upiPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } catch(err) {
-      paymentStatus.textContent = 'Error: ' + err.message;
-      paymentStatus.style.color = '#e55';
-    }
-  }
-
-  // Scanning the QR is fine on a second device, but most people pay on the
-  // same phone they are reading this on, where the useful action is copying
-  // the UPI ID into their bank app.
-  document.querySelectorAll('.upi-copy').forEach(btn => btn.addEventListener('click', async () => {
-    const value = document.getElementById(btn.dataset.copy)?.textContent?.trim();
-    if(!value) return;
-    const hint = btn.querySelector('.upi-copy-hint');
-    try {
-      await navigator.clipboard.writeText(value);
-      if(hint){ hint.textContent = 'Copied'; btn.classList.add('copied');
-        setTimeout(()=>{ hint.textContent = 'Copy'; btn.classList.remove('copied'); }, 1600); }
-    } catch(e){
-      // Clipboard is blocked on insecure origins and in some in-app browsers;
-      // select the text so it can still be copied by hand.
-      const el = document.getElementById(btn.dataset.copy);
-      const range = document.createRange(); range.selectNodeContents(el);
-      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
-      if(hint) hint.textContent = 'Select & copy';
-    }
-  }));
-
-  document.getElementById('upi-submit')?.addEventListener('click', async()=>{
-    const utr = document.getElementById('upi-utr').value.trim();
-    if(!upiTopupId){ paymentStatus.textContent = 'Pick an amount first.'; paymentStatus.style.color = '#e55'; return; }
-    if(!utr){ paymentStatus.textContent = 'Enter the UPI reference number from your payment app.'; paymentStatus.style.color = '#e55'; return; }
-
-    const {data:{session}} = await sb.auth.getSession();
-    if(!session){ paymentStatus.textContent = 'Sign in again to submit your reference.'; paymentStatus.style.color = '#e55'; return; }
-
-    paymentStatus.textContent = 'Submitting…';
-    paymentStatus.style.color = 'var(--muted)';
-    try {
-      const r = await fetch('/api/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ action: 'upi-claim', topupId: upiTopupId, utr })
-      });
-      const j = await r.json().catch(()=>({}));
-      if(!r.ok){ paymentStatus.textContent = j.error || 'Could not submit that reference.'; paymentStatus.style.color = '#e55'; return; }
-
-      upiPanel.hidden = true;
-      upiTopupId = null;
-      paymentAlert.textContent = j.message || 'Reference received — we will add your votes once the payment is matched.';
-      paymentAlert.className = 'notice ok';
-      paymentAlert.style.display = 'block';
-      paymentStatus.textContent = '';
-      // The claim is now sitting in review; show it rather than leaving the
-      // payer wondering whether anything was recorded.
-      const {data:{user:claimUser}} = await sb.auth.getUser();
-      if(claimUser) loadTopups(claimUser.id);
-    } catch(err) {
-      paymentStatus.textContent = 'Error: ' + err.message;
-      paymentStatus.style.color = '#e55';
-    }
-  });
-
-  async function doTopup(cents){
-    const {data:{user}}=await sb.auth.getUser();
+  async function doTopup(){
+    const {data:{user}} = await sb.auth.getUser();
     if(!user) return alert('Sign in first.');
-    paymentStatus.textContent='Creating checkout…';
-    paymentStatus.style.color='var(--muted)';
-    const returnTo = getReturnTo();
-    try {
-      if(payMethod === 'upi') return startDirectUpi(cents);
-      const action = payMethod === 'uropay' ? 'uropay-checkout' : 'paypal-checkout';
-      // Send the session token, not just the user id: the server trusts the
-      // token over the posted id, so this stops a top-up being opened against
-      // somebody else's account.
-      const {data:{session}} = await sb.auth.getSession();
-      const r = await fetch('/api/pay', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session ? { 'Authorization': 'Bearer ' + session.access_token } : {})
-        },
-        body: JSON.stringify({ action, amountCents: cents, userId: user.id, email: user.email, returnTo })
-      });
-      const j = await r.json().catch(()=>({}));
-      if(!r.ok){
-        paymentStatus.textContent = j.error || 'Checkout failed';
-        paymentStatus.style.color = '#e55';
-        return;
-      }
-      if(j.url){
-        location.href = j.url;
-      } else if(j.newBalance !== undefined || j.votesAdded !== undefined){
-        paymentStatus.textContent = `✓ Added ${cents/100} votes!`;
-        paymentStatus.style.color = 'var(--live)';
-        if(window.refreshBalance) await window.refreshBalance();
-        const {data: u2} = await sb.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
-        if(u2) balanceBig.textContent = Math.floor(u2.balance_cents/100).toLocaleString()+' votes';
-        loadHistory(user.id);
-      } else {
-        paymentStatus.textContent = 'Payment processing — balance will update in moments.';
-      }
-    } catch(err) {
-      paymentStatus.textContent = 'Error: ' + err.message;
-      paymentStatus.style.color = '#e55';
-    }
+    openCheckout();
   }
 
-  document.querySelectorAll('[data-topup]').forEach(b=> b.addEventListener('click', ()=> doTopup(Number(b.dataset.topup))));
+  document.querySelectorAll('[data-topup]').forEach(b=> b.addEventListener('click', ()=> doTopup()));
 
   // The homepage's inline "out of votes" prompt deep-links here as
   // /wallet?topup=1000&returnTo=/… — fire that top-up straight away so the

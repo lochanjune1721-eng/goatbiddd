@@ -3,6 +3,7 @@
 import { withHandler, nearMiss } from './_lib.js';
 import { payPalBase } from './_paypal.js';
 import { upiVpa, upiPayeeName } from './_pay-upi.js';
+import { publicTiers } from './_pricing.js';
 
 // All three PayPal values are required, not optional: without the client
 // credentials a top-up cannot start, and without the webhook id the webhook
@@ -14,29 +15,43 @@ const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV',
   'INR_PER_VOTE', 'UROPAY_INR_PER_VOTE',
   'UROPAY_VPA', 'UPI_VPA', 'UPI_PAYEE_NAME'];
 
-// India pays in rupees, everyone else pays by card. Splitting it here means
-// the wallet page renders one list and never has to hold the policy itself.
-// A rail that is not configured is never offered, whatever the country: an
-// offered button that 503s is worse than a button that was never there.
+// Which rails to draw, and what backs each one.
 //
-// India is deliberately given ONE rail, direct UPI, not a choice between two.
-// Two buttons that both say "UPI" is a decision the payer has no basis to
-// make, and UroPay is only distinguishable to us. UroPay stays wired up and
-// tested as a fallback for when direct UPI has no VPA configured — a fallback,
-// never a second button.
+// The page sees two ideas: "card" and "UPI". Which company processes the UPI
+// payment is our problem, not the payer's, so it is resolved here:
+//
+//   uropay — a hosted UPI checkout with a webhook, so votes land by themselves.
+//   direct — pay our VPA straight. No callback exists for that, so it can only
+//            be settled by a human matching the reference. The fallback for
+//            when UroPay is not configured, never the default.
+//
+// Both rails are offered wherever both work; the country only decides which one
+// is preselected, because a UPI app is what an Indian payer reaches for and a
+// card is what everyone else reaches for.
 export function railsFor(country, ready){
   const inIndia = country === 'IN';
+  const upiProvider = ready.uropayReady ? 'uropay' : (ready.upiReady ? 'direct' : null);
+
   const offer = [];
-  if (inIndia) {
-    if (ready.upiReady) offer.push('upi');
-    else if (ready.uropayReady) offer.push('uropay');
-    // Nothing rupee-denominated is configured — fall back rather than leaving
-    // an Indian visitor with no way to pay at all.
-    else if (ready.paypalReady) offer.push('paypal');
-  } else {
-    if (ready.paypalReady) offer.push('paypal');
-  }
-  return { country: country || null, inIndia, offer, currency: inIndia && offer[0] !== 'paypal' ? 'INR' : 'USD' };
+  if (upiProvider) offer.push('upi');
+  if (ready.paypalReady) offer.push('paypal');
+
+  // Preselect what this visitor most likely wants, without hiding the other.
+  const preferred = inIndia
+    ? (offer.includes('upi') ? 'upi' : offer[0] || null)
+    : (offer.includes('paypal') ? 'paypal' : offer[0] || null);
+
+  return {
+    country: country || null,
+    inIndia,
+    offer,
+    preferred,
+    upiProvider,
+    // Direct UPI cannot confirm itself; UroPay can. The page says so rather
+    // than promising votes that need a human first.
+    upiAutoConfirms: upiProvider === 'uropay',
+    currency: preferred === 'upi' ? 'INR' : 'USD'
+  };
 }
 
 export default withHandler(async function handler(req, res){
@@ -119,6 +134,9 @@ export default withHandler(async function handler(req, res){
     // not have to know the rule. India gets the rupee rails; everyone else
     // gets the card rail.
     rails: railsFor(country, { upiReady: upi.ready, uropayReady: uropay.ready, paypalReady: paypal.credentialsConfigured }),
+    // The price list the checkout draws its buttons from, so the page can never
+    // advertise a bonus the server will not honour.
+    tiers: publicTiers(),
     paypal,
     uropay,
     upi,

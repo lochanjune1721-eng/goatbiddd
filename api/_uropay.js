@@ -144,4 +144,4 @@ export function verifyWebhook(req, rawBody){
 }
 
 // Both Indian rails price a vote the same way.
-export { rupeesForVotes } from './_pricing.js';
+export { rupeesForVotes, rupeesForCents } from './_pricing.js';

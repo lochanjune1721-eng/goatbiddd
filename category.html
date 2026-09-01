@@ -38,6 +38,7 @@
 <footer class="footer">The True GOAT — pay to rank. <a href="/rules">Rules</a> · <a href="/wallet">Wallet</a> · <a href="/fans">Fans</a></footer>
 
 <script src="js/supabase.js"></script>
+<script src="js/checkout.js"></script>
 <script src="js/video-manager.js"></script>
 <script src="js/optimized-image.js"></script>
 <script src="js/portrait-fallback.js"></script>
@@ -283,7 +284,12 @@
           p.total_cents = prevTotal;
           people.sort((a,b)=> (b.total_cents - a.total_cents) || (new Date(a.first_backed_at||0) - new Date(b.first_backed_at||0)));
           await render();
-          alert(e.message.includes('Not enough')?'Not enough votes — get votes first.': e.message.includes('taking #1')? e.message : e.message);
+          if(String(e.message||'').toLowerCase().includes('not enough') && window.GoatCheckout){
+            window.GoatCheckout.open({ personId: p.id, personName: p.name,
+              personPhoto: window.GOAT?.getPhotoUrl?.(p.photo_path) });
+          } else {
+            alert(e.message);
+          }
           btn.disabled=false; btn.textContent='Vote';
         }
       });

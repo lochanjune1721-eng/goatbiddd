@@ -7,12 +7,14 @@ import { createClient } from '@supabase/supabase-js';
 import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
 import { payPalFetch, toPayPalAmount, fromPayPalAmount, hasIssue } from './_paypal.js';
 import { settleTopup, readCapture } from './_settle.js';
+import { creditCentsForCents, votesForCents } from './_pricing.js';
 export async function payPalCheckout(req, res, body){
 
-  const { userId, amountCents, amount_cents, returnTo } = body;
+  const { userId, amountCents, amount_cents, returnTo, personId } = body;
   const cents = Number(amountCents ?? amount_cents);
-  if (!Number.isInteger(cents) || cents < 100) throw new HttpError(400, 'Minimum top-up is $1 (1 vote)');
-  if (cents > 500000) throw new HttpError(400, 'Maximum top-up is $5,000');
+  // Throws for anything outside $1–$5,000, so the range check lives in one place.
+  const votesBought = votesForCents(cents);
+  const creditCents = creditCentsForCents(cents);
 
   const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const SUPABASE_URL = supabaseUrl();
@@ -35,13 +37,24 @@ export async function payPalCheckout(req, res, body){
   // payer cannot decide their own credit.
   const { data: pending, error: pendingErr } = await supabaseAdmin
     .from('topups')
-    .insert({ user_id: uid, amount_cents: cents, status: 'pending', provider: 'paypal' })
+    .insert({
+      user_id: uid,
+      amount_cents: cents,
+      // What settlement will grant: the tier's votes, not the dollars. Fixed
+      // now so repricing a tier cannot change an order already open.
+      credit_cents: creditCents,
+      // Set for pay-to-vote — settlement spends the votes on this contender
+      // instead of leaving a balance the payer never asked for.
+      vote_person_id: personId || null,
+      status: 'pending',
+      provider: 'paypal'
+    })
     .select('id')
     .single();
   if (pendingErr) throw new HttpError(500, `Could not open a top-up: ${pendingErr.message}`);
   const topupId = pending.id;
 
-  const votes = cents / 100;
+  const votes = votesBought;
   const returnQuery = new URLSearchParams({ paypal: 'return', topup_id: topupId });
   if (returnTo) returnQuery.set('returnTo', returnTo);
 

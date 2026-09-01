@@ -12,7 +12,7 @@
 import QRCode from 'qrcode/lib/browser.js';
 import { createClient } from '@supabase/supabase-js';
 import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
-import { rupeesForVotes } from './_pricing.js';
+import { rupeesForCents, votesForCents, creditCentsForCents } from './_pricing.js';
 // UroPay's dashboard calls the payee address UROPAY_VPA; accept either name so
 // the variables it hands you work without being renamed. The payee name is the
 // site's own, so it defaults rather than being a fifth thing to configure.
@@ -32,10 +32,10 @@ export async function upiIntent(req, res, body){
   const UPI_PAYEE_NAME = upiPayeeName();
   if (!UPI_VPA) throw new HttpError(503, 'UPI is not configured yet: set UROPAY_VPA (or UPI_VPA) to the UPI address payments should go to. Nothing has been charged.');
 
-  const { userId, amountCents, amount_cents } = body;
+  const { userId, amountCents, amount_cents, personId } = body;
   const cents = Number(amountCents ?? amount_cents);
-  if (!Number.isInteger(cents) || cents < 100) throw new HttpError(400, 'Minimum top-up is $1 (1 vote)');
-  if (cents > 500000) throw new HttpError(400, 'Maximum top-up is $5,000');
+  const votesBought = votesForCents(cents);
+  const creditCents = creditCentsForCents(cents);
 
   const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const SUPABASE_URL = supabaseUrl();
@@ -49,12 +49,14 @@ export async function upiIntent(req, res, body){
   }
   if (!uid) throw new HttpError(401, 'Sign in before topping up');
 
-  const votes = cents / 100;
-  const rupees = rupeesForVotes(votes);
+  const votes = votesBought;
+  const rupees = rupeesForCents(cents);
 
   const { data: pending, error } = await supa.from('topups').insert({
     user_id: uid,
     amount_cents: cents,
+    credit_cents: creditCents,
+    vote_person_id: personId || null,
     status: 'pending',
     provider: 'upi',
     provider_amount: rupees,

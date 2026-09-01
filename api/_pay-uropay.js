@@ -5,16 +5,17 @@
 // against an order UroPay itself confirms as PAID.
 import { createClient } from '@supabase/supabase-js';
 import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
-import { createOrder, rupeesForVotes, isConfigured } from './_uropay.js';
+import { createOrder, isConfigured } from './_uropay.js';
+import { creditCentsForCents, votesForCents, rupeesForCents } from './_pricing.js';
 import { settleUroPayOrder } from './_uropay-settle.js';
 export async function uroPayCheckout(req, res, body){
 
   if (!isConfigured()) throw new HttpError(503, 'UPI top-ups are not configured yet. Nothing has been charged.');
 
-  const { userId, amountCents, amount_cents, returnTo } = body;
+  const { userId, amountCents, amount_cents, returnTo, personId } = body;
   const cents = Number(amountCents ?? amount_cents);
-  if (!Number.isInteger(cents) || cents < 100) throw new HttpError(400, 'Minimum top-up is $1 (1 vote)');
-  if (cents > 500000) throw new HttpError(400, 'Maximum top-up is $5,000');
+  const votesBought = votesForCents(cents);
+  const creditCents = creditCentsForCents(cents);
 
   const { SUPABASE_SERVICE_ROLE_KEY } = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
   const SUPABASE_URL = supabaseUrl();
@@ -28,8 +29,10 @@ export async function uroPayCheckout(req, res, body){
   }
   if (!uid) throw new HttpError(401, 'Sign in before topping up');
 
-  const votes = cents / 100;
-  const rupees = rupeesForVotes(votes);
+  const votes = votesBought;
+  // Charged on the dollars, not on the bonused votes — the bonus is a discount,
+  // and billing for it would hand it straight back.
+  const rupees = rupeesForCents(cents);
   const siteUrl = process.env.SITE_URL || 'https://www.thetruegoat.com';
 
   // The pending row is the record of what was asked for, in both currencies:
@@ -40,6 +43,8 @@ export async function uroPayCheckout(req, res, body){
     .insert({
       user_id: uid,
       amount_cents: cents,
+      credit_cents: creditCents,
+      vote_person_id: personId || null,
       status: 'pending',
       provider: 'uropay',
       provider_amount: rupees,
