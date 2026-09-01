@@ -37,22 +37,22 @@
 .duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:340px;height:191px}
 @media(max-width:768px){.duel-side.video-playing .photo,.duel-side .photo.video-playing{width:240px;height:135px}.duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:260px;height:146px}}
 @media(max-width:480px){.duel-side.video-playing .photo,.duel-side .photo.video-playing{width:calc(85vw - 8px);height:calc((85vw - 8px) * 9/16)}.duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:calc(85vw - 8px);height:calc((85vw - 8px) * 9/16)}}
-.duel-side .name{font-family:'Anton',sans-serif;font-size:18px;line-height:1.05;max-width:100%;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;width:100%}
-.duel-body.crazy .duel-side .name{font-size:21px}
-@media(max-width:640px){.duel-side .name{font-size:14px}.duel-body.crazy .duel-side .name{font-size:15px}}
-.duel-side .total{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--gold);margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.duel-side .total span{font-family:'Inter',sans-serif;font-size:9px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
-.duel-side.leader .photo{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold), 0 6px 14px rgba(201,168,106,.18)}
+
+.duel-body.crazy 
+@media(max-width:640px){.duel-body.crazy }
+
+
+
 .duel-vs{grid-column:2;grid-row:1;align-self:center;width:52px;height:52px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:14px;letter-spacing:.04em;border:2px solid var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.3);line-height:1;flex-shrink:0;margin:0 2px}
 @media(max-width:640px){.duel-vs{width:38px;height:38px;font-size:11px}}
-.duel-gap{grid-column:1 / -1;grid-row:2;text-align:center;font-size:12.5px;line-height:1.35;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:6px 12px;max-width:94%;white-space:normal;overflow-wrap:break-word;justify-self:center;margin-top:2px}
-.duel-gap b{color:var(--ink);font-weight:700}
-.vote-bar-wrap{grid-column:1 / -1;grid-row:3;display:flex;flex-direction:column;gap:4px;margin-top:2px}
-.vote-bar{display:flex;height:7px;border-radius:999px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
-.vote-bar-fill{height:100%;transition:width .5s}
-.vote-bar-fill.p1{background:var(--gold)}
-.vote-bar-fill.p2{background:var(--border-2)}
-.vote-bar-label{text-align:center;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+
+
+
+
+
+
+
+
 .duel-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
 /* One vote button per contender, sitting directly under that contender —
    a shared row underneath made you read left-to-right to work out which
@@ -66,9 +66,9 @@
 .btn-vote:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .btn-vote:disabled{opacity:.5;cursor:not-allowed;transform:none}
 /* The side that is currently ahead gets the solid button. */
-.duel-side.leader .btn-vote{background:var(--gold);border-color:var(--gold);color:var(--bg)}
-.duel-side.leader .btn-vote .btn-vote-plus{background:rgba(0,0,0,.18);color:var(--bg)}
-.duel-side.leader .btn-vote:hover{background:var(--gold);filter:brightness(1.06)}
+
+
+
 @media(max-width:480px){.duel-side .btn-vote{height:36px;font-size:12px;padding:0 12px;margin-top:8px}}
 
 /* Filter bar */
@@ -604,40 +604,64 @@
     let gapText = '';
     if(v1 === 0 && v2 === 0) gapText = 'Tied — 1 vote takes the lead';
     else if(v1 === v2) gapText = `Tied at ${v1.toLocaleString()} votes — 1 vote takes the lead`;
-    else if(v1 > v2) gapText = `${p1.name} leads by ${gapVotes.toLocaleString()} votes`;
-    else gapText = `${p2.name} leads by ${gapVotes.toLocaleString()} votes`;
+    else if(v1 > v2) gapText = `${firstName(p1.name)} leads by ${gapVotes.toLocaleString()}`;
+    else gapText = `${firstName(p2.name)} leads by ${gapVotes.toLocaleString()}`;
 
     const totalVotes = v1 + v2;
-    const p1Pct = totalVotes > 0 ? Math.round(v1/totalVotes*100) : 50;
-    const p2Pct = 100 - p1Pct;
+    // One decimal: on a close board "52% / 48%" hides the movement a single
+    // vote makes, and the whole point of the bar is that it moves.
+    const p1Pct = totalVotes > 0 ? Math.round(v1/totalVotes*1000)/10 : 50;
+    const p2Pct = Math.round((100 - p1Pct)*10)/10;
     const isCrazy = opts.featured;
 
     const p1Photo = p1 ? photoHtml(p1, 240, opts.eager) : '<div class="fallback">?</div>';
     const p2Photo = p2 ? photoHtml(p2, 240, opts.eager) : '<div class="fallback">?</div>';
     
-    const bar = totalVotes > 0 ? `<div class="vote-bar-wrap"><div class="vote-bar"><div class="vote-bar-fill p1" style="width:${p1Pct}%"></div><div class="vote-bar-fill p2" style="width:${p2Pct}%"></div></div><div class="vote-bar-label mono">${v1.toLocaleString()} votes · ${v2.toLocaleString()} votes</div></div>` : '';
+    const bar = `
+      <div class="vs-bar-wrap">
+        <div class="vs-bar-head">
+          <span class="vs-bar-name a"><i></i>${p1 ? esc(firstName(p1.name)) : '—'} — ${p1Pct}%</span>
+          <span class="vs-bar-pill">${esc(gapText)}</span>
+          <span class="vs-bar-name b">${p2 ? esc(firstName(p2.name)) : '—'} — ${p2Pct}%<i></i></span>
+        </div>
+        <div class="vs-bar">
+          <div class="vs-bar-fill a" style="width:${p1Pct}%"></div>
+          <div class="vs-bar-knot">VS</div>
+          <div class="vs-bar-fill b" style="width:${p2Pct}%"></div>
+        </div>
+      </div>`;
 
     const catTitle = cat.name.startsWith('Greatest') ? cat.name + (cat.name.endsWith('All Time')?'':' of All Time') : 'Greatest ' + cat.name + ' of All Time';
+
+    // Each side carries its own accent, positionally rather than per person: in
+    // a head-to-head the colour means "this side", and a palette keyed off the
+    // contender would recolour the same face from one duel to the next.
+    const side = (p, votes, pct, cls) => `
+        <div class="duel-side ${cls} ${votes > (cls==='a'?v2:v1) ? 'leader' : ''}">
+          <div class="photo">${cls==='a'?p1Photo:p2Photo}
+            <div class="duel-plate"><span class="duel-plate-first">${p ? esc(givenName(p.name)) : ''}</span><span class="duel-plate-last">${p ? esc(firstName(p.name)) : 'Contender'}</span></div>
+          </div>
+          <div class="duel-count display">${votes.toLocaleString()}</div>
+          <div class="duel-share">${pct}% of votes</div>
+          ${p ? `<button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Vote ${esc(firstName(p.name))}</button>` : ''}
+        </div>`;
 
     return `
       <div class="duel-head"><strong>${esc(catTitle)}</strong><a href="/category?slug=${cat.slug}" style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase">View Board →</a></div>
       <div class="duel-body ${isCrazy?'crazy':''}">
-        <div class="duel-side ${v1>v2?'leader':''}">
-          <div class="photo">${p1Photo}</div>
-          <div class="name display"><a href="/person?slug=${p1?p1.slug:''}">${p1 ? esc(p1.name) : 'Contender 1'}</a></div>
-          <div class="total display">${v1.toLocaleString()} <span>votes</span></div>
-          ${p1 ? `<button class="btn-vote" data-vote="${p1.id}" data-name="${esc(p1.name)}"><span class="btn-vote-label">Vote ${esc(firstName(p1.name))}</span><span class="btn-vote-plus">+1</span></button>` : ''}
-        </div>
+        ${side(p1, v1, p1Pct, 'a')}
         <div class="duel-vs">VS</div>
-        <div class="duel-side ${v2>v1?'leader':''}">
-          <div class="photo">${p2Photo}</div>
-          <div class="name display"><a href="/person?slug=${p2?p2.slug:''}">${p2 ? esc(p2.name) : 'Contender 2'}</a></div>
-          <div class="total display">${v2.toLocaleString()} <span>votes</span></div>
-          ${p2 ? `<button class="btn-vote" data-vote="${p2.id}" data-name="${esc(p2.name)}"><span class="btn-vote-label">Vote ${esc(firstName(p2.name))}</span><span class="btn-vote-plus">+1</span></button>` : ''}
-        </div>
-        <div class="duel-gap"><b style="color:var(--gold)">${esc(gapText)}</b></div>
+        ${side(p2, v2, p2Pct, 'b')}
         ${bar}
       </div>`;
+  }
+
+  // firstName() is a misnomer inherited from the buttons: it returns the SHORT
+  // name, which for most people is their surname. The plate stacks the given
+  // name over that, so it needs the real first word.
+  function givenName(n){
+    const parts = String(n||'').trim().split(/\s+/).filter(Boolean);
+    return parts.length > 1 ? parts[0] : '';
   }
 
   function renderFeatured(){
@@ -934,19 +958,58 @@
       if(leadingFansEl){
         if(topFans.length){
           const medals = ['🥇','🥈','🥉'];
+          // A row of initials and a number said nothing about the rivalry. The
+          // face is the point, so it gets real size; the handle is a link out to
+          // where they actually are; and the contender they have put the most
+          // behind sits on the right, because "who is backing whom" is the whole
+          // story a leaderboard of fans is trying to tell.
+          const SOCIAL = { x:'https://x.com/', instagram:'https://instagram.com/',
+            tiktok:'https://www.tiktok.com/@', youtube:'https://www.youtube.com/@' };
+          function socialUrl(u){
+            const h = String(u.social_handle||'').trim().replace(/^@/,'');
+            if(!h || u.is_anonymous) return null;
+            if(/^https?:\/\//i.test(h)) return h;
+            const base = SOCIAL[u.social_platform];
+            return base ? base + encodeURIComponent(h) : null;
+          }
           leadingFansEl.innerHTML = topFans.map((u, i) => {
             const name = u.is_anonymous ? 'Anonymous' : (u.display_name || 'Supporter');
-            const photoUrl = u.photo_path ? (window.GOAT.getPhotoUrl(u.photo_path)||u.photo_path) : null;
-            const avatar = photoUrl ? `<img src="${photoUrl}">` : window.GOAT.initials(name);
+            const photoUrl = (!u.is_anonymous && u.photo_path) ? (window.GOAT.getPhotoUrl(u.photo_path)||u.photo_path) : null;
+            const face = photoUrl
+              ? `<img src="${esc(photoUrl)}" alt="" loading="lazy">`
+              : `<span class="fan-face-initials">${esc(window.GOAT.initials(name))}</span>`;
             const votes = Math.floor((u.total_spent_cents||0)/100).toLocaleString();
-            return `<div class="fan-row ${i<3?'podium':''}">
-              <div class="fan-rank">${i<3?medals[i]:'#'+(i+1)}</div>
-              <div class="fan-avatar">${avatar}</div>
-              <div class="fan-meta">
-                <div class="fan-name">${esc(name)}</div>
-                <div class="fan-supporting">${u.social_handle ? '@'+esc(u.social_handle.replace(/^@/,'')) : 'Leading backer'}</div>
-              </div>
-              <div class="fan-votes"><strong>${votes}</strong><span>votes</span></div>
+            const href = socialUrl(u);
+            const handle = (!u.is_anonymous && u.social_handle)
+              ? '@' + esc(String(u.social_handle).replace(/^@/,'')) : null;
+
+            const b = u.backing;
+            const backPhoto = b?.photo_path ? (window.GOAT.getPhotoUrl(b.photo_path)||b.photo_path) : null;
+            const backing = b ? `
+                <a class="fan-backing" href="/person?slug=${esc(b.slug)}">
+                  <span class="fan-backing-label">Backing</span>
+                  <span class="fan-backing-who">
+                    ${backPhoto ? `<img src="${esc(backPhoto)}" alt="" loading="lazy">`
+                                : `<span class="fan-backing-initials">${esc(window.GOAT.initials(b.name))}</span>`}
+                    <span class="fan-backing-name">${esc(b.name)}</span>
+                  </span>
+                  <span class="fan-backing-votes mono">${b.votes.toLocaleString()} votes on them</span>
+                </a>` : '<div class="fan-backing empty">Not backing anyone yet</div>';
+
+            // An anonymous backer has no profile to open, so the face is inert
+            // rather than a link that goes nowhere.
+            const faceTag = href ? 'a' : 'div';
+            const faceAttrs = href ? ` href="${esc(href)}" target="_blank" rel="noopener nofollow"` : '';
+
+            return `<div class="fan-card ${i<3?'podium':''}">
+              <div class="fan-card-rank">${i<3?medals[i]:'#'+(i+1)}</div>
+              <${faceTag} class="fan-card-left"${faceAttrs}>
+                <span class="fan-face">${face}</span>
+                <span class="fan-card-name">${esc(name)}</span>
+                ${handle ? `<span class="fan-card-handle">${handle}${href?' ↗':''}</span>` : ''}
+                <span class="fan-card-votes"><b>${votes}</b> votes cast</span>
+              </${faceTag}>
+              ${backing}
             </div>`;
           }).join('');
         } else {

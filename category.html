@@ -145,6 +145,23 @@
     return '';
   }
 
+  // Share of every vote cast on this board — the same number the duel shows, so
+  // a contender reads the same way whichever surface you meet them on.
+  function boardTotalCents(){ return people.reduce((n,x)=> n + (x.total_cents||0), 0); }
+  function sharePct(p){
+    const all = boardTotalCents();
+    if(!all) return 0;
+    return Math.round(((p.total_cents||0) / all) * 1000) / 10;
+  }
+  // "Cristiano Ronaldo" -> "Ronaldo". A long surname falls back to the given
+  // name so the button never wraps.
+  function shortName(full){
+    const parts=String(full||'').trim().split(/\s+/).filter(Boolean);
+    if(parts.length<2) return parts[0]||'';
+    const last=parts[parts.length-1];
+    return last.length>12 ? parts[0] : last;
+  }
+
   async function render(){
     const board=document.getElementById('board');
     if(!people.length){
@@ -200,7 +217,9 @@
           <div class="meta">
             <div class="name display">${p.name}</div>
             <div class="blurb">${p.blurb||''}</div>
-            <div class="total">${fmtVotes(p.total_cents)}</div>
+            <div class="board-count display">${Math.floor((p.total_cents||0)/100).toLocaleString()}</div>
+            <div class="board-share">${sharePct(p)}% of the board</div>
+            <div class="board-bar"><div class="board-bar-fill" style="width:${Math.max(sharePct(p),1.5)}%"></div></div>
             <div class="gap">${gapText}</div>
           </div>
         </div>
@@ -208,7 +227,7 @@
         <div class="row-right">${fanHtml} <a href="/person?slug=${p.slug}#fans" style="margin-left:auto;font-size:11px;color:var(--gold);text-decoration:underline;white-space:nowrap">Report</a></div>
         <div class="row-actions">
           <span class="stepper"><button data-dec aria-label="Decrease">−</button><input data-amt-input type="number" min="1" value="1" style="width:56px;text-align:center;background:transparent;border:none;color:var(--ink);font-weight:700;font-size:12px;font-family:JetBrains Mono"><span data-amt style="display:none">1 vote</span><button data-inc aria-label="Increase">+</button></span>
-          <button class="btn-back back-btn" data-back style="min-height:44px;min-width:44px">Vote</button>
+          <button class="btn-back back-btn" data-back style="min-height:44px;min-width:44px">Vote ${shortName(p.name)}</button>
           <span class="stakes" data-stakes>1 vote → #${rank}</span>
         </div>`;
 

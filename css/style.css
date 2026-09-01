@@ -554,3 +554,181 @@ body.preview-only #add-btn{display:none!important}
   border:1px solid var(--border-2);border-radius:999px;padding:8px 14px;margin-right:12px;
   font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
 .file-field input[type=file]::file-selector-button:hover{border-color:var(--gold);color:var(--gold)}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Head-to-head — the house style.
+
+   Every surface that shows a contender's standing uses these three pieces, so
+   a board row, a person page and a duel all read as the same product: a big
+   tabular count, the share of the vote under it, and a filled button in the
+   accent that side owns.
+
+   In a duel the accent is positional — left is blue, right is red. Keying it
+   off the contender instead would recolour the same face from one matchup to
+   the next, and "this side" is what the colour actually means here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --side-a:#39a7f0; --side-a-lo:rgba(57,167,240,.16); --side-a-glow:rgba(57,167,240,.30);
+  --side-b:#f4353f; --side-b-lo:rgba(244,53,63,.16);  --side-b-glow:rgba(244,53,63,.28);
+}
+.duel-side.a{--accent:var(--side-a);--accent-lo:var(--side-a-lo);--accent-glow:var(--side-a-glow)}
+.duel-side.b{--accent:var(--side-b);--accent-lo:var(--side-b-lo);--accent-glow:var(--side-b-glow)}
+
+/* The name sits on the portrait, the way a matchup card is drawn. */
+.duel-side .photo{position:relative}
+.duel-plate{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;text-align:left;
+  background:linear-gradient(to top,rgba(6,6,9,.92) 18%,rgba(6,6,9,.55) 55%,transparent);
+  pointer-events:none;display:flex;flex-direction:column;line-height:.92}
+.duel-plate-first{font-family:'Anton',sans-serif;font-size:clamp(15px,3.4vw,26px);color:#fff;
+  letter-spacing:.005em;text-transform:uppercase}
+.duel-plate-last{font-family:'Anton',sans-serif;font-size:clamp(17px,4vw,30px);color:var(--accent);
+  letter-spacing:.005em;text-transform:uppercase;text-shadow:0 0 24px var(--accent-glow)}
+
+.duel-side.leader .photo{border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent),0 14px 40px -10px var(--accent-glow)}
+
+.duel-count{font-family:'Anton',sans-serif;font-size:clamp(26px,6.4vw,44px);line-height:1;
+  color:var(--ink);margin-top:12px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.duel-share{font-size:clamp(11px,2.6vw,14px);font-weight:650;color:var(--accent);margin-top:5px;
+  letter-spacing:-.005em}
+
+.duel-side .btn-vote{margin-top:12px;width:100%;max-width:230px;height:44px;border:0;border-radius:12px;
+  background:var(--accent);color:#0b0b0e;font-family:'JetBrains Mono',monospace;font-size:12.5px;
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 10px 26px -10px var(--accent-glow);transition:transform .12s,filter .15s}
+.duel-side .btn-vote:hover{filter:brightness(1.08)}
+.duel-side .btn-vote:active{transform:scale(.98)}
+.duel-side .btn-vote:disabled{opacity:.55;cursor:not-allowed}
+
+/* The bar, with the lead called out in the middle of it. */
+.vs-bar-wrap{grid-column:1 / -1;grid-row:3;margin-top:16px;padding-top:15px;
+  border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.vs-bar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.vs-bar-name{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;
+  color:var(--muted);white-space:nowrap}
+.vs-bar-name i{width:9px;height:9px;border-radius:50%;display:block;flex:0 0 auto}
+.vs-bar-name.a{color:var(--side-a)} .vs-bar-name.a i{background:var(--side-a)}
+.vs-bar-name.b{color:var(--side-b)} .vs-bar-name.b i{background:var(--side-b)}
+.vs-bar-pill{flex:1 1 auto;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);
+  border:1px solid color-mix(in srgb,var(--gold) 42%,transparent);border-radius:999px;
+  padding:6px 12px;background:var(--gold-lo,rgba(201,168,106,.08));white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.vs-bar{position:relative;display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--bg)}
+.vs-bar-fill{height:100%;transition:width .5s ease}
+.vs-bar-fill.a{background:linear-gradient(90deg,color-mix(in srgb,var(--side-a) 70%,#000),var(--side-a))}
+.vs-bar-fill.b{background:linear-gradient(90deg,var(--side-b),color-mix(in srgb,var(--side-b) 70%,#000))}
+.vs-bar-knot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-family:'Anton',sans-serif;font-size:8px;letter-spacing:.06em;color:var(--ink);
+  background:var(--bg);border-radius:999px;padding:2px 7px;line-height:1;
+  border:1px solid var(--border);pointer-events:none}
+
+@media(max-width:480px){
+  .duel-plate{padding:18px 9px 8px}
+  .duel-count{margin-top:8px}
+  .duel-side .btn-vote{height:38px;font-size:11px;letter-spacing:.05em;margin-top:9px}
+  .vs-bar-wrap{margin-top:12px;padding-top:12px;gap:8px}
+  .vs-bar-pill{order:3;flex-basis:100%}
+  .vs-bar{height:10px}
+}
+
+
+/* ── The same three pieces on a board row ────────────────────────────────────
+   A board is not a duel, so the accent is earned rather than positional: gold
+   for whoever holds #1, neutral for everyone chasing. Thirty contenders in
+   thirty colours would be noise, not identity. */
+.board-row{--accent:var(--muted-2,#8b8b98);--accent-lo:rgba(255,255,255,.06)}
+.board-row.rank-1{--accent:var(--gold);--accent-lo:var(--gold-lo,rgba(201,168,106,.12))}
+
+.board-count{font-family:'Anton',sans-serif;font-size:clamp(24px,4.6vw,38px);line-height:1;
+  color:var(--ink);margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.board-row.rank-1 .board-count{color:var(--gold)}
+.board-share{font-size:12.5px;font-weight:650;color:var(--accent);margin-top:4px;letter-spacing:-.005em}
+.board-bar{height:7px;border-radius:999px;background:var(--bg);overflow:hidden;margin-top:9px;
+  max-width:320px;border:1px solid var(--border)}
+.board-bar-fill{height:100%;border-radius:999px;background:var(--accent);transition:width .5s ease}
+.board-row.rank-1 .board-bar-fill{
+  background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 65%,#000),var(--gold))}
+
+/* The vote button carries the same weight it has in a duel: filled, in the
+   row's accent, naming who it backs. */
+.board-row .btn-back{background:var(--accent-lo);border:1px solid var(--accent);color:var(--accent);
+  border-radius:12px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;padding:0 16px;transition:filter .15s,transform .1s}
+.board-row.rank-1 .btn-back{background:var(--gold);border-color:var(--gold);color:var(--bg);
+  box-shadow:0 10px 26px -12px rgba(201,168,106,.55)}
+.board-row .btn-back:hover{filter:brightness(1.12)}
+.board-row .btn-back:active{transform:scale(.98)}
+
+@media(max-width:480px){
+  .board-count{margin-top:6px}
+  .board-bar{max-width:none}
+  .board-row .btn-back{font-size:11px;letter-spacing:.04em;padding:0 12px}
+}
+
+/* ── And on a person's own page ──────────────────────────────────────────── */
+.person-hero-count{font-family:'Anton',sans-serif;font-size:clamp(38px,9vw,68px);line-height:1;
+  color:var(--gold);font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+.person-hero-share{font-size:14px;font-weight:650;color:var(--muted);margin-top:6px}
+.person-hero-share b{color:var(--gold)}
+.person-hero-bar{height:9px;border-radius:999px;background:var(--bg);border:1px solid var(--border);
+  overflow:hidden;margin-top:12px;max-width:420px}
+.person-hero-bar-fill{height:100%;border-radius:999px;transition:width .5s ease;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 62%,#000),var(--gold))}
+
+/* ── Leading fans ────────────────────────────────────────────────────────────
+   The old row was an avatar, a name and a number in about 56px of height. A
+   backer is a person: the face gets real size, the handle opens where they
+   actually are, and the contender they have put the most behind sits opposite
+   them — "who is backing whom" being the only thing a fan leaderboard is for. */
+.fan-card{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch;
+  padding:14px;border:1px solid var(--border);border-radius:16px;background:var(--surface);
+  margin-bottom:10px;transition:border-color .15s}
+.fan-card:hover{border-color:var(--border-2)}
+.fan-card.podium{border-color:color-mix(in srgb,var(--gold) 38%,transparent);
+  background:linear-gradient(180deg,var(--gold-lo,rgba(201,168,106,.07)),var(--surface))}
+.fan-card-rank{position:absolute;top:10px;left:12px;font-size:15px;line-height:1;z-index:2;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.fan-card:not(.podium) .fan-card-rank{font-family:'JetBrains Mono',monospace;font-size:11px;
+  font-weight:700;color:var(--muted-2)}
+
+.fan-card-left{display:flex;flex-direction:column;align-items:center;text-align:center;gap:7px;
+  text-decoration:none;color:inherit;padding-top:6px}
+a.fan-card-left:hover .fan-face{border-color:var(--gold)}
+a.fan-card-left:hover .fan-card-handle{color:var(--gold)}
+.fan-face{width:104px;height:104px;border-radius:50%;overflow:hidden;display:grid;place-items:center;
+  background:var(--surface-3);border:2px solid var(--border);flex:0 0 auto;transition:border-color .15s}
+.fan-face img{width:100%;height:100%;object-fit:cover;display:block}
+.fan-face-initials{font-family:'Anton',sans-serif;font-size:34px;color:var(--gold)}
+.fan-card-name{font-family:'Anton',sans-serif;font-size:18px;line-height:1.05;color:var(--ink);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fan-card-handle{font-size:12px;color:var(--muted);max-width:100%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;transition:color .15s}
+.fan-card-votes{font-size:11.5px;color:var(--muted)}
+.fan-card-votes b{font-family:'JetBrains Mono',monospace;color:var(--gold);font-size:14px;
+  font-variant-numeric:tabular-nums}
+
+.fan-backing{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  text-align:center;text-decoration:none;color:inherit;padding:12px 8px;border-radius:12px;
+  background:var(--bg);border:1px solid var(--border);transition:border-color .15s}
+a.fan-backing:hover{border-color:var(--gold)}
+.fan-backing-label{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);
+  font-weight:700}
+.fan-backing-who{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;width:100%}
+.fan-backing-who img,.fan-backing-initials{width:60px;height:60px;border-radius:12px;object-fit:cover;
+  display:grid;place-items:center;background:var(--surface-3);border:1px solid var(--border);
+  font-family:'Anton',sans-serif;font-size:20px;color:var(--gold);flex:0 0 auto}
+.fan-backing-name{font-family:'Anton',sans-serif;font-size:15px;line-height:1.1;color:var(--ink);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+a.fan-backing:hover .fan-backing-name{color:var(--gold)}
+.fan-backing-votes{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fan-backing.empty{color:var(--muted-2);font-size:12px;border-style:dashed}
+
+@media(max-width:420px){
+  .fan-card{grid-template-columns:1fr;gap:10px}
+  .fan-face{width:88px;height:88px}
+  .fan-backing{flex-direction:row;justify-content:flex-start;gap:10px;text-align:left;padding:10px}
+  .fan-backing-who{flex-direction:row;align-items:center}
+  .fan-backing-label{display:none}
+}

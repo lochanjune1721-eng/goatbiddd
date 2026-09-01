@@ -27,9 +27,13 @@
       <div id="crumb" class="mono" style="font-size:12px;color:var(--muted)"></div>
       <h1 id="name" class="display" style="font-size:42px;line-height:1;margin-top:4px">—</h1>
       <div id="blurb" style="color:var(--muted);margin-top:6px;font-size:14px"></div>
-      <div style="margin-top:14px;display:flex;gap:12px;align-items:baseline">
-        <span id="total" class="display" style="font-size:36px;color:var(--gold)">0 votes</span>
-        <span id="rank" class="mono" style="font-size:13px;color:var(--muted)"></span>
+      <!-- Same three pieces as a duel side and a board row: the count, the
+           share under it, the bar. -->
+      <div style="margin-top:16px">
+        <div id="total" class="person-hero-count">0</div>
+        <div id="hero-share" class="person-hero-share"></div>
+        <div class="person-hero-bar"><div id="hero-bar" class="person-hero-bar-fill" style="width:0%"></div></div>
+        <div id="rank" class="mono" style="font-size:13px;color:var(--muted);margin-top:10px"></div>
       </div>
       <div class="back-row" id="back-row" style="margin-top:14px"></div>
       <div id="wiki" class="mono" style="font-size:11px;color:var(--muted);margin-top:12px"></div>
@@ -61,7 +65,7 @@
   document.title=person.name+' — The True GOAT';
   document.getElementById('name').textContent=person.name;
   document.getElementById('blurb').textContent=person.blurb||'';
-  document.getElementById('total').textContent=window.GOAT.votes(person.total_cents||0);
+  paintHero();
   if(person.categories){
     document.getElementById('crumb').innerHTML=`<a href="/category?slug=${person.categories.slug}" style="color:var(--gold)">${person.categories.name}</a> · ${person.categories.group_name}`;
   }
@@ -73,6 +77,22 @@
 
   // Parallel rank and fan query
   let fans = [];
+  // The hero's three pieces move together: the count, the share of the board,
+  // and the bar. Six places used to set the count alone.
+  let catTotalCents = 0;
+  function paintHero(){
+    const cents = person?.total_cents || 0;
+    const el = document.getElementById('total');
+    if(el) el.textContent = Math.floor(cents/100).toLocaleString();
+    const pct = catTotalCents > 0 ? Math.round((cents / catTotalCents) * 1000) / 10 : 0;
+    const share = document.getElementById('hero-share');
+    if(share) share.innerHTML = catTotalCents > 0
+      ? '<b>' + pct + '%</b> of every vote on this board'
+      : 'First vote takes #1';
+    const bar = document.getElementById('hero-bar');
+    if(bar) bar.style.width = Math.max(pct, catTotalCents > 0 ? 1.5 : 0) + '%';
+  }
+
   async function loadFansData(){
     try {
       const [catPeopleRes, fansRes] = await Promise.all([
@@ -82,7 +102,9 @@
 
       const catPeople = catPeopleRes?.data || [];
       const rank = catPeople.findIndex(p => p.id === person.id) + 1 || '—';
-      document.getElementById('rank').textContent = `#${rank} in ${person.categories?.name || 'Category'} · ${window.GOAT.votes(person.total_cents||0)}`;
+      catTotalCents = catPeople.reduce((n,x)=> n + (x.total_cents||0), 0);
+      paintHero();
+      document.getElementById('rank').textContent = `#${rank} in ${person.categories?.name || 'Category'}`;
       if(person.wikipedia_url) {
         document.getElementById('wiki').innerHTML = `<a href="${person.wikipedia_url}" target="_blank" rel="noopener" style="text-decoration:underline">Wikipedia</a> ${person.photo_credit? '· '+person.photo_credit:''}`;
       }
@@ -176,7 +198,7 @@
           if(res.error) throw res.error;
 
           person.total_cents = (res.data?.new_total) || (person.total_cents + need*100);
-          document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
+          paintHero();
           if(window.refreshBalance) await window.refreshBalance();
           
           await loadFansData();
@@ -232,7 +254,7 @@
         onVoted(r){
           if(r && typeof r.new_total === 'number'){
             person.total_cents = r.new_total;
-            document.getElementById('total').textContent = window.GOAT.votes(person.total_cents);
+            paintHero();
           }
           if(typeof loadFansData === 'function') loadFansData();
         }
@@ -240,7 +262,7 @@
     }
     const prev=person.total_cents;
     person.total_cents += v*100;
-    document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
+    paintHero();
     btn.disabled=true; btn.textContent='Voting…';
     
     try{
@@ -251,13 +273,13 @@
       if(res.error) throw res.error;
       
       if(res.data && res.data.new_total) person.total_cents=res.data.new_total;
-      document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
+      paintHero();
       if(window.refreshBalance) await window.refreshBalance();
       await loadFansData();
       btn.disabled=false; btn.textContent=`Back (+${v})`;
     }catch(e){
       person.total_cents=prev;
-      document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);
+      paintHero();
       const m=String(e.message||e);
       if(m.toLowerCase().includes('not enough')||m.toLowerCase().includes('insufficient')||m.toLowerCase().includes('balance')){
         if(window.GoatCheckout) window.GoatCheckout.open({

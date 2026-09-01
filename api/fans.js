@@ -19,6 +19,33 @@ export default withHandler(async function handler(req, res){
     .order('total_spent_cents', { ascending: false })
     .limit(50);
 
+  // Who each fan is actually backing. A leaderboard of names and numbers says
+  // nothing about the rivalry; the contender they have put the most behind is
+  // the interesting half, and it is one extra query for the whole page rather
+  // than one per fan.
+  const ids = (users || []).map(u => u.id);
+  const backing = new Map();
+  if (ids.length) {
+    const { data: totals } = await supa
+      .from('fan_totals')
+      .select('user_id,total_cents,people(name,slug,photo_path)')
+      .in('user_id', ids)
+      .order('total_cents', { ascending: false });
+
+    // Ordered by size, so the first row seen for a fan is their biggest bet.
+    for (const row of totals || []) {
+      if (!row?.people || backing.has(row.user_id)) continue;
+      backing.set(row.user_id, {
+        name: row.people.name,
+        slug: row.people.slug,
+        photo_path: row.people.photo_path,
+        votes: Math.floor((row.total_cents || 0) / 100)
+      });
+    }
+  }
+
+  const fans = (users || []).map(u => ({ ...u, backing: backing.get(u.id) || null }));
+
   res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=15');
-  return res.status(200).json({ ok: true, fans: users || [] });
+  return res.status(200).json({ ok: true, fans });
 });
