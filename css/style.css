@@ -809,3 +809,14 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
     .duel-body.crazy .duel-side > .photo{max-height:calc(43vw - 8px)}
   }
 }
+
+/* ── The opening argument ────────────────────────────────────────────────────
+   The page used to open on a headline, a stat pair, a search box, a sort
+   dropdown, a country row and a chip row — six pieces of furniture before the
+   thing anyone came for. The first fight now sits at the top on its own, and
+   the copy explains it underneath, where an explanation belongs. */
+.hero-fight{max-width:760px;margin:0 auto 20px}
+.hero-fight .duel-lead{width:100%}
+.hero-fight .skel-duel{min-height:420px;border-radius:16px}
+.hero-under{padding-top:4px}
+@media(max-width:640px){ .hero-fight{margin-bottom:14px} .hero-fight .skel-duel{min-height:320px} }

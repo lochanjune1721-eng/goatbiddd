@@ -205,10 +205,16 @@
   <div class="container">
     <div class="live-pill" style="max-width:760px;margin:0 auto 10px"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">$0 backed today</span></div>
 
-    <div class="hero" style="max-width:760px;margin:0 auto 16px">
+    <!-- THE FIGHT. Nothing above it but the live pill: the page opens on the
+         argument itself rather than on furniture explaining the argument. -->
+    <div class="hero-fight" id="hero-fight">
+      <div class="duel skeleton skel-duel"></div>
+    </div>
+
+    <div class="hero hero-under" style="max-width:760px;margin:0 auto 16px">
       <div class="hero-copy">
         <h1 class="display">Who is the<br><em>Greatest of All Time?</em></h1>
-        <p>Anyone can vote for free somewhere else. <span style="color:var(--ink);font-weight:700">Here, the score is real money.</span> <b>$1 = 1 vote.</b> No judges, no algorithms — the board shows what fans actually put down. Talk is cheap — <span style="color:var(--gold)">prove it.</span></p>
+        <p>Anyone can argue. <span style="color:var(--ink);font-weight:700">Can you put your money where your mouth is?</span> <b>$1 = 1 vote.</b> Talk is cheap — <span style="color:var(--gold)">prove it.</span></p>
       </div>
       <div class="hero-stats">
         <div class="hero-stat"><strong id="hero-boards">—</strong><span>Boards</span></div>
@@ -216,27 +222,24 @@
       </div>
     </div>
 
-    <!-- FILTER BAR -->
+    <!-- FILTER BAR — search and country only. The sort dropdown, the Clear
+         button and the group chips were three ways of narrowing a list nobody
+         had scrolled yet; the board grid below already carries its own nav. -->
     <div class="filter-bar" id="filter-bar">
       <div class="filter-bar-top">
         <label class="filter-search" aria-label="Search categories and people">
           <i>⌕</i>
           <input id="q" placeholder="Search categories or people — try 'Ronaldo', 'Messi', 'Directors'" autocomplete="off" spellcheck="false">
         </label>
-        <div class="filter-actions">
-          <select id="sort" aria-label="Sort boards"><option value="hype">Featured</option><option value="az">A → Z</option><option value="money">Most backed</option></select>
-          <button id="clear" class="btn-clear" type="button">Clear</button>
-        </div>
       </div>
       <div class="country-bar" id="country-bar" hidden role="tablist" aria-label="Filter by country"></div>
-      <div class="chips" id="chips" role="tablist" aria-label="Filter by group"></div>
     </div>
 
     <!-- FEATURED DUELS — PREMIER GLOBAL TOP 50 FIGHTS -->
     <div class="featured-wrap" id="featured-wrap">
       <div class="section-head">
-        <h2 id="featured-title">Top 50 Fights <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span></h2>
-        <p id="featured-sub">The 50 biggest debates of all time • #1 vs #2, back with one tap</p>
+        <h2 id="featured-title">Top Fights <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span></h2>
+        <p id="featured-sub">The biggest debates of all time • #1 vs #2, back with one tap</p>
       </div>
       <div id="featured" class="featured-grid">
         <div class="skeleton skel-duel"></div>
@@ -297,7 +300,12 @@
 <script>
 (async function(){
   const sb = window.supabaseClient;
-  const qEl = document.getElementById('q'), sortEl = document.getElementById('sort'), clearEl = document.getElementById('clear'), chipsEl = document.getElementById('chips');
+  // sort, clear and the group chips are gone from the markup; the code that
+  // used them stays, guarded, so a future layout can put any of them back
+  // without re-deriving what they did.
+  const qEl = document.getElementById('q'), sortEl = document.getElementById('sort'),
+        clearEl = document.getElementById('clear'), chipsEl = document.getElementById('chips'),
+        heroFightEl = document.getElementById('hero-fight');
   const featuredWrap = document.getElementById('featured-wrap'), featuredEl = document.getElementById('featured');
   const groupsEl = document.getElementById('groups'), activityEl = document.getElementById('activity');
   const srWrap = document.getElementById('search-results'), srCats = document.getElementById('sr-cats'), srPeople = document.getElementById('sr-people'), srPeopleHead = document.getElementById('sr-people-head');
@@ -528,6 +536,7 @@
 
   // Category navigation & chips
   function renderChips(){
+    if(!chipsEl) return;
     const scoped = catsInScope();
     const counts = new Map();
     for(const c of scoped){
@@ -713,15 +722,15 @@
     if(title && sub){
       const tag = '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span>';
       if(activeCountry === 'Global'){
-        title.innerHTML = 'Top 50 Fights ' + tag;
-        sub.textContent = 'The 50 biggest debates of all time • #1 vs #2, back with one tap';
+        title.innerHTML = 'Top Fights ' + tag;
+        sub.textContent = 'The biggest debates of all time • #1 vs #2, back with one tap';
       } else {
         title.innerHTML = esc(activeCountry) + ' Fights ' + tag;
         sub.textContent = `The biggest debates in ${activeCountry} • #1 vs #2, back with one tap`;
       }
     }
     let idx = 0;
-    // The Top 50 are the global fights; under a country tab the featured strip
+    // Global shows the curated fights; under a country tab the featured strip
     // becomes that country's biggest boards instead of showing nothing.
     const scoped = catsInScope();
     // The fights come from the database, ordered by sort_order — which is what
@@ -739,12 +748,27 @@
       ? ordered.slice(0, FEATURED_LIMIT).map(c => c.slug)
       : (activeCountry === 'Global' ? GLOBAL_TOP_50_FIGHTS : scoped.slice(0, FEATURED_LIMIT).map(c => c.slug));
 
+    // The first fight is the page's opening argument, so it is rendered on its
+    // own above the fold rather than as tile one of a hundred.
+    let leadDone = false;
+    if(heroFightEl) heroFightEl.innerHTML = '';
+
     for(const slug of featuredSlugs){
       const cat = scoped.find(c => c.slug === slug)
         || (activeCountry === 'Global' ? cats.find(c => c.slug === slug || c.slug.includes(slug) || slug.includes(c.slug)) : null);
       if(!cat) continue;
       if(activeGroup !== 'All' && cat.group_name !== activeGroup) continue;
       const catPeople = duoForCat(cat);
+
+      if(!leadDone && heroFightEl){
+        leadDone = true;
+        const lead = document.createElement('div');
+        lead.className = 'duel cat-tile duel-lead';
+        lead.innerHTML = duelHtml(cat, catPeople, {featured: true, eager: true});
+        heroFightEl.appendChild(lead);
+        continue;
+      }
+
       const div = document.createElement('div');
       div.className = 'duel cat-tile';
       div.innerHTML = duelHtml(cat, catPeople, {featured: true, eager: idx < 6});
@@ -757,7 +781,7 @@
     const list = filteredCats || catsInScope();
     const visible = activeGroup === 'All' ? list : list.filter(c => c.group_name === activeGroup);
 
-    const sort = sortEl.value;
+    const sort = sortEl ? sortEl.value : 'hype';
     if(sort === 'az') visible.sort((a,b) => a.name.localeCompare(b.name));
     else if(sort === 'money'){
       visible.sort((a,b)=>{
@@ -853,8 +877,8 @@
   }
 
   qEl.addEventListener('input', debounce(applyFilters, 150));
-  sortEl.addEventListener('change', applyFilters);
-  clearEl.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; renderChips(); renderCatNav(); applyFilters(); });
+  sortEl?.addEventListener('change', applyFilters);
+  clearEl?.addEventListener('click', ()=>{ qEl.value=''; activeGroup='All'; renderChips(); renderCatNav(); applyFilters(); });
 
   // === 1-TAP HOMEPAGE VOTING ===
   // Out of credit mid-vote: offer the top-up right there instead of a native
