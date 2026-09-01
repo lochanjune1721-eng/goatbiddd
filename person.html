@@ -96,7 +96,7 @@
   async function loadFansData(){
     try {
       const [catPeopleRes, fansRes] = await Promise.all([
-        person.category_id ? sb.from('people').select('id,total_cents,first_backed_at').eq('category_id', person.category_id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}) : Promise.resolve({data:[]}),
+        person.category_id ? sb.from('people').select('id,total_cents,first_backed_at,seed_rank').eq('category_id', person.category_id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true,nullsFirst:false}).order('seed_rank',{ascending:true,nullsFirst:false}) : Promise.resolve({data:[]}),
         sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform,photo_status)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100)
       ]);
 

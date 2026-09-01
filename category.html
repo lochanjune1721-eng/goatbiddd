@@ -92,7 +92,7 @@
       people=window.CountryBoards.asPeople(cat.__board, cat.country_code).slice(0, BOARD_SIZE);
       return;
     }
-    const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true}).limit(FETCH_SIZE);
+    const {data}=await sb.from('people').select('*').eq('category_id', cat.id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true,nullsFirst:false}).order('seed_rank',{ascending:true,nullsFirst:false}).limit(FETCH_SIZE);
     const rawList = data||[];
     
     // Deduplicate any duplicates from database
@@ -144,6 +144,18 @@
     if(p==='tiktok') return '♫';
     if(p==='youtube') return '▶';
     return '';
+  }
+
+  // The order the database uses, mirrored here so an optimistic re-sort after a
+  // vote does not disagree with the next fetch: money, then who got there
+  // first, then the curated seed order for a board nobody has backed yet.
+  function boardOrder(a,b){
+    const money = (b.total_cents||0) - (a.total_cents||0);
+    if(money) return money;
+    const fa = a.first_backed_at ? Date.parse(a.first_backed_at) : Infinity;
+    const fb = b.first_backed_at ? Date.parse(b.first_backed_at) : Infinity;
+    if(fa !== fb) return fa - fb;
+    return (a.seed_rank ?? Infinity) - (b.seed_rank ?? Infinity);
   }
 
   // Share of every vote cast on this board — the same number the duel shows, so
@@ -267,7 +279,7 @@
         const prevBalanceText=document.getElementById('sticky-balance')?.textContent;
         p.total_cents = (p.total_cents||0) + amt;
         // re-sort people by total_cents desc, first_backed_at asc
-        people.sort((a,b)=> (b.total_cents - a.total_cents) || (new Date(a.first_backed_at||0) - new Date(b.first_backed_at||0)));
+        people.sort(boardOrder);
         // optimistic balance tick (if header present)
         await render();
         // sticky highlight: flash
@@ -285,7 +297,7 @@
             personPhoto: window.GOAT?.getPhotoUrl?.(p.photo_path),
             onVoted(r){
               if(r && typeof r.new_total === 'number') p.total_cents = r.new_total;
-              people.sort((a,b)=> (b.total_cents - a.total_cents) || (new Date(a.first_backed_at||0) - new Date(b.first_backed_at||0)));
+              people.sort(boardOrder);
               render();
             }
           });
@@ -320,7 +332,7 @@
         }catch(e){
           // rollback
           p.total_cents = prevTotal;
-          people.sort((a,b)=> (b.total_cents - a.total_cents) || (new Date(a.first_backed_at||0) - new Date(b.first_backed_at||0)));
+          people.sort(boardOrder);
           await render();
           if(String(e.message||'').toLowerCase().includes('not enough') && window.GoatCheckout){
             window.GoatCheckout.open({ personId: p.id, personName: p.name,

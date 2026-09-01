@@ -391,11 +391,11 @@
   try {
     const [catsRes, p0, p1, p2, p3, p4] = await Promise.all([
       sb.from('categories').select('id,slug,name,group_name,sort_order,country,country_code').order('sort_order'),
-      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(0, 999),
-      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(1000, 1999),
-      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(2000, 2999),
-      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(3000, 3999),
-      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at').order('total_cents',{ascending:false}).range(4000, 4999)
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at,seed_rank').order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true,nullsFirst:false}).order('seed_rank',{ascending:true,nullsFirst:false}).range(0, 999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at,seed_rank').order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true,nullsFirst:false}).order('seed_rank',{ascending:true,nullsFirst:false}).range(1000, 1999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at,seed_rank').order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true,nullsFirst:false}).order('seed_rank',{ascending:true,nullsFirst:false}).range(2000, 2999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at,seed_rank').order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true,nullsFirst:false}).order('seed_rank',{ascending:true,nullsFirst:false}).range(3000, 3999),
+      sb.from('people').select('id,slug,name,photo_path,wikipedia_url,total_cents,category_id,first_backed_at,seed_rank').order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true,nullsFirst:false}).order('seed_rank',{ascending:true,nullsFirst:false}).range(4000, 4999)
     ]);
     cats = catsRes?.data || [];
     // data/country-boards-seed.sql adds categories.country. Until it is run the
@@ -421,11 +421,24 @@
       if(!peopleByCat[p.category_id]) peopleByCat[p.category_id] = [];
       peopleByCat[p.category_id].push(p);
     }
-    for(const k in peopleByCat) peopleByCat[k].sort((a,b)=> (b.total_cents||0)-(a.total_cents||0));
+    // Same order the database uses, so the fight the homepage shows is the
+    // same #1 vs #2 the board shows: money first, then who got there first,
+    // then the curated order for a board nobody has backed yet.
+    for(const k in peopleByCat) peopleByCat[k].sort(boardOrder);
     groupMap = {};
     catsInScope().forEach(c=>{ const g = c.group_name || 'Other'; if(!groupMap[g]) groupMap[g] = []; groupMap[g].push(c); });
   }
   buildIndices();
+
+  function boardOrder(a,b){
+    const money = (b.total_cents||0) - (a.total_cents||0);
+    if(money) return money;
+    const fa = a.first_backed_at ? Date.parse(a.first_backed_at) : Infinity;
+    const fb = b.first_backed_at ? Date.parse(b.first_backed_at) : Infinity;
+    if(fa !== fb) return fa - fb;
+    const sa = a.seed_rank ?? Infinity, sb2 = b.seed_rank ?? Infinity;
+    return sa - sb2;
+  }
 
   // Populate hero stats with actual database values
   const hb = document.getElementById('hero-boards'), hv = document.getElementById('hero-votes');

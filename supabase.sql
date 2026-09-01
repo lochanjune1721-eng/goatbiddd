@@ -698,3 +698,17 @@ do $$ begin
   end if;
 end $$;
 create index if not exists users_country_idx on users (country);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Editorial starting order.
+--
+-- A fresh board is 20 contenders on $0 each, so total_cents cannot order it and
+-- first_backed_at is null for all of them — the board would come back in
+-- whatever order Postgres felt like, and the homepage fight would be a random
+-- pair rather than #1 vs #2. seed_rank carries the curated order until money
+-- starts moving it, and it is the LAST tiebreak: a single dollar still outranks
+-- any amount of editorial opinion.
+-- ─────────────────────────────────────────────────────────────────────────────
+alter table people add column if not exists seed_rank int;
+create index if not exists people_board_order_idx
+  on people (category_id, total_cents desc, first_backed_at asc nulls last, seed_rank asc nulls last);
