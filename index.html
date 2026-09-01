@@ -357,7 +357,12 @@
   }
 
   function duoForCat(cat){
-    const list = peopleByCat[cat.id] || [];
+    // Ranked on every render, not once at page load. The arrays in peopleByCat
+    // were sorted a single time after the fetch, so backing someone updated
+    // their total but never moved them: the card kept showing the old pair with
+    // new numbers beside it, which is the one thing a scoreboard must not do.
+    // Twenty rows per board — re-sorting is free, and being wrong is not.
+    const list = (peopleByCat[cat.id] || []).slice().sort(boardOrder);
     // Whatever the board itself says, in the board's own order: money first,
     // then who got there first, then seed_rank — the curated order from the
     // CSV. It used to defer to CANONICAL_TOP2 for any board with no money on
@@ -431,10 +436,9 @@
       if(!peopleByCat[p.category_id]) peopleByCat[p.category_id] = [];
       peopleByCat[p.category_id].push(p);
     }
-    // Same order the database uses, so the fight the homepage shows is the
-    // same #1 vs #2 the board shows: money first, then who got there first,
-    // then the curated order for a board nobody has backed yet.
-    for(const k in peopleByCat) peopleByCat[k].sort(boardOrder);
+    // Deliberately not sorted here: duoForCat() ranks on every render, so a
+    // board reflects a vote the moment it lands. Sorting once here is what
+    // froze the pairs in the first place.
     groupMap = {};
     catsInScope().forEach(c=>{ const g = c.group_name || 'Other'; if(!groupMap[g]) groupMap[g] = []; groupMap[g].push(c); });
   }
@@ -901,6 +905,12 @@
       if(res.error) throw res.error;
 
       if(res.data?.new_total && person) person.total_cents = res.data.new_total;
+
+      // Re-render with the authoritative total. The only render before this was
+      // the optimistic +$1 fired before the call, so the card kept whatever the
+      // guess produced: a contender who actually overtook the leader stayed in
+      // second place with the wrong number beside them until a reload.
+      applyFilters();
 
       // Say what the dollar did, not that a click registered. The rival is the
       // best-placed other contender on the same board — the one the gap is
