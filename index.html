@@ -26,32 +26,38 @@
 .duel:hover{border-color:var(--border-2)}
 .duel-head{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface-2)}
 .duel-head strong{font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--muted);line-height:1.2}
-.duel-body{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:start;padding:20px 18px 16px}
-.duel-body.crazy{gap:16px;padding:24px 20px 18px}
-.duel-side{text-align:center;min-width:0;align-items:center;gap:0;overflow:visible}
-.duel-side .photo{width:220px;height:220px;border-radius:14px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);position:relative;flex-shrink:0;transition:width .35s ease, height .35s ease}
-.duel-body.crazy .duel-side .photo{width:240px;height:240px;border-radius:16px}
-@media(max-width:768px){.duel-side .photo{width:150px;height:150px}.duel-body.crazy .duel-side .photo{width:160px;height:160px}}
-@media(max-width:480px){.duel-body{gap:8px 8px;padding:12px 10px 10px}.duel-side .photo{width:calc(43vw - 8px);height:calc(43vw - 8px);border-radius:10px}.duel-body.crazy .duel-side .photo{width:calc(43vw - 8px);height:calc(43vw - 8px)}}
-.duel-side.video-playing .photo,.duel-side .photo.video-playing{width:320px;height:180px}
-.duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:340px;height:191px}
-@media(max-width:768px){.duel-side.video-playing .photo,.duel-side .photo.video-playing{width:240px;height:135px}.duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:260px;height:146px}}
-@media(max-width:480px){.duel-side.video-playing .photo,.duel-side .photo.video-playing{width:calc(85vw - 8px);height:calc((85vw - 8px) * 9/16)}.duel-body.crazy .duel-side.video-playing .photo,.duel-body.crazy .duel-side .photo.video-playing{width:calc(85vw - 8px);height:calc((85vw - 8px) * 9/16)}}
+/* ── The duel: face, board, face ─────────────────────────────────────────────
+   Three columns. The portraits are the poster; everything countable lives in
+   the card between them. The card used to be a stack under each face — name,
+   dollars, share, two buttons, then a bar across the bottom — which made every
+   duel about 400px tall for six numbers. This is nearer 230px and says more.
 
-.duel-body.crazy 
-@media(max-width:640px){.duel-body.crazy }
+   The photo columns are fluid and the portrait is sized by aspect-ratio rather
+   than by pixels, so the 1:1 portrait and the 16:9 clip that replaces it on
+   hover occupy the same column at the same width. Only the height moves, and
+   the grid does not reflow around it. */
+.duel-body{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1.62fr) minmax(0,1.12fr);
+  gap:16px;align-items:center;padding:16px}
+.duel-body.crazy{gap:18px;padding:18px}
+.duel-side{min-width:0;display:flex;flex-direction:column;align-items:stretch}
+.duel-side .photo{width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;
+  background:var(--surface-3);border:1px solid var(--border);position:relative;
+  transition:aspect-ratio .35s ease,border-color .2s,box-shadow .2s}
+.duel-body.crazy .duel-side .photo{border-radius:16px}
+/* A clip is 16:9. Same column, same width — the card keeps its shape. */
+.duel-side.video-playing .photo,.duel-side .photo.video-playing{aspect-ratio:16/9}
 
-
-
-.duel-vs{grid-column:2;grid-row:1;align-self:center;width:52px;height:52px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:14px;letter-spacing:.04em;border:2px solid var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.3);line-height:1;flex-shrink:0;margin:0 2px}
-@media(max-width:640px){.duel-vs{width:38px;height:38px;font-size:11px}}
-
-
-
-
-
-
-
+@media(max-width:700px){
+  /* The wrap is 760px, so three columns hold on any viewport that can show it
+     in full. Below that the card drops under the two faces rather than being
+     squeezed between them. */
+  .duel-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:14px}
+  .duel-poll{grid-column:1 / -1;order:3}
+}
+@media(max-width:480px){
+  .duel-body{gap:9px;padding:10px}
+  .duel-side .photo{border-radius:10px}
+}
 
 .duel-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
 /* One vote button per contender, sitting directly under that contender —
@@ -673,47 +679,60 @@
     const p1Photo = p1 ? photoHtml(p1, 240, opts.eager) : '<div class="fallback">?</div>';
     const p2Photo = p2 ? photoHtml(p2, 240, opts.eager) : '<div class="fallback">?</div>';
     
-    const bar = `
-      <div class="vs-bar-wrap">
-        <div class="gap-hero">
-          <div class="gap-hero-num display">${esc(gapLead)}</div>
-          <div class="gap-hero-sub">${esc(gapTrail)}</div>
-        </div>
-        <div class="vs-bar-head">
-          <span class="vs-bar-name a"><i></i>${p1 ? esc(firstName(p1.name)) : '—'} — ${p1Pct}%</span>
-          <span class="vs-bar-pill">${p1 && p2 ? (v1===v2 ? 'Level' : (v1>v2?esc(firstName(p1.name)):esc(firstName(p2.name)))+' leads') : ''}</span>
-          <span class="vs-bar-name b">${p2 ? esc(firstName(p2.name)) : '—'} — ${p2Pct}%<i></i></span>
-        </div>
-        <div class="vs-bar">
-          <div class="vs-bar-fill a" style="width:${p1Pct}%"></div>
-          <div class="vs-bar-knot">VS</div>
-          <div class="vs-bar-fill b" style="width:${p2Pct}%"></div>
-        </div>
-      </div>`;
-
     const catTitle = cat.name.startsWith('Greatest') ? cat.name + (cat.name.endsWith('All Time')?'':' of All Time') : 'Greatest ' + cat.name + ' of All Time';
+    const totalMoney = '$' + (v1 + v2).toLocaleString('en-US');
 
-    // Each side carries its own accent, positionally rather than per person: in
-    // a head-to-head the colour means "this side", and a palette keyed off the
-    // contender would recolour the same face from one duel to the next.
-    const side = (p, votes, pct, cls) => `
-        <div class="duel-side ${cls} ${votes > (cls==='a'?v2:v1) ? 'leader' : ''}">
-          <div class="photo">${cls==='a'?p1Photo:p2Photo}
-            <div class="duel-plate"><span class="duel-plate-first">${p ? esc(givenName(p.name)) : ''}</span><span class="duel-plate-last">${p ? esc(firstName(p.name)) : 'Contender'}</span></div>
-          </div>
-          <div class="duel-count display">$${votes.toLocaleString('en-US')}</div>
-          <div class="duel-share">${pct}% of the money</div>
-          ${p ? `<button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back ${esc(firstName(p.name))} · $1</button>
-          <button class="duel-more" data-back-more="${p.id}" data-name="${esc(p.name)}">👑 Any amount · take the crown</button>` : ''}
+    // The photo column. Nothing but the face — the name used to be printed
+    // across the bottom of it, which fought the portrait and repeated what the
+    // tile beside it already says. A portrait is 1:1 and a clip is 16:9, and
+    // the swap is an aspect-ratio change inside a column that does not resize,
+    // so the card does not jump when a video starts.
+    const side = (p, cls) => `
+        <div class="duel-side ${cls} ${(cls==='a'?v1>v2:v2>v1) ? 'leader' : ''}">
+          <div class="photo">${cls==='a'?p1Photo:p2Photo}</div>
         </div>`;
+
+    // Each contender's tile: who, what share, how much, who leads their fans,
+    // and the two ways to add to it. Everything that used to be stacked under
+    // the portraits now sits here, which is most of the height that went.
+    const tile = (p, votes, pct, cls) => {
+      if(!p) return `<div class="poll-tile ${cls} empty"><div class="poll-team">Team</div><div class="poll-name">—</div></div>`;
+      return `
+        <div class="poll-tile ${cls}">
+          <div class="poll-team">Team</div>
+          <div class="poll-name">${esc(firstName(p.name))}</div>
+          <div class="poll-pct">${pct}%</div>
+          <div class="poll-money mono">$${votes.toLocaleString('en-US')}</div>
+          <div class="poll-gfoat" data-gfoat="${p.id}"></div>
+        </div>`;
+    };
 
     return `
       <div class="duel-head"><strong>${esc(catTitle)}</strong><a href="/category?slug=${cat.slug}" style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase">View Board →</a></div>
       <div class="duel-body ${isCrazy?'crazy':''}">
-        ${side(p1, v1, p1Pct, 'a')}
-        <div class="duel-vs">VS</div>
-        ${side(p2, v2, p2Pct, 'b')}
-        ${bar}
+        ${side(p1, 'a')}
+        <div class="duel-poll">
+          <div class="poll-head">
+            <span class="poll-head-label">Live board</span>
+            <span class="poll-head-total mono">${totalMoney} on the fight</span>
+          </div>
+          <div class="poll-tiles">
+            ${tile(p1, v1, p1Pct, 'a')}
+            ${tile(p2, v2, p2Pct, 'b')}
+          </div>
+          <div class="poll-bar">
+            <span class="poll-bar-fill a" style="width:${p1Pct}%"></span>
+            <span class="poll-bar-fill b" style="width:${p2Pct}%"></span>
+          </div>
+          <div class="poll-acts">
+            ${[p1,p2].map((p,i)=> p ? `<div class="poll-act ${i?'b':'a'}">
+              <button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back ${esc(firstName(p.name))} · $1</button>
+              <button class="duel-more" data-back-more="${p.id}" data-name="${esc(p.name)}">👑 Any amount</button>
+            </div>` : '<div class="poll-act"></div>').join('')}
+          </div>
+          <div class="poll-foot">${esc(gapText)}</div>
+        </div>
+        ${side(p2, 'b')}
       </div>`;
   }
 
@@ -981,6 +1000,92 @@
       btn.disabled = false;
       btn.textContent = orig;
     }
+  }
+
+  // ── Greatest Fan of All Time, on every tile ───────────────────────────────
+  //
+  // One query for the whole page. top_fans() takes every contender id on screen
+  // and returns one row each — asking per tile would be two hundred round trips
+  // on a homepage of a hundred duels. Filled in after the duels paint, so a slow
+  // answer delays a face and nothing else.
+  async function paintGfoat(){
+    const slots = [...document.querySelectorAll('.poll-gfoat[data-gfoat]:not([data-gfoat-done])')];
+    if(!slots.length) return;
+    const ids = [...new Set(slots.map(el => el.dataset.gfoat))];
+
+    let rows = null;
+    try {
+      const { data, error } = await sb.rpc('top_fans', { p_person_ids: ids });
+      if(!error) rows = data;
+    } catch(e){ /* falls through to the read below */ }
+
+    // A project that has not run supabase-top-fans.sql yet still gets the
+    // faces: fan_totals is public read, so the same answer can be assembled in
+    // the browser. Slower and heavier, which is why it is the fallback.
+    if(!rows){
+      const { data } = await sb.from('fan_totals')
+        .select('person_id,total_cents,users(display_name,is_anonymous,photo_path)')
+        .in('person_id', ids).order('total_cents', { ascending:false }).limit(2000);
+      const best = new Map();
+      for(const r of (data||[])){
+        if(best.has(r.person_id)) continue;
+        best.set(r.person_id, { person_id:r.person_id, total_cents:r.total_cents,
+          display_name: r.users?.is_anonymous ? 'Anonymous' : r.users?.display_name,
+          photo_path:   r.users?.is_anonymous ? null       : r.users?.photo_path });
+      }
+      rows = [...best.values()];
+    }
+
+    const byPerson = new Map((rows||[]).map(r => [r.person_id, r]));
+    for(const el of slots){
+      el.dataset.gfoatDone = '1';
+      const f = byPerson.get(el.dataset.gfoat);
+      if(!f){
+        el.innerHTML = '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
+        continue;
+      }
+      const name = f.display_name || 'Anonymous';
+      const url = f.photo_path ? (window.GOAT?.getPhotoUrl?.(f.photo_path) || f.photo_path) : null;
+      const face = url
+        ? `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'poll-gfoat-initials',textContent:${JSON.stringify(initialsOf(name))}}))">`
+        : `<span class="poll-gfoat-initials">${esc(initialsOf(name))}</span>`;
+      // The amount rides on the label line, not the name line: at tile width the
+      // two together truncated the name to make room for a figure nobody could
+      // read the end of anyway.
+      const down = '$' + Math.floor((f.total_cents||0)/100).toLocaleString('en-US');
+      el.title = `${name} — ${down} on this contender`;
+      el.innerHTML = `${face}<span class="poll-gfoat-copy">
+          <span class="poll-gfoat-label">Greatest fan · ${esc(down)}</span>
+          <span class="poll-gfoat-name">${esc(name)}</span>
+        </span>`;
+    }
+  }
+
+  // Duels are painted from four places — the hero, the featured strip, the
+  // groups and the filtered list — and re-painted on every vote and every
+  // filter change. Rather than remembering to call this from each of them and
+  // missing one, watch for tiles arriving. paintGfoat only touches slots it has
+  // not already filled, so firing it often costs nothing.
+  (function watchForTiles(){
+    let queued = null;
+    const run = () => { queued = null; paintGfoat(); };
+    new MutationObserver(muts => {
+      if(queued) return;
+      for(const m of muts){
+        for(const n of m.addedNodes){
+          if(n.nodeType === 1 && (n.matches?.('.poll-gfoat') || n.querySelector?.('.poll-gfoat'))){
+            queued = setTimeout(run, 60);
+            return;
+          }
+        }
+      }
+    }).observe(document.body, { childList:true, subtree:true });
+  })();
+
+  function initialsOf(name){
+    const parts = String(name||'').trim().split(/\s+/).filter(Boolean);
+    if(!parts.length) return '?';
+    return (parts[0][0] + (parts.length > 1 ? parts[parts.length-1][0] : '')).toUpperCase();
   }
 
   document.addEventListener('click', e => {

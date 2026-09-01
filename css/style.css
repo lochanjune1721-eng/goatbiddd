@@ -100,21 +100,12 @@ a{color:inherit;text-decoration:none}
 .duel-head strong{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted)}
 .badge-featured{font-size:9px;letter-spacing:.08em;font-weight:700;background:var(--gold);color:var(--bg);padding:4px 7px;border-radius:999px;text-transform:uppercase}
 
-/* duel body — 3-col grid on desktop, 2-col on phone with photos scaling to fill */
-.duel-body{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;gap:10px 10px;align-items:center;padding:16px 14px 14px}
-.duel-body.crazy{gap:12px 10px;padding:18px 16px 14px}
-.duel-side{text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0;overflow:visible}
-/* Desktop: big squares */
-.duel-side .photo{width:220px;height:220px;border-radius:14px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);contain:paint;position:relative;flex-shrink:0;transition:width .35s ease, height .35s ease}
-.duel-body.crazy .duel-side .photo{width:260px;height:260px;border-radius:16px}
-/* Tablet */
-@media(max-width:768px){.duel-side .photo{width:150px;height:150px}.duel-body.crazy .duel-side .photo{width:170px;height:170px}}
-/* Phone: photos fill the column width using calc so they never overflow */
-@media(max-width:480px){
-  .duel-body{gap:8px 8px;padding:12px 10px 10px}
-  .duel-side .photo{width:calc(43vw - 8px);height:calc(43vw - 8px);border-radius:10px}
-  .duel-body.crazy .duel-side .photo{width:calc(43vw - 8px);height:calc(43vw - 8px)}
-}
+/* duel body — face, board, face. The layout itself lives in index.html's inline
+   <style>, which is where the duel is built; this file used to carry a second
+   copy that set the portrait to a fixed 220px (260px featured). Two copies of a
+   layout is one too many, and the fixed width was the one winning on
+   specificity — it held the portrait at 260px inside a 199px column, so the
+   photos overlapped the card between them and the 16:9 swap did nothing. */
 
 /* A contender's box keeps the same square whether or not a clip is playing.
    It used to switch to 16:9 while playing, which left a card lopsided when
@@ -136,28 +127,8 @@ a{color:inherit;text-decoration:none}
 .photo .fallback.has-portrait, .person-photo .fallback.has-portrait{background:none}
 .photo .fallback.has-portrait img.goat-photo, .person-photo .fallback.has-portrait img.goat-photo{opacity:1}
 .fallback{width:100%;height:100%;display:grid;place-items:center;background:radial-gradient(120% 120% at 50% 30%, #2A241E 0%, #15120F 60%);color:var(--gold);font-family:'Anton',sans-serif;font-size:26px;letter-spacing:.02em}
-.duel-side .name{font-family:'Anton',sans-serif;font-size:15px;line-height:1;max-width:100%;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
-.duel-body.crazy .duel-side .name{font-size:17px}
-@media(max-width:480px){.duel-side .name{font-size:12px;margin-top:5px}.duel-body.crazy .duel-side .name{font-size:13px}}
-.duel-side .total{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);margin-top:2px;font-variant-numeric:tabular-nums}
-.duel-side .total span{font-family:'Inter',sans-serif;font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
-@media(max-width:480px){.duel-side .total{font-size:10px}}
-.duel-side.leader .photo{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold), 0 8px 18px rgba(201,168,106,.22)}
-.duel-vs{grid-column:2;grid-row:1;align-self:center;width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:'Anton',sans-serif;font-size:12px;letter-spacing:.05em;border:2px solid var(--bg);box-shadow:0 2px 12px rgba(0,0,0,.35);line-height:1;flex-shrink:0}
-.duel-body.crazy .duel-vs{width:48px;height:48px;font-size:13px;border-width:3px}
-@media(max-width:480px){.duel-vs{width:32px;height:32px;font-size:10px;border-width:2px}.duel-body.crazy .duel-vs{width:36px;height:36px;font-size:11px}}
-.duel-gap{grid-column:1 / -1;grid-row:2;text-align:center;font-size:11px;line-height:1.35;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:5px 10px;max-width:90%;white-space:normal;overflow-wrap:break-word;box-shadow:none;justify-self:center}
-.duel-gap b{color:var(--ink);font-weight:700}
-.duel-body.crazy .duel-gap{font-size:11px;padding:6px 12px;font-weight:600}
-@media(max-width:480px){.duel-gap{font-size:10px;padding:4px 8px;max-width:95%}}
-.vote-bar-wrap{grid-column:1 / -1;grid-row:3;display:flex;flex-direction:column;gap:4px;margin-top:2px}
-.vote-bar{display:flex;height:5px;border-radius:999px;overflow:hidden;background:var(--bg);border:1px solid var(--border)}
-.duel-body.crazy .vote-bar{height:5px}
-.vote-bar-fill{height:100%;transition:width .5s}
-.vote-bar-fill.p1{background:var(--gold)}
-.vote-bar-fill.p2{background:var(--border-2)}
-.vote-bar-label{text-align:center;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
-.duel-foot{padding:8px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
+.duel-body.crazy .duel-side.leader .photo{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold), 0 8px 18px rgba(201,168,106,.22)}
+.duel-body.crazy .duel-foot{padding:8px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
 .duel-foot span:last-child{color:var(--gold)}
 @media(max-width:480px){.duel-foot{padding:7px 10px;font-size:9px}}
 
@@ -575,63 +546,12 @@ body.preview-only #add-btn{display:none!important}
 .duel-side.a{--accent:var(--side-a);--accent-lo:var(--side-a-lo);--accent-glow:var(--side-a-glow)}
 .duel-side.b{--accent:var(--side-b);--accent-lo:var(--side-b-lo);--accent-glow:var(--side-b-glow)}
 
-/* The name sits on the portrait, the way a matchup card is drawn. */
+/* The portrait carries no name. It used to have one burned across the bottom
+   over a gradient, which fought the face and repeated the tile beside it. */
 .duel-side .photo{position:relative}
-.duel-plate{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;text-align:left;
-  background:linear-gradient(to top,rgba(6,6,9,.92) 18%,rgba(6,6,9,.55) 55%,transparent);
-  pointer-events:none;display:flex;flex-direction:column;line-height:.92}
-.duel-plate-first{font-family:'Anton',sans-serif;font-size:clamp(15px,3.4vw,26px);color:#fff;
-  letter-spacing:.005em;text-transform:uppercase}
-.duel-plate-last{font-family:'Anton',sans-serif;font-size:clamp(17px,4vw,30px);color:var(--accent);
-  letter-spacing:.005em;text-transform:uppercase;text-shadow:0 0 24px var(--accent-glow)}
 
 .duel-side.leader .photo{border-color:var(--accent);
   box-shadow:0 0 0 1px var(--accent),0 14px 40px -10px var(--accent-glow)}
-
-.duel-count{font-family:'Anton',sans-serif;font-size:clamp(26px,6.4vw,44px);line-height:1;
-  color:var(--ink);margin-top:12px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.duel-share{font-size:clamp(11px,2.6vw,14px);font-weight:650;color:var(--accent);margin-top:5px;
-  letter-spacing:-.005em}
-
-.duel-side .btn-vote{margin-top:12px;width:100%;max-width:230px;height:44px;border:0;border-radius:12px;
-  background:var(--accent);color:#0b0b0e;font-family:'JetBrains Mono',monospace;font-size:12.5px;
-  font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
-  box-shadow:0 10px 26px -10px var(--accent-glow);transition:transform .12s,filter .15s}
-.duel-side .btn-vote:hover{filter:brightness(1.08)}
-.duel-side .btn-vote:active{transform:scale(.98)}
-.duel-side .btn-vote:disabled{opacity:.55;cursor:not-allowed}
-
-/* The bar, with the lead called out in the middle of it. */
-.vs-bar-wrap{grid-column:1 / -1;grid-row:3;margin-top:16px;padding-top:15px;
-  border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
-.vs-bar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.vs-bar-name{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;
-  color:var(--muted);white-space:nowrap}
-.vs-bar-name i{width:9px;height:9px;border-radius:50%;display:block;flex:0 0 auto}
-.vs-bar-name.a{color:var(--side-a)} .vs-bar-name.a i{background:var(--side-a)}
-.vs-bar-name.b{color:var(--side-b)} .vs-bar-name.b i{background:var(--side-b)}
-.vs-bar-pill{flex:1 1 auto;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;
-  font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);
-  border:1px solid color-mix(in srgb,var(--gold) 42%,transparent);border-radius:999px;
-  padding:6px 12px;background:var(--gold-lo,rgba(201,168,106,.08));white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.vs-bar{position:relative;display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--bg)}
-.vs-bar-fill{height:100%;transition:width .5s ease}
-.vs-bar-fill.a{background:linear-gradient(90deg,color-mix(in srgb,var(--side-a) 70%,#000),var(--side-a))}
-.vs-bar-fill.b{background:linear-gradient(90deg,var(--side-b),color-mix(in srgb,var(--side-b) 70%,#000))}
-.vs-bar-knot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  font-family:'Anton',sans-serif;font-size:8px;letter-spacing:.06em;color:var(--ink);
-  background:var(--bg);border-radius:999px;padding:2px 7px;line-height:1;
-  border:1px solid var(--border);pointer-events:none}
-
-@media(max-width:480px){
-  .duel-plate{padding:18px 9px 8px}
-  .duel-count{margin-top:8px}
-  .duel-side .btn-vote{height:38px;font-size:11px;letter-spacing:.05em;margin-top:9px}
-  .vs-bar-wrap{margin-top:12px;padding-top:12px;gap:8px}
-  .vs-bar-pill{order:3;flex-basis:100%}
-  .vs-bar{height:10px}
-}
 
 
 /* ── The same three pieces on a board row ────────────────────────────────────
@@ -760,55 +680,18 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 @media(max-width:640px){.goat-toast{bottom:78px;font-size:13px;padding:11px 15px}}
 
 
-/* ── Both sides share the same rows ──────────────────────────────────────────
-   Each side used to be its own flex column, so the moment the two portraits
-   differed in height — a 16:9 video playing on one side against a square
-   portrait on the other — every row below drifted out of line: one $4 sitting
-   an inch above the other $1, and the two Back buttons at different heights.
+/* ── The two portraits keep the same height ─────────────────────────────────
+   Each side is one photo now, and the columns are equal, so the portraits line
+   up by construction. What still has to hold is the 1:1 → 16:9 swap when a clip
+   plays: the row is centred rather than stretched, so the shorter photo stays
+   centred against the taller one instead of being pulled out of shape.
 
-   The sides now sit on the SAME grid rows via subgrid, so the count, the share
-   line and the button are level by construction, whatever the photos do. The
-   photo row takes the height of the taller one and both photos sit on its
-   bottom edge, which reads as deliberate rather than as a gap. */
-.duel-body{grid-template-rows:auto auto auto auto auto}
-.duel-side{grid-row:1 / 5;display:grid;grid-template-rows:subgrid;justify-items:center;gap:0}
+   aspect-ratio has been in every current browser since 2021 and needs no
+   fallback; the subgrid scaffolding this replaces existed to keep four stacked
+   rows level under each face, and there are no longer four rows to keep level. */
 .duel-side.a{grid-column:1}
 .duel-side.b{grid-column:3}
-.duel-side .photo{align-self:end}
-.duel-side .duel-count{align-self:start}
-.duel-side .btn-vote{align-self:start}
-.duel-vs{grid-column:2;grid-row:1;align-self:center}
-.vs-bar-wrap{grid-column:1 / -1;grid-row:5}
-
-/* Safari before 16 and any browser without subgrid: hold the photo row to a
-   fixed height instead, so the rows below still start at the same place. The
-   16:9 state is letterboxed inside it rather than shortening the column. */
-@supports not (grid-template-rows: subgrid){
-  /* Safari before 16, Chrome before 117.
-     Rather than trying to out-specify every rule that sizes a portrait — and
-     index.html's inline <style> wins every tie against this file, so that is a
-     fight worth avoiding — the photo ROW is given a fixed height on the SIDE.
-     Whatever the photo's own height turns out to be, the rows beneath it start
-     at the same place on both sides, which is the only thing that has to hold.
-     max-height keeps a tall portrait from spilling into the count below it. */
-  .duel-body .duel-side{display:grid;grid-template-rows:240px auto auto auto;
-    justify-items:center;align-content:start}
-  .duel-body .duel-side > .photo{align-self:end;max-height:240px}
-  .duel-body.crazy .duel-side{grid-template-rows:260px auto auto auto}
-  .duel-body.crazy .duel-side > .photo{max-height:260px}
-  @media(max-width:768px){
-    .duel-body .duel-side{grid-template-rows:160px auto auto auto}
-    .duel-body .duel-side > .photo{max-height:160px}
-    .duel-body.crazy .duel-side{grid-template-rows:170px auto auto auto}
-    .duel-body.crazy .duel-side > .photo{max-height:170px}
-  }
-  @media(max-width:480px){
-    .duel-body .duel-side,
-    .duel-body.crazy .duel-side{grid-template-rows:calc(43vw - 8px) auto auto auto}
-    .duel-body .duel-side > .photo,
-    .duel-body.crazy .duel-side > .photo{max-height:calc(43vw - 8px)}
-  }
-}
+@media(max-width:700px){ .duel-side.b{grid-column:2} }
 
 /* ── The opening argument ────────────────────────────────────────────────────
    The page used to open on a headline, a stat pair, a search box, a sort
@@ -817,9 +700,9 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
    the copy explains it underneath, where an explanation belongs. */
 .hero-fight{max-width:760px;margin:0 auto 20px}
 .hero-fight .duel-lead{width:100%}
-.hero-fight .skel-duel{min-height:420px;border-radius:16px}
+.hero-fight .skel-duel{min-height:300px;border-radius:16px}
 .hero-under{padding-top:4px}
-@media(max-width:640px){ .hero-fight{margin-bottom:14px} .hero-fight .skel-duel{min-height:320px} }
+@media(max-width:640px){ .hero-fight{margin-bottom:14px} .hero-fight .skel-duel{min-height:260px} }
 
 /* ── backing control: $1, any amount, or the #1 fan spot ────────────────────
    One control on every page that shows a contender. The Greatest Fan button
@@ -855,3 +738,89 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 /* The crown on a board row, under the amount controls it shares a price with. */
 .row-goat{grid-column:1/-1;margin-top:8px}
 .row-goat:empty{display:none}
+
+/* ── The board between the faces ─────────────────────────────────────────────
+   The scoreboard, the two ways to back, and each contender's Greatest Fan, in
+   one card sitting between the portraits. It replaces a stack under each face
+   plus a bar across the bottom — six numbers spread over 400px of card, now
+   about 230px and carrying two more.
+
+   The tiles are coloured by side, not by contender: left is blue and right is
+   red wherever a duel appears, which is what makes the bar underneath readable
+   at a glance. */
+.duel-poll{grid-column:2;min-width:0;display:flex;flex-direction:column;gap:9px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:11px}
+
+.poll-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.poll-head-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.poll-head-label::before{content:"🏆";font-size:12px}
+.poll-head-total{font-size:11px;color:var(--muted);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+
+.poll-tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.poll-tile{--accent:var(--muted);--accent-glow:transparent;
+  display:flex;flex-direction:column;gap:1px;min-width:0;border-radius:12px;padding:9px 10px;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 88%,#000),
+                                    color-mix(in srgb,var(--accent) 55%,#000));
+  color:#fff;border:1px solid color-mix(in srgb,var(--accent) 70%,transparent)}
+.poll-tile.a{--accent:var(--side-a);--accent-glow:var(--side-a-glow)}
+.poll-tile.b{--accent:var(--side-b);--accent-glow:var(--side-b-glow)}
+.poll-tile.empty{opacity:.45}
+.poll-team{font-size:9.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;opacity:.8}
+.poll-name{font-family:'Anton',sans-serif;font-size:clamp(15px,2.2vw,21px);line-height:1.05;
+  letter-spacing:.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poll-pct{font-family:'Anton',sans-serif;font-size:clamp(20px,3.2vw,30px);line-height:1.02;
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin-top:1px}
+.poll-money{font-size:11px;opacity:.85;font-variant-numeric:tabular-nums}
+
+/* The Greatest Fan of All Time, on the tile of the contender they lead. The
+   face is the point — a name alone reads as a caption, a face reads as a
+   person who is winning something. */
+.poll-gfoat{display:flex;align-items:center;gap:6px;margin-top:7px;padding-top:7px;
+  border-top:1px solid rgba(255,255,255,.22);min-height:26px}
+.poll-gfoat img,.poll-gfoat .poll-gfoat-initials{width:22px;height:22px;border-radius:50%;
+  object-fit:cover;flex:0 0 auto;border:1.5px solid rgba(255,255,255,.75);
+  background:rgba(0,0,0,.28);display:grid;place-items:center;
+  font-family:'Anton',sans-serif;font-size:9px;color:#fff}
+.poll-gfoat-copy{min-width:0;display:flex;flex-direction:column;line-height:1.1}
+.poll-gfoat-label{font-size:8px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;opacity:.72;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poll-gfoat-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poll-gfoat-empty{font-size:10px;opacity:.75;line-height:1.2}
+
+/* The buttons get the card's full width rather than a tile's half of it: at
+   the width a duel actually renders, a tile is about 130px and "Back Messi ·
+   $1" wrapped onto three lines inside one. Each pair still carries its side's
+   colour and its contender's name, so which button belongs to which face is
+   never in question. */
+.poll-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.poll-act{--accent:var(--muted);display:flex;flex-direction:column;gap:5px;min-width:0}
+.poll-act.a{--accent:var(--side-a);--accent-glow:var(--side-a-glow)}
+.poll-act.b{--accent:var(--side-b);--accent-glow:var(--side-b-glow)}
+.poll-act .btn-vote{width:100%;height:36px;border:0;border-radius:10px;background:var(--accent);
+  color:#0b0b0e;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;padding:0 8px;
+  box-shadow:0 8px 20px -10px var(--accent-glow);transition:transform .12s,filter .15s}
+.poll-act .btn-vote:hover{filter:brightness(1.08)}
+.poll-act .btn-vote:active{transform:scale(.98)}
+.poll-act .btn-vote:disabled{opacity:.55;cursor:not-allowed}
+.poll-act .duel-more{margin-top:0;max-width:none;font-size:9.5px;padding:5px 8px;letter-spacing:0}
+
+.poll-bar{display:flex;height:9px;border-radius:999px;overflow:hidden;background:var(--bg);
+  border:1px solid var(--border)}
+.poll-bar-fill{height:100%;transition:width .5s ease}
+.poll-bar-fill.a{background:linear-gradient(90deg,color-mix(in srgb,var(--side-a) 68%,#000),var(--side-a))}
+.poll-bar-fill.b{background:linear-gradient(90deg,var(--side-b),color-mix(in srgb,var(--side-b) 68%,#000))}
+
+.poll-foot{font-size:11px;color:var(--muted);text-align:center;line-height:1.35}
+
+@media(max-width:700px){ .duel-poll{grid-column:1 / -1} }
+@media(max-width:480px){
+  .duel-poll{padding:11px;gap:9px;border-radius:12px}
+  .poll-tiles{gap:7px}
+  .poll-tile{padding:9px 9px;border-radius:10px}
+  .poll-gfoat{margin-top:6px;padding-top:6px}
+    .poll-tile .duel-more{font-size:9.5px;padding:5px 7px}
+}
