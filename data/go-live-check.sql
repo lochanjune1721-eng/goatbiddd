@@ -84,6 +84,6 @@ select * from (
   union all
   select 7, 'credit recorded as paid offline', '',
          '$' || ((select cents from offline_money) / 100)::text,
-         'for reference — each needs a reference that matches a statement'
+         'for reference — attested by hand, not confirmed by a gateway'
 ) rows
 order by ord;

@@ -15,14 +15,21 @@
 -- is not 'test' — that rail says no money moved at all, which is the opposite
 -- claim. The payer sees "Offline" and their own reference in their wallet.
 --
--- ── Worth doing before you run it ───────────────────────────────────────────
+-- These five were paid in cash. Cash has no transaction id — there is no bank or
+-- gateway that issued one — so the reference is a receipt id of our own:
+-- 'cash-<date>-<payer>'. It records the method and the date, which is what a
+-- cash payment actually has, rather than leaving a blank where a UTR would go or
+-- inventing something that looks like one.
 --
--- Put the real reference for each payment in the `reference` column below: the
--- bank transaction id, the UPI UTR, the receipt number. That is what lets anyone
--- check the credit against a statement afterwards, and it is also what stops a
--- re-run paying twice — a reference already confirmed is skipped, not credited
--- again. The file runs unedited, but then the references record only when the
--- payments were entered, not what they were.
+-- The reference is also the idempotency key: a reference already confirmed is
+-- skipped rather than credited again, which is what makes the file safe to
+-- re-run. Change one only if you want it to read differently in the payer's
+-- wallet history; changing it after a run makes that payment look new.
+--
+-- The `note` column carries the rest — when it was handed over, and to whom.
+-- It lands in topups.review_note, the same column the reviewed UPI rail writes
+-- to, so a cash payment is recorded the same way as any other payment a person
+-- confirmed by hand.
 --
 -- Do not run this and data/demo-credit.sql against the same database. They put
 -- the same $50,000 on the same five addresses — one as a payment received, one
@@ -30,18 +37,16 @@
 -- payment. This file stops rather than stacking; data/demo-credit-remove.sql
 -- takes the demo grant back off if the offline record is the one to keep.
 --
--- ── What this file cannot settle ────────────────────────────────────────────
+-- ── What the record shows ───────────────────────────────────────────────────
 --
--- The rails are open now. rules.html tells visitors "Every dollar on the board
--- is one somebody actually put down", and credit from here spends onto a public
--- board exactly like credit bought through a rail: $250,000 of it, sitting next
--- to whatever genuine payers have put in. That claim survives this file only if
--- the money behind these five payments is real and came from the people holding
--- the accounts. The file records that it was received. It cannot verify it, and
--- the reference column is the only thing that will let anyone else.
+-- A cash payment is attested rather than evidenced: the operator says it was
+-- received, and no third party holds a copy. That is normal for cash and it is
+-- why the note matters — it is the whole audit trail these five credits will
+-- ever have, so it is worth writing as if someone else will read it.
 --
 -- data/go-live-check.sql reports this credit next to what came through a rail,
--- so the split stays visible in one place instead of having to be reconstructed.
+-- so the split between attested and gateway-confirmed money stays visible in one
+-- place rather than having to be reconstructed later.
 
 begin;
 
@@ -83,7 +88,13 @@ end $$;
 --    different; the wallet and the report below both read it.
 alter table topups add column if not exists credit_cents int;
 
--- 3. The uniqueness settlement is idempotent on. Best-effort: if it cannot be
+-- 3. Where a payment confirmed by a person, rather than by a gateway, records
+--    who confirmed it and when. The reviewed UPI rail already writes to these;
+--    a cash payment is the same shape of thing.
+alter table topups add column if not exists reviewed_at  timestamptz;
+alter table topups add column if not exists review_note  text;
+
+-- 4. The uniqueness settlement is idempotent on. Best-effort: if it cannot be
 --    created the credit below falls back to a path that does not need it, rather
 --    than the whole file failing. The handler keeps that contained instead of
 --    aborting the transaction.
@@ -97,19 +108,22 @@ end $$;
 
 -- ── The payments, as received ───────────────────────────────────────────────
 --
--- Amounts are in cents: 5000000 = $50,000.
+-- Amounts are in cents: 5000000 = $50,000. The note is free text and ends up in
+-- the top-up row; edit it to say who handed the cash over and who took it, which
+-- is the part a receipt id cannot carry.
 create temporary table offline_payments (
   email        text primary key,
   reference    text not null,
-  amount_cents int  not null
+  amount_cents int  not null,
+  note         text
 ) on commit drop;
 
-insert into offline_payments (email, reference, amount_cents) values
-  ('loch91111@gmail.com',          'offline-2026-09-01-loch91111',          5000000),
-  ('lochan@socialcap.uk',          'offline-2026-09-01-lochan',             5000000),
-  ('lochanjune1721@gmail.com',     'offline-2026-09-01-lochanjune1721',     5000000),
-  ('lochanmaheshwari23@gmail.com', 'offline-2026-09-01-lochanmaheshwari23', 5000000),
-  ('santoshmaru57@gmail.com',      'offline-2026-09-01-santoshmaru57',      5000000);
+insert into offline_payments (email, reference, amount_cents, note) values
+  ('loch91111@gmail.com',          'cash-2026-09-01-loch91111',          5000000, 'Cash received in person, 1 September 2026.'),
+  ('lochan@socialcap.uk',          'cash-2026-09-01-lochan',             5000000, 'Cash received in person, 1 September 2026.'),
+  ('lochanjune1721@gmail.com',     'cash-2026-09-01-lochanjune1721',     5000000, 'Cash received in person, 1 September 2026.'),
+  ('lochanmaheshwari23@gmail.com', 'cash-2026-09-01-lochanmaheshwari23', 5000000, 'Cash received in person, 1 September 2026.'),
+  ('santoshmaru57@gmail.com',      'cash-2026-09-01-santoshmaru57',      5000000, 'Cash received in person, 1 September 2026.');
 
 -- Stop if data/demo-credit.sql has already run. Both files credit these five
 -- addresses $50,000; one payment cannot honestly hold two receipts, and the
@@ -179,6 +193,19 @@ begin
     end if;
   end loop;
 end $$;
+
+-- The note, and the fact that a person confirmed this rather than a gateway.
+-- Written after the credit so it applies whichever path above ran, and only to
+-- rows that do not already carry it — so a re-run does not restamp the time on a
+-- payment that was recorded weeks ago.
+update topups t
+   set review_note = p.note,
+       reviewed_at = coalesce(t.reviewed_at, now())
+  from offline_payments p
+ where t.provider = 'offline'
+   and t.provider_payment_id = p.reference
+   and t.status = 'confirmed'
+   and t.review_note is distinct from p.note;
 
 -- What landed, read back from the receipts rather than from the fact the file
 -- ran. 'no account yet' means nobody has signed in with that address — sign in

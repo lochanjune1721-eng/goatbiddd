@@ -57,11 +57,14 @@ Run the check, clear whatever it names, run it again.
 ### Offline payments
 Money settled directly rather than through a rail — bank transfer, UPI, cash —
 is credited by hand and recorded on its own `offline` rail, so a granted balance
-is never mistaken for one a provider confirmed, and each credit carries the
-reference that matches it to a statement.
+is never mistaken for one a gateway confirmed. Each credit carries a reference
+and a note: a bank transfer or UPI payment uses the id the provider issued, and
+cash — which has none — uses a dated receipt id of our own, with the note
+carrying who handed it over and who took it. Both land on the top-up row, in the
+same columns the reviewed UPI rail writes to.
 
 ```
-data/offline-payments.sql     -- the credits; put the real references in first
+data/offline-payments.sql     -- the credits
 ```
 
 That is the whole procedure — the file carries its own schema changes, so there
