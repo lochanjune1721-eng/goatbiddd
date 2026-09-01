@@ -11,6 +11,7 @@
 // actually fetches. Nothing to ignore, nothing to get wrong.
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 const ROOT = path.resolve(import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname), '..');
 const OUT = path.join(ROOT, 'public');
@@ -53,6 +54,43 @@ for (const name of DATA_FILES) {
 }
 for (const dir of DATA_DIRS) files += copyDir(path.join(ROOT, 'data', dir), path.join(OUT, 'data', dir));
 
+// ── Cache busting ───────────────────────────────────────────────────────────
+//
+// The pages ask for css/style.css and js/*.js by bare path, so a browser that
+// has them cached keeps using them after a deploy: new HTML, old stylesheet,
+// and a layout that looks like nothing shipped. One file had a hand-written
+// ?v=single_audio_v5 for exactly this reason, which only works for as long as
+// somebody remembers to change it.
+//
+// Every reference now carries a hash of that file's own contents. Change a
+// file and its URL changes with it; leave it alone and the URL stays put, so
+// the cache still does its job for everything that did not move.
+const stamp = new Map();
+for (const dir of ['css', 'js']) {
+  const abs = path.join(OUT, dir);
+  if (!fs.existsSync(abs)) continue;
+  for (const name of fs.readdirSync(abs)) {
+    if (!/\.(css|js)$/.test(name)) continue;
+    const hash = crypto.createHash('sha256')
+      .update(fs.readFileSync(path.join(abs, name))).digest('hex').slice(0, 8);
+    stamp.set(`${dir}/${name}`, hash);
+  }
+}
+
+let rewritten = 0;
+for (const name of fs.readdirSync(OUT)) {
+  if (!name.endsWith('.html')) continue;
+  const file = path.join(OUT, name);
+  let html = fs.readFileSync(file, 'utf8');
+  const before = html;
+  // Matches href="css/style.css", src="js/thing.js", and the same with a query
+  // string already on them — including the hand-written one, which this
+  // replaces rather than fights.
+  html = html.replace(/((?:href|src)=")((?:css|js)\/[A-Za-z0-9._-]+\.(?:css|js))(\?[^"]*)?"/g,
+    (whole, lead, ref) => stamp.has(ref) ? `${lead}${ref}?v=${stamp.get(ref)}"` : whole);
+  if (html !== before) { fs.writeFileSync(file, html); rewritten++; }
+}
+
 // Fail the build rather than deploy something Cloudflare will reject.
 const LIMIT = 25 * 1024 * 1024;
 const oversized = [];
@@ -65,7 +103,7 @@ let bytes = 0;
   }
 })(OUT);
 
-console.log(`build-assets: ${files} files, ${(bytes / 1e6).toFixed(1)} MB -> public/`);
+console.log(`build-assets: ${files} files, ${(bytes / 1e6).toFixed(1)} MB -> public/ (${stamp.size} assets stamped, ${rewritten} pages rewritten)`);
 if (oversized.length) {
   console.error('build-assets: these exceed Cloudflare\'s 25 MiB per-file limit:');
   for (const [p, s] of oversized) console.error(`  ${(s / 1e6).toFixed(1)} MB  ${path.relative(ROOT, p)}`);
