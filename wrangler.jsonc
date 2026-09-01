@@ -23,10 +23,20 @@
   //
   // Change INR_PER_VOTE here to reprice the Indian rails; both read it.
   "vars": {
-    // A demonstration build: the boards and their backing history are seeded,
-    // and no payment can be taken. Set to "0" to run this for real, and only
-    // then do the payment secrets mean anything.
-    "DEMO_MODE": "1",
+    // Live. Every rail whose secrets are set will take real money, and the
+    // dollars on the boards are meant to be the dollars people paid.
+    //
+    // Turning this off is only half of going live. The other half is the
+    // database, which no deploy touches: seeded backing left in place with the
+    // rails open puts real payers in front of $192,764 nobody paid, on a site
+    // whose rules page says every dollar on a board is one somebody actually
+    // put down. data/go-live-check.sql answers whether that has been cleared —
+    // run it before trusting this flag.
+    //
+    // Set back to "1" to close the rails again. It is enforced in the payment
+    // handlers, not only in the UI, so a hand-made POST is refused the same as
+    // a button.
+    "DEMO_MODE": "0",
 
     "INR_PER_VOTE": "60",
     "UPI_PAYEE_NAME": "The True GOAT",

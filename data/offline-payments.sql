@@ -35,13 +35,18 @@
 --
 -- ── What this file cannot settle ────────────────────────────────────────────
 --
--- rules.html tells visitors "Every dollar on the board is one somebody actually
--- put down", and credit from here spends onto a public board exactly like
--- credit bought through a rail — $250,000 of it, against a seeded backing
--- history of $192,764. That claim holds only if the money behind these five
--- payments is real and came from the people holding the accounts. This file
--- records that it was received; it cannot verify it, and the reference column
--- is the only thing that will let anyone else.
+-- The rails are open now. rules.html tells visitors "Every dollar on the board
+-- is one somebody actually put down", and credit from here spends onto a public
+-- board exactly like credit bought through a rail: $250,000 of it, sitting next
+-- to whatever genuine payers have put in. That claim survives this file only if
+-- the money behind these five payments is real and came from the people holding
+-- the accounts. The file records that it was received. It cannot verify it, and
+-- the reference column is the only thing that will let anyone else — which is
+-- why running it with the placeholder references still in matters more now than
+-- it would have in a demonstration build.
+--
+-- data/go-live-check.sql reports this credit next to what came through a rail,
+-- so the split stays visible in one place instead of having to be reconstructed.
 
 begin;
 
