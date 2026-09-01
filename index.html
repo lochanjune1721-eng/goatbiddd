@@ -13,12 +13,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* === Single-Column Duel Layout === */
-.featured-grid, .cat-grid, #sr-cats{display:grid;grid-template-columns:1fr;gap:20px;max-width:760px;margin:0 auto}
-.featured-wrap{margin:18px auto 10px;max-width:760px}
-.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:14px auto 12px;max-width:760px}
+/* The page column. Everything that carries a duel is measured from this, so a
+   wide screen is not 760px of card in the middle of nothing — which is what
+   made a 16:9 clip impossible to show at any size worth watching. The hero copy
+   keeps its own narrower measure; prose does not want 1040px of line. */
+:root{--wrap:760px}
+@media(min-width:1120px){ :root{--wrap:1040px} }
+
+.featured-grid, .cat-grid, #sr-cats{display:grid;grid-template-columns:1fr;gap:20px;max-width:var(--wrap);margin:0 auto}
+.featured-wrap{margin:18px auto 10px;max-width:var(--wrap)}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:14px auto 12px;max-width:var(--wrap)}
 .section-head h2{font-family:'Anton',sans-serif;font-size:22px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
 .section-head p{font-size:12.5px;color:var(--muted)}
-.group{margin:28px auto;max-width:760px}
+.group{margin:28px auto;max-width:var(--wrap)}
 .group-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:6px}
 .group-head h2{font-family:'EB Garamond',serif;font-size:22px;font-style:italic;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
 
@@ -48,6 +55,34 @@
   background:var(--surface-3);border:1px solid var(--border);position:relative;
   transition:border-color .2s,box-shadow .2s}
 .duel-body.crazy .duel-side .photo{border-radius:16px}
+
+/* A clip plays as a wide 16:9, and the row gives it the width to do that: the
+   playing side grows, the other shrinks to a strip, and the board keeps enough
+   to stay readable. Previously the frame went 16:9 at a fixed column width,
+   which made the video SHORTER than the portrait it replaced — a letterbox in
+   an empty column. Growing the column is what "plays a video" should look like.
+
+   :has() does the switch with no JS; where it is unsupported the clip simply
+   fills the portrait frame, which is the state above and still fine. */
+.duel-body{transition:grid-template-columns .32s ease}
+/* Scoped to the three-column layout on purpose. .duel-body:has(...) outranks
+   the plain .duel-body in the phone media query below, so without this bound a
+   clip playing on a phone would drag the two-column layout back to three. */
+@media(min-width:701px){
+  .duel-body:has(.duel-side.a.video-playing),
+  .duel-body:has(.duel-side.a .photo.video-playing){
+    grid-template-columns:minmax(0,2fr) minmax(0,1.45fr) minmax(0,0.62fr)}
+  .duel-body:has(.duel-side.b.video-playing),
+  .duel-body:has(.duel-side.b .photo.video-playing){
+    grid-template-columns:minmax(0,0.62fr) minmax(0,1.45fr) minmax(0,2fr)}
+}
+.duel-side.video-playing .photo,.duel-side .photo.video-playing{
+  aspect-ratio:16/9;flex:0 0 auto;align-self:center}
+/* The side that is not playing steps back rather than stretching into a sliver:
+   full height at that narrowed width is a 1:3 strip, which reads as a rendering
+   fault rather than as deference. A centred 3:4 portrait reads as waiting. */
+.duel-body:has(.video-playing) .duel-side:not(:has(.video-playing)):not(.video-playing) .photo{
+  aspect-ratio:3/4;flex:0 0 auto;align-self:center;opacity:.85}
 
 @media(max-width:700px){
   /* The wrap is 760px, so three columns hold on any viewport that can show it
@@ -90,7 +125,7 @@
 @media(max-width:480px){.duel-side .btn-vote{height:36px;font-size:12px;padding:0 12px;margin-top:8px}}
 
 /* Filter bar */
-.filter-bar{position:sticky;top:53px;z-index:30;background:rgba(15,14,12,.92);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:18px;margin:10px auto 14px;padding:12px;box-shadow:var(--shadow);max-width:760px}
+.filter-bar{position:sticky;top:53px;z-index:30;background:rgba(15,14,12,.92);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:18px;margin:10px auto 14px;padding:12px;box-shadow:var(--shadow);max-width:var(--wrap)}
 .filter-bar-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .filter-search{flex:1;min-width:220px;position:relative;display:flex;align-items:center}
 .filter-search input{width:100%;height:42px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 16px 0 38px;font-size:14px;outline:none;transition:border-color .15s}
