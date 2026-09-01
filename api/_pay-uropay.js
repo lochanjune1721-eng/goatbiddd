@@ -42,7 +42,7 @@ export async function uroPayCheckout(req, res, body){
   // Charged on the dollars, not on the bonused votes — the bonus is a discount,
   // and billing for it would hand it straight back.
   const rupees = rupeesForCents(cents);
-  const siteUrl = process.env.SITE_URL || 'https://www.thetruegoat.com';
+  const siteUrl = process.env.SITE_URL || 'https://thetruegoat.com';
 
   // The pending row is the record of what was asked for, in both currencies:
   // amount_cents is the votes to grant, provider_amount is the rupees UroPay

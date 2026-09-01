@@ -4,7 +4,11 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 
-const PRODUCTION_DOMAIN = "https://www.thetruegoat.com";
+// The apex. www.thetruegoat.com has no DNS record, so a magic link built
+// against it lands the signer on a browser error instead of their session.
+// Only reached when the page is served from localhost — in production the real
+// origin below wins — but that is exactly when someone is testing sign-in.
+const PRODUCTION_DOMAIN = "https://thetruegoat.com";
 
 function getSiteUrl(){
   try {

@@ -39,7 +39,7 @@ export async function payPalCheckout(req, res, body){
   // cannot open an order on a rail this fan was never offered.
   assertRail(await userCountry(supabaseAdmin, uid), 'paypal');
 
-  const siteUrl = process.env.SITE_URL || 'https://www.thetruegoat.com';
+  const siteUrl = process.env.SITE_URL || 'https://thetruegoat.com';
 
   // The pending row is the record of what was asked for. Settlement reads the
   // amount from here and checks PayPal's captured total against it, so the

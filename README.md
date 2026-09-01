@@ -2,7 +2,7 @@
 
 The definitive pay-to-rank Hall of Fame. $1 = 1 vote. Top up once, vote with one tap.
 
-Live at [thetruegoat.com](https://www.thetruegoat.com).
+Live at [thetruegoat.com](https://thetruegoat.com) — the apex; `www` has no DNS record.
 
 ## Core Loop
 1. **Sign In**: Email magic-link or Google OAuth. Land back where you were with your balance in the topbar.

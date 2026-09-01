@@ -40,7 +40,16 @@
 
     "INR_PER_VOTE": "60",
     "UPI_PAYEE_NAME": "The True GOAT",
-    "SITE_URL": "https://www.thetruegoat.com"
+    // The apex, not www. www.thetruegoat.com has no DNS record — it answers
+    // NXDOMAIN, while thetruegoat.com resolves to Cloudflare and serves the
+    // site. This value is where a payer is sent back to after paying, so
+    // pointing it at a hostname that does not exist strands them on a browser
+    // error holding a completed payment.
+    //
+    // If www is meant to be the canonical name, add the DNS record for it in
+    // Cloudflare and change this back — the record has to exist first either
+    // way.
+    "SITE_URL": "https://thetruegoat.com"
   },
 
   // public/ is assembled by scripts/build-assets.mjs and holds only what the
