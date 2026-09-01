@@ -10,6 +10,24 @@
 
   "observability": { "enabled": true },
 
+  // Plaintext configuration, not secrets — the rupee price of a vote and the
+  // name that shows in a payer's UPI app are both public the moment a checkout
+  // opens. Declaring them here means they deploy with the code, are reviewable
+  // in a diff, and cannot go missing because someone forgot a dashboard step.
+  //
+  // This is also the correct home for them for a mechanical reason: `wrangler
+  // deploy` treats this file as the source of truth for plaintext vars, so any
+  // set only in the dashboard are wiped on the next deploy. Secrets are
+  // encrypted and unaffected — API keys and ADMIN_PASSWORD stay there, and a
+  // dashboard Secret of the same name still overrides anything below.
+  //
+  // Change INR_PER_VOTE here to reprice the Indian rails; both read it.
+  "vars": {
+    "INR_PER_VOTE": "60",
+    "UPI_PAYEE_NAME": "The True GOAT",
+    "SITE_URL": "https://www.thetruegoat.com"
+  },
+
   // public/ is assembled by scripts/build-assets.mjs and holds only what the
   // browser fetches — so node_modules can never be swept into the upload.
   // The Worker handles /api/* and hands everything else to ASSETS, whose
