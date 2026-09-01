@@ -18,15 +18,21 @@ const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV',
 // the wallet page renders one list and never has to hold the policy itself.
 // A rail that is not configured is never offered, whatever the country: an
 // offered button that 503s is worse than a button that was never there.
+//
+// India is deliberately given ONE rail, direct UPI, not a choice between two.
+// Two buttons that both say "UPI" is a decision the payer has no basis to
+// make, and UroPay is only distinguishable to us. UroPay stays wired up and
+// tested as a fallback for when direct UPI has no VPA configured — a fallback,
+// never a second button.
 export function railsFor(country, ready){
   const inIndia = country === 'IN';
   const offer = [];
   if (inIndia) {
     if (ready.upiReady) offer.push('upi');
-    if (ready.uropayReady) offer.push('uropay');
+    else if (ready.uropayReady) offer.push('uropay');
     // Nothing rupee-denominated is configured — fall back rather than leaving
     // an Indian visitor with no way to pay at all.
-    if (!offer.length && ready.paypalReady) offer.push('paypal');
+    else if (ready.paypalReady) offer.push('paypal');
   } else {
     if (ready.paypalReady) offer.push('paypal');
   }
