@@ -215,14 +215,14 @@
               <div class="gco-big-sub" data-big-sub></div>
             </div>
             <div class="gco-lines">
-              <div class="gco-line"><span data-k-votes>Votes</span><b data-l-votes>—</b></div>
-              <div class="gco-line bonus" data-l-bonus-row hidden><span>Bonus votes</span><b data-l-bonus></b></div>
+              <div class="gco-line"><span data-k-votes>Backing power</span><b data-l-votes>—</b></div>
+              <div class="gco-line bonus" data-l-bonus-row hidden><span>Bonus</span><b data-l-bonus></b></div>
               <div class="gco-line total"><span data-k-total>Total</span><b data-l-total>—</b></div>
               <div class="gco-note" data-note></div>
             </div>
           </aside>
           <section class="gco-main">
-            <h2 class="gco-h" data-title>Add votes</h2>
+            <h2 class="gco-h" data-title>Add credit</h2>
             <p class="gco-sub" data-subtitle></p>
             <div class="gco-msg" data-msg></div>
             <div data-buy>
@@ -237,15 +237,15 @@
               <div class="gco-fine" style="margin-top:11px" data-fine></div>
             </div>
             <div class="gco-vote" data-vote>
-              <div class="gco-label">How many votes</div>
+              <div class="gco-label">How much to put behind them</div>
               <div class="gco-step">
                 <button type="button" data-minus aria-label="Fewer">−</button>
                 <input type="number" min="1" data-votes value="1">
                 <button type="button" data-plus aria-label="More">+</button>
               </div>
               <div class="gco-quick" data-quick></div>
-              <button class="gco-pay" data-cast>Cast 1 vote</button>
-              <button class="gco-link" data-buy-more>Need more votes — buy some</button>
+              <button class="gco-pay" data-cast>Back with $1</button>
+              <button class="gco-link" data-buy-more>Need more credit — add some</button>
             </div>
             <div class="gco-country" data-country-ask>
               <div class="gco-label">Where are you?</div>
@@ -330,9 +330,9 @@
     // Amount tiles.
     q('[data-tiers]').innerHTML = t.map(x =>
       `<button class="gco-tier${x.cents === state.cents ? ' on' : ''}" data-cents="${x.cents}">
-         ${x.bonus > 0 ? `<span class="gco-tier-tag">+${x.bonus} free</span>` : ''}
+         ${x.bonus > 0 ? `<span class="gco-tier-tag">+$${x.bonus} free</span>` : ''}
          <span class="gco-tier-amt">${money(x.cents, currency, perVote)}</span>
-         <span class="gco-tier-votes">${x.votes} votes</span>
+         <span class="gco-tier-votes">$${x.votes.toLocaleString('en-US')} to back with</span>
        </button>`).join('');
     q('[data-tiers]').querySelectorAll('.gco-tier').forEach(b => b.addEventListener('click', () => {
       state.cents = Number(b.dataset.cents);
@@ -345,7 +345,7 @@
       paypal: ['PayPal', 'paypal', 'Card, or your PayPal balance'],
       upi:    ['UPI', 'upi', rails.upiAutoConfirms
         ? 'Any UPI app. Votes land the moment it clears.'
-        : 'Any UPI app. We add the votes after matching your reference.']
+        : 'Any UPI app. We add the credit after matching your reference.']
     };
     q('[data-methods]').innerHTML = rails.offer.map(m => {
       const [name, cls, sub] = LABEL[m] || [m, '', ''];
@@ -367,14 +367,14 @@
     const votes = tier ? tier.votes : Math.floor(state.cents / 100);
     const bonus = tier ? tier.bonus : 0;
     q('[data-big]').textContent = money(state.cents, currency, perVote);
-    q('[data-big-sub]').textContent = votes + ' vote' + (votes === 1 ? '' : 's')
+    q('[data-big-sub]').textContent = '$' + votes.toLocaleString('en-US') + ' to back with'
       + (currency === 'INR' ? ' · charged in rupees' : '');
-    q('[data-k-votes]').textContent = 'Votes';
+    q('[data-k-votes]').textContent = 'Backing power';
     q('[data-k-total]').textContent = 'Total';
-    q('[data-l-votes]').textContent = (votes - bonus) + '';
+    q('[data-l-votes]').textContent = '$' + (votes - bonus).toLocaleString('en-US');
     q('[data-l-bonus-row]').hidden = bonus <= 0;
-    q('[data-l-bonus]').textContent = '+' + bonus;
-    q('[data-l-total]').textContent = votes + ' votes';
+    q('[data-l-bonus]').textContent = '+$' + bonus.toLocaleString('en-US');
+    q('[data-l-total]').textContent = '$' + votes.toLocaleString('en-US');
     q('[data-note]').textContent = state.personName
       ? 'Spent on ' + state.personName + ' the moment your payment clears.'
       : 'Added to your wallet. Spend it on anyone, any time.';
@@ -432,7 +432,7 @@
 
       if(j.url){ location.href = j.url; return; }          // PayPal / UroPay hosted page
       if(j.upiUrl){ showDirectUpi(j); return; }             // fallback rail only
-      msg('Payment started. Your votes will appear shortly.', 'info');
+      msg('Payment started. Your credit will appear shortly.', 'info');
       paint();
     } catch(err){
       msg('Could not reach the payment service: ' + err.message, 'err');
@@ -471,7 +471,7 @@
       if(!r.ok) return msg(j.error || 'Could not submit that reference.', 'err');
       el.querySelector('[data-upi]').classList.remove('show');
       el.querySelector('[data-title]').textContent = 'Thanks — reference received';
-      el.querySelector('[data-subtitle]').textContent = j.message || 'We will add your votes once the payment is matched.';
+      el.querySelector('[data-subtitle]').textContent = j.message || 'We will add your credit once the payment is matched.';
     } catch(err){ msg('Error: ' + err.message, 'err'); }
   }
 
@@ -502,23 +502,25 @@
     if(holder.dataset.for !== wanted){
       holder.dataset.for = wanted;
       holder.innerHTML = quick.map(n =>
-        `<button type="button" data-q="${n}">${n === have ? 'All ' + n : n}</button>`).join('');
+        `<button type="button" data-q="${n}">${n === have ? 'All $' + n.toLocaleString('en-US') : '$' + n}</button>`).join('');
       holder.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
         q('[data-votes]').value = b.dataset.q; paintVote();
       }));
     }
-    q('[data-big]').textContent = votes.toLocaleString();
-    q('[data-big-sub]').textContent = 'vote' + (votes === 1 ? '' : 's') + ' for ' + (state.personName || 'them');
-    q('[data-k-votes]').textContent = 'Your balance';
-    q('[data-l-votes]').textContent = have.toLocaleString();
+    q('[data-big]').textContent = '$' + votes.toLocaleString('en-US');
+    q('[data-big-sub]').textContent = 'behind ' + (state.personName || 'them');
+    q('[data-k-votes]').textContent = 'Your credit';
+    q('[data-l-votes]').textContent = '$' + have.toLocaleString('en-US');
     q('[data-l-bonus-row]').hidden = true;
     q('[data-k-total]').textContent = 'Left after this';
-    q('[data-l-total]').textContent = Math.max(0, have - votes).toLocaleString();
+    q('[data-l-total]').textContent = '$' + Math.max(0, have - votes).toLocaleString('en-US');
     q('[data-note]').textContent = votes > have
-      ? 'You have ' + have + '. Buy ' + (votes - have) + ' more to cast this.'
+      ? 'You have $' + have.toLocaleString('en-US') + '. Add $' + (votes - have).toLocaleString('en-US') + ' more to put this down.'
       : 'Added to their total the moment you confirm.';
     const cast = q('[data-cast]');
-    cast.textContent = votes > have ? 'Buy ' + (votes - have) + ' more votes' : 'Cast ' + votes + ' vote' + (votes === 1 ? '' : 's');
+    cast.textContent = votes > have
+      ? 'Add $' + (votes - have).toLocaleString('en-US') + ' more'
+      : 'Back with $' + votes.toLocaleString('en-US');
     cast.dataset.short = votes > have ? String(votes - have) : '';
   }
 
@@ -535,9 +537,9 @@
         { p_person_id: state.personId, p_votes: votes });
       if(error) throw error;
       me = await loadMe(true);
-      q('[data-title]').textContent = votes + ' vote' + (votes === 1 ? '' : 's') + ' cast';
-      q('[data-subtitle]').textContent = (state.personName || 'They') + ' now has ' +
-        Math.floor((data?.new_total ?? 0) / 100).toLocaleString() + ' votes.';
+      q('[data-title]').textContent = '$' + votes.toLocaleString('en-US') + ' down';
+      q('[data-subtitle]').textContent = (state.personName || 'They') + ' now has $' +
+        Math.floor((data?.new_total ?? 0) / 100).toLocaleString('en-US') + ' behind them.';
       showPanel(null);
       if(typeof state.onVoted === 'function') state.onVoted(data);
       if(window.refreshBalance) window.refreshBalance();
@@ -552,10 +554,10 @@
 
   function toBuy(cents){
     state.cents = Math.min(Math.max(cents || 1000, 100), 500000);
-    el.querySelector('[data-title]').textContent = state.personName ? 'Back ' + state.personName : 'Add votes';
+    el.querySelector('[data-title]').textContent = state.personName ? 'Back ' + state.personName : 'Add credit';
     el.querySelector('[data-subtitle]').textContent = state.personName
       ? 'Your votes go straight onto their total — no wallet needed.'
-      : 'Top up once, then back anyone with one tap.';
+      : 'Add credit once, then back anyone with one tap.';
     // Snap up to the tier at or above what is needed, so the bonus is not missed
     // by a dollar.
     const t = (health?.tiers || []).map(x => x.cents).sort((a,b) => a-b);
@@ -598,9 +600,9 @@
     }
     q('[data-title]').textContent = state.mode === 'vote'
       ? 'Back ' + (state.personName || 'them')
-      : (state.personName ? 'Back ' + state.personName : 'Add votes');
+      : (state.personName ? 'Back ' + state.personName : 'Add credit');
     q('[data-subtitle]').textContent = state.mode === 'vote'
-      ? 'Spend votes from your balance. They land on their total straight away.'
+      ? 'Put your credit behind them. It lands on their total straight away.'
       : (state.personName ? 'Your votes go straight onto their total — no wallet needed.'
                           : 'Top up once, then back anyone with one tap.');
 

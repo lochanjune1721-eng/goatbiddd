@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Top Fans — The True GOAT</title>
-<meta name="description" content="Global leaderboard of top backers on The True GOAT — rankings, votes, and status.">
+<meta name="description" content="Global leaderboard of top backers on The True GOAT — rankings, money down, and status.">
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -53,7 +53,7 @@
           <div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${i===0?' <span style="font-size:11px;color:var(--gold);font-weight:700;margin-left:4px">👑 #1 Backer</span>':''}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px">${supporting}</div>
         </div>
-        <b class="display" style="color:var(--gold);font-size:18px">${window.GOAT.votes(u.total_spent_cents||0)}</b>
+        <b class="display" style="color:var(--gold);font-size:18px">${window.GOAT.money(u.total_spent_cents||0)}</b>
       </div>`;
     }).join('');
   } catch(e){

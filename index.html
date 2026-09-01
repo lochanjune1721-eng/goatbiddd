@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>The True GOAT — Who is the Greatest of All Time?</title>
-<meta name="description" content="The True GOAT — The definitive pay-to-rank Hall of Fame. $1 = 1 vote. Top up once, vote with one tap.">
+<meta name="description" content="The True GOAT — The definitive pay-to-rank Hall of Fame. $1 = 1 vote — the score is real money. Add credit once, back with one tap.">
 <link rel="preconnect" href="https://orzcszqpnvicreqvpncu.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -203,16 +203,16 @@
   </aside>
 
   <div class="container">
-    <div class="live-pill" style="max-width:760px;margin:0 auto 10px"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">0 votes cast today</span></div>
+    <div class="live-pill" style="max-width:760px;margin:0 auto 10px"><span class="live-dot"></span> <span id="online">— online</span> · <span id="backed-today">$0 backed today</span></div>
 
     <div class="hero" style="max-width:760px;margin:0 auto 16px">
       <div class="hero-copy">
         <h1 class="display">Who is the<br><em>Greatest of All Time?</em></h1>
-        <p>Anyone can argue. <span style="color:var(--ink);font-weight:700">Can you put your money where your mouth is?</span> <b>$1 = 1 vote.</b> No judges. No algorithms. Just votes. Talk is cheap — <span style="color:var(--gold)">prove it.</span></p>
+        <p>Anyone can vote for free somewhere else. <span style="color:var(--ink);font-weight:700">Here, the score is real money.</span> <b>$1 = 1 vote.</b> No judges, no algorithms — the board shows what fans actually put down. Talk is cheap — <span style="color:var(--gold)">prove it.</span></p>
       </div>
       <div class="hero-stats">
         <div class="hero-stat"><strong id="hero-boards">—</strong><span>Boards</span></div>
-        <div class="hero-stat"><strong id="hero-votes">0</strong><span>Total votes</span></div>
+        <div class="hero-stat"><strong id="hero-votes">$0</strong><span>Total backed</span></div>
       </div>
     </div>
 
@@ -224,7 +224,7 @@
           <input id="q" placeholder="Search categories or people — try 'Ronaldo', 'Messi', 'Directors'" autocomplete="off" spellcheck="false">
         </label>
         <div class="filter-actions">
-          <select id="sort" aria-label="Sort boards"><option value="hype">Featured</option><option value="az">A → Z</option><option value="money">Most votes</option></select>
+          <select id="sort" aria-label="Sort boards"><option value="hype">Featured</option><option value="az">A → Z</option><option value="money">Most backed</option></select>
           <button id="clear" class="btn-clear" type="button">Clear</button>
         </div>
       </div>
@@ -236,7 +236,7 @@
     <div class="featured-wrap" id="featured-wrap">
       <div class="section-head">
         <h2 id="featured-title">Top 50 Fights <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span></h2>
-        <p id="featured-sub">The 50 biggest debates of all time • #1 vs #2, vote with one tap</p>
+        <p id="featured-sub">The 50 biggest debates of all time • #1 vs #2, back with one tap</p>
       </div>
       <div id="featured" class="featured-grid">
         <div class="skeleton skel-duel"></div>
@@ -430,8 +430,8 @@
   // Populate hero stats with actual database values
   const hb = document.getElementById('hero-boards'), hv = document.getElementById('hero-votes');
   if(hb) hb.textContent = (cats.length || 0).toLocaleString();
-  const totalVotesCast = Math.floor(people.reduce((s,p)=> s + (p.total_cents||0), 0) / 100);
-  if(hv) hv.textContent = totalVotesCast.toLocaleString();
+  const totalBackedCents = people.reduce((s,p)=> s + (p.total_cents||0), 0);
+  if(hv) hv.textContent = window.GOAT.money(totalBackedCents);
 
   // ── Countries ────────────────────────────────────────────────────────────
   // Boards seeded by data/country-boards-seed.sql carry a country; the global
@@ -601,11 +601,21 @@
     const v1 = Math.floor(c1/100), v2 = Math.floor(c2/100);
     const gapVotes = Math.abs(v1 - v2);
     
-    let gapText = '';
-    if(v1 === 0 && v2 === 0) gapText = 'Tied — 1 vote takes the lead';
-    else if(v1 === v2) gapText = `Tied at ${v1.toLocaleString()} votes — 1 vote takes the lead`;
-    else if(v1 > v2) gapText = `${firstName(p1.name)} leads by ${gapVotes.toLocaleString()}`;
-    else gapText = `${firstName(p2.name)} leads by ${gapVotes.toLocaleString()}`;
+    // The gap is the call to action — it is the price of flipping this fight —
+    // so it gets the loudest treatment in the card, not a caption under the bar.
+    const gapMoney = '$' + gapVotes.toLocaleString('en-US');
+    let gapLead = '', gapTrail = '';
+    if(v1 === v2){
+      gapLead = 'Dead level';
+      gapTrail = v1 === 0 ? '$1 takes the lead' : `$1 takes the lead at ${'$'+v1.toLocaleString('en-US')} apiece`;
+    } else if(v1 > v2){
+      gapLead = gapMoney;
+      gapTrail = `${firstName(p2.name)} trails by ${gapMoney}`;
+    } else {
+      gapLead = gapMoney;
+      gapTrail = `${firstName(p1.name)} trails by ${gapMoney}`;
+    }
+    const gapText = gapTrail;
 
     const totalVotes = v1 + v2;
     // One decimal: on a close board "52% / 48%" hides the movement a single
@@ -619,9 +629,13 @@
     
     const bar = `
       <div class="vs-bar-wrap">
+        <div class="gap-hero">
+          <div class="gap-hero-num display">${esc(gapLead)}</div>
+          <div class="gap-hero-sub">${esc(gapTrail)}</div>
+        </div>
         <div class="vs-bar-head">
           <span class="vs-bar-name a"><i></i>${p1 ? esc(firstName(p1.name)) : '—'} — ${p1Pct}%</span>
-          <span class="vs-bar-pill">${esc(gapText)}</span>
+          <span class="vs-bar-pill">${p1 && p2 ? (v1===v2 ? 'Level' : (v1>v2?esc(firstName(p1.name)):esc(firstName(p2.name)))+' leads') : ''}</span>
           <span class="vs-bar-name b">${p2 ? esc(firstName(p2.name)) : '—'} — ${p2Pct}%<i></i></span>
         </div>
         <div class="vs-bar">
@@ -641,9 +655,9 @@
           <div class="photo">${cls==='a'?p1Photo:p2Photo}
             <div class="duel-plate"><span class="duel-plate-first">${p ? esc(givenName(p.name)) : ''}</span><span class="duel-plate-last">${p ? esc(firstName(p.name)) : 'Contender'}</span></div>
           </div>
-          <div class="duel-count display">${votes.toLocaleString()}</div>
-          <div class="duel-share">${pct}% of votes</div>
-          ${p ? `<button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Vote ${esc(firstName(p.name))}</button>` : ''}
+          <div class="duel-count display">$${votes.toLocaleString('en-US')}</div>
+          <div class="duel-share">${pct}% of the money</div>
+          ${p ? `<button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back ${esc(firstName(p.name))} · $1</button>` : ''}
         </div>`;
 
     return `
@@ -673,10 +687,10 @@
       const tag = '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;letter-spacing:.08em;color:var(--gold);font-weight:700;vertical-align:middle;margin-left:6px">HEAD-TO-HEAD</span>';
       if(activeCountry === 'Global'){
         title.innerHTML = 'Top 50 Fights ' + tag;
-        sub.textContent = 'The 50 biggest debates of all time • #1 vs #2, vote with one tap';
+        sub.textContent = 'The 50 biggest debates of all time • #1 vs #2, back with one tap';
       } else {
         title.innerHTML = esc(activeCountry) + ' Fights ' + tag;
-        sub.textContent = `The biggest debates in ${activeCountry} • #1 vs #2, vote with one tap`;
+        sub.textContent = `The biggest debates in ${activeCountry} • #1 vs #2, back with one tap`;
       }
     }
     let idx = 0;
@@ -753,7 +767,7 @@
       const a = document.createElement('a');
       a.href = `/person?slug=${p.slug}`;
       a.className = 'person-hit';
-      a.innerHTML = `<div class="hit-photo">${photo}</div><div class="hit-meta"><div class="hit-name">${esc(p.name)}</div><div class="hit-cat">${cat?esc(cat.name):''}</div><div class="hit-total">${Math.floor((p.total_cents||0)/100).toLocaleString()} votes</div></div><span style="color:var(--gold)">→</span>`;
+      a.innerHTML = `<div class="hit-photo">${photo}</div><div class="hit-meta"><div class="hit-name">${esc(p.name)}</div><div class="hit-cat">${cat?esc(cat.name):''}</div><div class="hit-total">${window.GOAT.money(p.total_cents||0)}</div></div><span style="color:var(--gold)">→</span>`;
       srPeople.appendChild(a);
     });
   }
@@ -817,12 +831,12 @@
     el.innerHTML = `
       <div class="inline-topup-card" style="max-width:360px;text-align:center;position:relative">
         <button data-close style="position:absolute;right:14px;top:12px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">&times;</button>
-        <h3 class="display" style="font-size:20px;margin-bottom:4px">Out of votes</h3>
+        <h3 class="display" style="font-size:20px;margin-bottom:4px">Out of credit</h3>
         <p class="mono" style="font-size:12px;color:var(--muted);margin-bottom:14px">Top up to back${pname ? ' ' + esc(pname) : ''}. $1 = 1 vote.</p>
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
           <a class="btn-primary" style="width:auto;padding:10px 16px" href="/wallet?topup=500&returnTo=${back}">+$5</a>
           <a class="btn-primary" style="width:auto;padding:10px 16px" href="/wallet?topup=1000&returnTo=${back}">+$10</a>
-          <a class="btn-primary" style="width:auto;padding:10px 16px" href="/wallet?topup=2500&returnTo=${back}">+$25</a>
+          <a class="btn-primary" style="width:auto;padding:10px 16px" href="/wallet?topup=2000&returnTo=${back}">+$20</a>
         </div>
         <a href="/wallet?returnTo=${back}" class="mono" style="display:block;margin-top:12px;font-size:11px;color:var(--muted);text-decoration:underline">Other amounts →</a>
       </div>`;
@@ -853,6 +867,19 @@
       if(res.error) throw res.error;
 
       if(res.data?.new_total && person) person.total_cents = res.data.new_total;
+
+      // Say what the dollar did, not that a click registered. The rival is the
+      // best-placed other contender on the same board — the one the gap is
+      // measured against.
+      if(person){
+        const rivals = people
+          .filter(x => x.category_id === person.category_id && x.id !== person.id)
+          .sort((a,b) => (b.total_cents||0) - (a.total_cents||0));
+        const rival = rivals[0] || null;
+        window.goatToast(window.backedMessage(esc(pname || person.name), 100,
+          person.total_cents, rival ? rival.total_cents : null, rival ? esc(rival.name) : null));
+      }
+
       if(window.refreshBalance) await window.refreshBalance();
       await refreshActivity();
     } catch(err) {
@@ -893,7 +920,7 @@
       const backedToday = (todayBidsRes.data||[]).reduce((s,r)=> s + (r.amount_cents||0), 0);
       const backedVotes = Math.floor(backedToday/100);
       const backedEl = document.getElementById('backed-today');
-      if(backedEl) backedEl.textContent = `${backedVotes.toLocaleString()} votes cast today`;
+      if(backedEl) window.tickMoney(backedEl, backedToday);
 
       const bids = activityBidsRes.data || [];
 
@@ -915,24 +942,19 @@
         if(url) return `<img src="${esc(url)}" alt="" loading="lazy" style="${box};object-fit:cover">`;
         return `<span style="${box};background:var(--surface-3);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif;font-size:${Math.round(px*0.42)}px">${esc(window.GOAT.initials(name))}</span>`;
       }
-      // A vote big enough to top that contender's board reads as a takeover.
-      function verb(b){
-        const votes = Math.floor(b.amount_cents/100);
-        return votes >= 50 ? 'just took over' : 'backed';
-      }
 
       if(activityEl){
         if(bids.length){
           activityEl.innerHTML = bids.slice(0, 8).map(b => {
             return `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px">
               <span style="display:flex;align-items:center;gap:8px;min-width:0">${fanAvatar(b,24)}
-                <span style="min-width:0"><b>${esc(fanName(b))}</b> ${verb(b)} <a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${esc(b.people?.name)}</a> with <b>${Math.floor(b.amount_cents/100)} votes</b></span>
+                <span style="min-width:0"><b>${esc(fanName(b))}</b> put <b>$${Math.floor(b.amount_cents/100).toLocaleString('en-US')}</b> behind <a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${esc(b.people?.name)}</a></span>
               </span>
               <span class="mono" style="font-size:11px;color:var(--muted);white-space:nowrap">${window.GOAT.fmtAgo(b.created_at)}</span>
             </div>`;
           }).join('');
         } else {
-          activityEl.innerHTML = '<div class="mono" style="color:var(--muted);text-align:center;padding:12px">No votes yet. Be the first to back your GOAT!</div>';
+          activityEl.innerHTML = '<div class="mono" style="color:var(--muted);text-align:center;padding:12px">Nothing backed yet. Be the first to back your GOAT!</div>';
         }
       }
 
@@ -943,7 +965,7 @@
             return `<div style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;line-height:1.4;display:flex;gap:8px;align-items:flex-start">
               ${fanAvatar(b,22)}
               <div style="min-width:0">
-                <b>${esc(fanName(b))}</b> ${verb(b)} <a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${esc(b.people?.name)}</a> with <b>${Math.floor(b.amount_cents/100)} votes</b>
+                <b>${esc(fanName(b))}</b> put <b>$${Math.floor(b.amount_cents/100).toLocaleString('en-US')}</b> behind <a href="/person?slug=${b.people?.slug}" style="color:var(--gold);font-weight:700">${esc(b.people?.name)}</a>
                 <div class="mono" style="font-size:10px;color:var(--muted)">${window.GOAT.fmtAgo(b.created_at)}</div>
               </div>
             </div>`;
@@ -978,7 +1000,7 @@
             const face = photoUrl
               ? `<img src="${esc(photoUrl)}" alt="" loading="lazy">`
               : `<span class="fan-face-initials">${esc(window.GOAT.initials(name))}</span>`;
-            const votes = Math.floor((u.total_spent_cents||0)/100).toLocaleString();
+            const spent = window.GOAT.money(u.total_spent_cents||0);
             const href = socialUrl(u);
             const handle = (!u.is_anonymous && u.social_handle)
               ? '@' + esc(String(u.social_handle).replace(/^@/,'')) : null;
@@ -993,7 +1015,7 @@
                                 : `<span class="fan-backing-initials">${esc(window.GOAT.initials(b.name))}</span>`}
                     <span class="fan-backing-name">${esc(b.name)}</span>
                   </span>
-                  <span class="fan-backing-votes mono">${b.votes.toLocaleString()} votes on them</span>
+                  <span class="fan-backing-votes mono">$${b.votes.toLocaleString('en-US')} behind them</span>
                 </a>` : '<div class="fan-backing empty">Not backing anyone yet</div>';
 
             // An anonymous backer has no profile to open, so the face is inert
@@ -1007,13 +1029,13 @@
                 <span class="fan-face">${face}</span>
                 <span class="fan-card-name">${esc(name)}</span>
                 ${handle ? `<span class="fan-card-handle">${handle}${href?' ↗':''}</span>` : ''}
-                <span class="fan-card-votes"><b>${votes}</b> votes cast</span>
+                <span class="fan-card-votes"><b>${spent}</b> backed</span>
               </${faceTag}>
               ${backing}
             </div>`;
           }).join('');
         } else {
-          leadingFansEl.innerHTML = '<div class="mono" style="color:var(--muted);font-size:12px;padding:16px;text-align:center">No backers yet. Back a contender with 1 vote to take #1!</div>';
+          leadingFansEl.innerHTML = '<div class="mono" style="color:var(--muted);font-size:12px;padding:16px;text-align:center">No backers yet. Put $1 behind a contender to take #1!</div>';
         }
       }
 
@@ -1025,13 +1047,13 @@
     const track = document.getElementById('goat-ticker-track');
     if(!track) return;
     const items = [];
-    if(todayVotes > 0) items.push(`🔥 <b>${todayVotes.toLocaleString()}</b> votes cast today`);
+    if(todayVotes > 0) items.push(`🔥 <b>$${todayVotes.toLocaleString('en-US')}</b> backed today`);
     if(topUsers && topUsers[0]){
       const top = topUsers[0];
-      items.push(`👑 <b>${esc(top.display_name||'Supporter')}</b> is #1 Leading Fan with <span class="g">${Math.floor(top.total_spent_cents/100).toLocaleString()}</span> votes`);
+      items.push(`👑 <b>${esc(top.display_name||'Supporter')}</b> is #1 Leading Fan with <span class="g">${window.GOAT.money(top.total_spent_cents)}</span> down`);
     }
     (bids||[]).slice(0, 5).forEach(b => {
-      items.push(`⚡ <b>${esc(b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'A backer'))}</b> voted <span class="g">${Math.floor(b.amount_cents/100)} votes</span> for <b>${esc(b.people?.name)}</b>`);
+      items.push(`⚡ <b>${esc(b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'A backer'))}</b> put <span class="g">$${Math.floor(b.amount_cents/100).toLocaleString('en-US')}</span> behind <b>${esc(b.people?.name)}</b>`);
     });
     items.push(`🏆 <b>${cats.length.toLocaleString()}</b> boards · $1 = 1 vote · no judges, no algorithms`);
 

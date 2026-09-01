@@ -25,15 +25,15 @@
 
   <div style="display:flex;gap:8px;margin:10px 0">
     <input id="add-name" placeholder="Add a person — real public figure with Wikipedia" style="flex:1;height:42px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 14px">
-    <button id="add-btn" class="btn-primary" style="width:auto">Add 1 vote →</button>
+    <button id="add-btn" class="btn-primary" style="width:auto">Back with $1 →</button>
   </div>
 
   <div id="board" class="list"></div>
   <div id="pagination" class="pagination"></div>
 </div>
 <div class="sticky-bar" id="sticky-bar">
-  <span class="balance"><span id="sticky-balance">— votes</span></span>
-  <a href="/wallet" class="btn-primary" style="padding:8px 14px">Get votes</a>
+  <span class="balance"><span id="sticky-balance">—</span></span>
+  <a href="/wallet" class="btn-primary" style="padding:8px 14px">Add credit</a>
 </div>
 <footer class="footer">The True GOAT — pay to rank. <a href="/rules">Rules</a> · <a href="/wallet">Wallet</a> · <a href="/fans">Fans</a></footer>
 
@@ -136,7 +136,8 @@
     if(r<=10) return 'rank-4-10';
     return 'rank-11-plus';
   }
-  function fmtVotes(c){ return Math.floor((c||0)/100).toLocaleString() + ' votes'; }
+  // The board speaks in dollars; the vote is what the dollar buys, not the score.
+  function fmtVotes(c){ return '$' + Math.floor((c||0)/100).toLocaleString('en-US'); }
   function platformIcon(p){
     if(p==='x') return '𝕏';
     if(p==='instagram') return '◎';
@@ -165,7 +166,7 @@
   async function render(){
     const board=document.getElementById('board');
     if(!people.length){
-      board.innerHTML='<div class="empty">No votes yet. 1 vote takes #1.</div>';
+      board.innerHTML='<div class="empty">Nothing backed yet. $1 takes #1.</div>';
       return;
     }
     const fanMap=await fetchFansDetailed(people.map(p=>p.id));
@@ -178,7 +179,9 @@
       const nextFan=fans[1]||null;
       const gapAhead = rank>1 ? Math.floor(((people[0].total_cents||0) - (p.total_cents||0))/100) : null;
       const gapVotesBehind = rank===1 && people[1] ? Math.floor(((p.total_cents||0)-(people[1].total_cents||0))/100) : null;
-      const gapText = rank===1 ? (gapVotesBehind!==null ? `${gapVotesBehind.toLocaleString()} votes ahead of #2` : 'No votes yet. 1 vote takes #1.') : `${Math.abs(gapAhead).toLocaleString()} votes behind #1`;
+      const gapText = rank===1
+        ? (gapVotesBehind!==null ? `$${gapVotesBehind.toLocaleString('en-US')} ahead of #2` : 'Nothing backed yet. $1 takes #1.')
+        : `$${Math.abs(gapAhead).toLocaleString('en-US')} behind #1`;
 
       const photoHtml = window.PortraitFallback.photoHtml(p, rank===1?220: rank===2?160: rank===3?130:90, {eager: i<3});
 
@@ -190,7 +193,7 @@
         const handle = u.social_handle ? `<a href="https://${u.social_platform==='x'?'x.com': u.social_platform+'.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,'') )}" target="_blank" rel="noopener">${u.social_handle.startsWith('@')?u.social_handle:'@'+u.social_handle} ${platformIcon(u.social_platform)}</a>` : '';
         const fanPhoto = u.photo_path ? window.OptimizedImage.render({ photoPath: u.photo_path, name: fanName, size: 90 }) : `<div class="fan-initials">${window.GOAT.initials(fanName)}</div>`;
         const fanVotes = fmtVotes(topFan.total_cents);
-        const fanGap = nextFan ? `${Math.floor((topFan.total_cents - nextFan.total_cents)/100).toLocaleString()} votes ahead of the next fan` : 'Only fan so far';
+        const fanGap = nextFan ? `$${Math.floor((topFan.total_cents - nextFan.total_cents)/100).toLocaleString('en-US')} ahead of the next fan` : 'Only fan so far';
         fanHtml = `
           <div class="fan-photo">${fanPhoto}</div>
           <div class="fan-meta">
@@ -217,8 +220,8 @@
           <div class="meta">
             <div class="name display">${p.name}</div>
             <div class="blurb">${p.blurb||''}</div>
-            <div class="board-count display">${Math.floor((p.total_cents||0)/100).toLocaleString()}</div>
-            <div class="board-share">${sharePct(p)}% of the board</div>
+            <div class="board-count display">$${Math.floor((p.total_cents||0)/100).toLocaleString('en-US')}</div>
+            <div class="board-share">${sharePct(p)}% of the money on this board</div>
             <div class="board-bar"><div class="board-bar-fill" style="width:${Math.max(sharePct(p),1.5)}%"></div></div>
             <div class="gap">${gapText}</div>
           </div>
@@ -226,18 +229,18 @@
         <div class="row-divider"></div>
         <div class="row-right">${fanHtml} <a href="/person?slug=${p.slug}#fans" style="margin-left:auto;font-size:11px;color:var(--gold);text-decoration:underline;white-space:nowrap">Report</a></div>
         <div class="row-actions">
-          <span class="stepper"><button data-dec aria-label="Decrease">−</button><input data-amt-input type="number" min="1" value="1" style="width:56px;text-align:center;background:transparent;border:none;color:var(--ink);font-weight:700;font-size:12px;font-family:JetBrains Mono"><span data-amt style="display:none">1 vote</span><button data-inc aria-label="Increase">+</button></span>
-          <button class="btn-back back-btn" data-back style="min-height:44px;min-width:44px">Vote ${shortName(p.name)}</button>
+          <span class="stepper"><button data-dec aria-label="Decrease">−</button><input data-amt-input type="number" min="1" value="1" style="width:56px;text-align:center;background:transparent;border:none;color:var(--ink);font-weight:700;font-size:12px;font-family:JetBrains Mono"><span data-amt style="display:none">$1</span><button data-inc aria-label="Increase">+</button></span>
+          <button class="btn-back back-btn" data-back style="min-height:44px;min-width:44px">Back ${shortName(p.name)}</button>
           <span class="stakes" data-stakes>1 vote → #${rank}</span>
         </div>`;
 
       // stepper
       let amt=100;
       const amtEl=row.querySelector('[data-amt]'), amtInput=row.querySelector('[data-amt-input]'), stakesEl=row.querySelector('[data-stakes]');
-      function setAmt(v){ v=Math.max(1,Math.min(100000,Math.floor(v)||1)); amt=v*100; if(amtInput) amtInput.value=v; if(amtEl) amtEl.textContent=`${v.toLocaleString()} ${v===1?"vote":"votes"}`; }
+      function setAmt(v){ v=Math.max(1,Math.min(100000,Math.floor(v)||1)); amt=v*100; if(amtInput) amtInput.value=v; if(amtEl) amtEl.textContent=`$${v.toLocaleString('en-US')}`; }
       function updateStakes(){
         const v=Math.floor(amt/100);
-        if(amtEl) amtEl.textContent=`${v.toLocaleString()} ${v===1?"vote":"votes"}`;
+        if(amtEl) amtEl.textContent=`$${v.toLocaleString('en-US')}`;
         if(amtInput && document.activeElement!==amtInput) amtInput.value=v;
         const newTotal=(p.total_cents||0)+amt;
         let newRank=1;
@@ -247,8 +250,8 @@
           else if((people[j].total_cents||0)===newTotal && people[j].first_backed_at && p.first_backed_at && new Date(people[j].first_backed_at) < new Date(p.first_backed_at)) newRank++;
           else break;
         }
-        stakesEl.textContent=`${v.toLocaleString()} votes → #${newRank}`;
-        if(rank===1) stakesEl.textContent=`${v.toLocaleString()} votes → ${Math.floor(newTotal/100).toLocaleString()} votes`;
+        stakesEl.textContent=`$${v.toLocaleString('en-US')} → #${newRank}`;
+        if(rank===1) stakesEl.textContent=`$${v.toLocaleString('en-US')} → $${Math.floor(newTotal/100).toLocaleString('en-US')}`;
       }
       row.querySelector('[data-dec]').addEventListener('click',()=>{ setAmt(Math.max(1,Math.floor(amt/100)-1)); updateStakes(); });
       row.querySelector('[data-inc]').addEventListener('click',()=>{ setAmt(Math.min(100000,Math.floor(amt/100)+1)); updateStakes(); });
@@ -304,15 +307,15 @@
           if(data && data.new_total) p.total_cents = data.new_total;
           if(data && data.balance!==undefined) {
             const pill=document.getElementById('balance-pill');
-            if(pill) pill.innerHTML=`<b>${Math.floor(data.balance/100).toLocaleString()} votes</b> <a href="/wallet">Get votes</a>`;
+            if(pill) pill.innerHTML=`<b>${window.GOAT.money(data.balance)}</b> <a href="/wallet">Add credit</a>`;
             const sb2=document.getElementById('sticky-balance');
-            if(sb2) sb2.innerHTML=`<b>${Math.floor(data.balance/100).toLocaleString()} votes</b>`;
+            if(sb2) sb2.innerHTML=`<b>${window.GOAT.money(data.balance)}</b>`;
           }
           await fetchPeople(); await render(); await window.refreshBalance();
           // post-vote: You're now X's #Y fan — claim spot
           const myRank = people.findIndex(x=>x.id===p.id)+1;
           setTimeout(()=> {
-            if(confirm(`You're now ${p.name}'s #${myRank} fan. Claim your spot on his card?`)) location.href="/wallet";
+            window.goatToast(`You're now <b>${p.name}</b>'s #${myRank} backer.`);
           }, 300);
         }catch(e){
           // rollback
@@ -342,11 +345,11 @@
       const {data:{user}}=await sb.auth.getUser();
       if(user){
         const {data}=await sb.from('users').select('balance_cents').eq('id', user.id).maybeSingle();
-        sbBal.innerHTML=`<b>${Math.floor((data?.balance_cents||0)/100).toLocaleString()} votes</b>`;
+        sbBal.innerHTML=`<b>${window.GOAT.money(data?.balance_cents||0)}</b>`;
       } else {
         // anon session cookie read
         const m=document.cookie.match(/goat_anon=([^;]+)/);
-        sbBal.textContent = m ? '— votes (anon)' : '0 votes';
+        sbBal.textContent = m ? '— (anon)' : '$0';
       }
     }
   }

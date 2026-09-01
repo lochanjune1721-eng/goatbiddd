@@ -120,7 +120,7 @@
   function renderFans(list){
     const el=document.getElementById('fans');
     if(!list||!list.length) {
-      el.innerHTML=`<div class="empty">No fans yet. Be the first with 1 vote — your face becomes crowned as ${esc(person.name)}'s #1 Fan!</div>`;
+      el.innerHTML=`<div class="empty">No backers yet. Be the first with $1 — your face becomes crowned as ${esc(person.name)}'s #1 Fan!</div>`;
       return;
     }
     el.innerHTML=list.map((f,i)=>{
@@ -131,7 +131,7 @@
       const photoUrl = u.photo_path ? (window.GOAT.getPhotoUrl(u.photo_path)||u.photo_path) : null;
       const photo = photoUrl ? `<img src="${photoUrl}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">` : `<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif">${initials}</div>`;
       const crown = i===0 ? '👑 ' : '';
-      const count = window.GOAT.votes(f.total_cents);
+      const count = window.GOAT.money(f.total_cents);
       return `<div class="job-card" style="display:flex;gap:12px;align-items:center;padding:12px 14px;${i===0?'border-color:var(--gold);background:linear-gradient(180deg, var(--gold-lo) 0%, var(--surface) 60%);':''}">
         <div style="font-family:JetBrains Mono,monospace;font-size:13px;color:var(--muted);width:28px;text-align:center;font-weight:700">${i===0?'👑':'#'+(i+1)}</div>
         <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex:0 0 auto">${photo}</div>
@@ -156,7 +156,7 @@
       outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
         <div>
           <div style="font-weight:700">Become ${esc(person.name)}'s Greatest Fan</div>
-          <div class="mono" style="font-size:12px;color:var(--muted)">Current #1 has ${topVotes} votes · <b style="color:var(--gold)">Take #1 with ${needVotes} votes ($${needVotes})</b></div>
+          <div class="mono" style="font-size:12px;color:var(--muted)">Current #1 has $${topVotes.toLocaleString('en-US')} down · <b style="color:var(--gold)">Take the #1 spot for $${needVotes.toLocaleString('en-US')}</b></div>
         </div>
         <button onclick="window.Auth.openAuthModal()" class="btn-primary" style="width:auto">Sign in to Outbid →</button>
       </div>`;
@@ -171,7 +171,7 @@
     
     if(isTop){
       outbidCard.style.display='block';
-      outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">👑</span><div><div style="font-weight:700;font-size:16px">You are the Greatest Fan of All Time</div><div class="mono" style="font-size:12px;color:var(--muted)">${window.GOAT.votes(myTotal)} on ${esc(person.name)} — keep backing to defend your #1 spot</div></div></div>`;
+      outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center"><span style="font-size:24px">👑</span><div><div style="font-weight:700;font-size:16px">You are the Greatest Fan of All Time</div><div class="mono" style="font-size:12px;color:var(--muted)">${window.GOAT.money(myTotal)} on ${esc(person.name)} — keep backing to defend your #1 spot</div></div></div>`;
       return;
     }
     const need = Math.max(1, Math.floor((topTotal - myTotal)/100)+1);
@@ -181,9 +181,9 @@
     outbidCard.innerHTML=`<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
       <div style="flex:1;min-width:200px">
         <div style="font-weight:700;font-size:15px">Outbid ${esc(topName)} to become Greatest Fan of All Time</div>
-        <div class="mono" style="font-size:12px;color:var(--muted);margin-top:2px">You have ${Math.floor(myTotal/100)} votes · #1 has ${Math.floor(topTotal/100)} · <b style="color:var(--gold)">needs ${need} votes ($${need})</b></div>
+        <div class="mono" style="font-size:12px;color:var(--muted);margin-top:2px">You have $${Math.floor(myTotal/100).toLocaleString('en-US')} down · #1 has $${Math.floor(topTotal/100).toLocaleString('en-US')} · <b style="color:var(--gold)">Take the #1 spot for $${need.toLocaleString('en-US')}</b></div>
       </div>
-      <button id="outbid-btn" class="btn-primary" style="width:auto;white-space:nowrap;padding:10px 18px">Outbid +${need} votes →</button>
+      <button id="outbid-btn" class="btn-primary" style="width:auto;white-space:nowrap;padding:10px 18px">Outbid · $${need.toLocaleString('en-US')} →</button>
     </div>`;
 
     const outbidBtn = document.getElementById('outbid-btn');
@@ -213,7 +213,7 @@
           } else {
             alert(m);
           }
-          outbidBtn.disabled=false; outbidBtn.textContent=`Outbid +${need} votes →`;
+          outbidBtn.disabled=false; outbidBtn.textContent=`Outbid · $${need.toLocaleString('en-US')} →`;
         }
       });
     }
@@ -224,13 +224,13 @@
   // Backing stepper
   const row=document.getElementById('back-row');
   let amt=100;
-  row.innerHTML=`<span class="stepper"><button id="dec">−</button><span id="amt">1 vote</span><button id="inc">+</button></span><button id="back" class="btn-back">Back (+1)</button><span class="stakes mono" id="stakes"></span>`;
+  row.innerHTML=`<span class="stepper"><button id="dec">−</button><span id="amt">$1</span><button id="inc">+</button></span><button id="back" class="btn-back">Back (+1)</button><span class="stakes mono" id="stakes"></span>`;
   
   function upd(){ 
     const v=Math.floor(amt/100); 
-    document.getElementById('amt').textContent=`${v} ${v===1?"vote":"votes"}`; 
+    document.getElementById('amt').textContent=`$${v.toLocaleString('en-US')}`; 
     document.getElementById('back').textContent=`Back (+${v})`;
-    document.getElementById('stakes').textContent=`${v} votes → ${Math.floor((person.total_cents+amt)/100)} votes`; 
+    document.getElementById('stakes').textContent=`$${v.toLocaleString('en-US')} → $${Math.floor((person.total_cents+amt)/100).toLocaleString('en-US')}`; 
   }
   document.getElementById('dec').addEventListener('click',()=>{ amt=Math.max(100, amt-100); upd(); });
   document.getElementById('inc').addEventListener('click',()=>{ amt=Math.min(100000, amt+100); upd(); });

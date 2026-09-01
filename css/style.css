@@ -732,3 +732,29 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
   .fan-backing-who{flex-direction:row;align-items:center}
   .fan-backing-label{display:none}
 }
+
+/* ── The gap, as the loudest thing on a fight card ───────────────────────────
+   Two totals tell you the state; the difference between them tells you the
+   price of changing it. That is the only number on the card anyone can act on,
+   so it is the one that gets the size. */
+.gap-hero{text-align:center;margin-bottom:14px}
+.gap-hero-num{font-family:'Anton',sans-serif;font-size:clamp(34px,8.5vw,58px);line-height:1;
+  color:var(--gold);letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 34px rgba(201,168,106,.25)}
+.gap-hero-sub{font-size:clamp(12px,2.9vw,15px);color:var(--muted);margin-top:6px;font-weight:600}
+@media(max-width:480px){.gap-hero{margin-bottom:10px}.gap-hero-sub{margin-top:4px}}
+
+/* A total ticking up should be visible without being a distraction. */
+@keyframes goat-tick{0%{transform:translateY(5px);opacity:.35}100%{transform:none;opacity:1}}
+.goat-ticking{animation:goat-tick .34s cubic-bezier(.2,.9,.3,1)}
+
+/* The confirmation after backing someone. States the money effect, because
+   "voted!" tells you nothing you did not already know. */
+.goat-toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,14px);z-index:9998;
+  max-width:min(440px,calc(100vw - 28px));background:var(--surface-2);border:1px solid var(--gold);
+  border-radius:14px;padding:13px 18px;font-size:14px;line-height:1.45;color:var(--ink);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.75);opacity:0;transition:opacity .24s,transform .24s;
+  text-align:center;pointer-events:none}
+.goat-toast.in{opacity:1;transform:translate(-50%,0)}
+.goat-toast b{color:var(--gold);font-variant-numeric:tabular-nums}
+@media(max-width:640px){.goat-toast{bottom:78px;font-size:13px;padding:11px 15px}}

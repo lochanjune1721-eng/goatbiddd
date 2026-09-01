@@ -35,6 +35,52 @@ try {
   };
 }
 
+// Money totals tick rather than snap, so a live change is noticed. Counts up
+// from whatever is on screen to the new figure; the element is the source of
+// truth for the start value, so two rapid changes chain instead of fighting.
+window.tickMoney = function(el, toCents, ms){
+  if(!el) return;
+  const parse = t => { const n = Number(String(t||'').replace(/[^0-9]/g,'')); return Number.isFinite(n)?n:0; };
+  const from = parse(el.textContent), to = Math.floor((toCents||0)/100);
+  const fmt = v => '$' + Math.round(v).toLocaleString('en-US');
+  if(from === to){ el.textContent = fmt(to); return; }
+  el.classList.add('goat-ticking');
+  setTimeout(()=> el.classList.remove('goat-ticking'), 360);
+  const dur = ms || 520, t0 = performance.now();
+  (function step(now){
+    const k = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - k, 3);
+    el.textContent = fmt(from + (to - from) * eased);
+    if(k < 1) requestAnimationFrame(step);
+  })(t0);
+};
+
+// One toast, so every surface confirms a backing the same way: what you put
+// down, and what it did to the gap. "Voted!" tells you nothing you did not
+// already know; the gap is the thing that moved.
+window.goatToast = function(html, ms){
+  document.getElementById('goat-toast')?.remove();
+  const el = document.createElement('div');
+  el.id = 'goat-toast';
+  el.className = 'goat-toast';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=> el.classList.add('in'));
+  setTimeout(()=>{ el.classList.remove('in'); setTimeout(()=> el.remove(), 260); }, ms || 3800);
+};
+
+// "You put $5 behind Messi. Gap is now $33." Built here so the wording cannot
+// drift between the home board, a category board and a person's page.
+window.backedMessage = function(name, spentCents, myCents, rivalCents, rivalName){
+  const money = c => '$' + Math.floor((c||0)/100).toLocaleString('en-US');
+  const put = `You put <b>${money(spentCents)}</b> behind ${name}.`;
+  if(rivalCents == null) return put;
+  const diff = Math.floor((myCents||0)/100) - Math.floor((rivalCents||0)/100);
+  if(diff === 0) return `${put} Dead level with ${rivalName||'the leader'}.`;
+  if(diff > 0)  return `${put} Now <b>${money(diff*100)}</b> ahead.`;
+  return `${put} Gap is now <b>${money(-diff*100)}</b>.`;
+};
+
 window.GOAT = {
   SUPABASE_URL,
   getPhotoUrl: (path) => {
@@ -54,9 +100,35 @@ window.GOAT = {
     if(trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
     return `${SUPABASE_URL}/storage/v1/object/public/people/${trimmed.replace(/^\/+/, '')}`;
   },
-  cents: (c)=> `$${(c/100).toLocaleString()}`,
-  votes: (c)=> `${Math.floor((c||0)/100).toLocaleString()} votes`,
-  votesShort: (c)=> `${Math.floor((c||0)/100).toLocaleString()}`,
+  // ── The scoreboard speaks in dollars ──────────────────────────────────────
+  //
+  // $1 of credit buys one vote and always has; nothing below changes that. What
+  // changes is what the board SAYS. "472 votes" reads like a free poll —
+  // clicks, which cost nothing and mean nothing. "$472" is the same fact and
+  // the only one worth putting on a scoreboard: it is what people actually put
+  // down.
+  //
+  // Whole dollars, no cents: the product cannot produce a fractional vote, so a
+  // decimal place would only ever be ".00". Separators from four digits up,
+  // which toLocaleString already does.
+  money: (c)=> `$${Math.floor((c||0)/100).toLocaleString('en-US')}`,
+  moneyShort: (c)=> `$${Math.floor((c||0)/100).toLocaleString('en-US')}`,
+  // The gap between two contenders, in dollars. On a fight card this is the
+  // number that matters — it is the price of taking the lead.
+  moneyGap: (c1,c2)=> `$${Math.abs(Math.floor((c1||0)/100)-Math.floor((c2||0)/100)).toLocaleString('en-US')}`,
+  // Private surfaces only — a fan's own wallet and history, where the vote
+  // count is a real thing they hold rather than a score being advertised.
+  moneyAndVotes: (c)=> {
+    const v = Math.floor((c||0)/100);
+    return `$${v.toLocaleString('en-US')} · ${v.toLocaleString('en-US')} vote${v===1?'':'s'}`;
+  },
+
+  cents: (c)=> `$${Math.floor((c||0)/100).toLocaleString('en-US')}`,
+  // Legacy name. Every caller is a public surface, so it renders money now
+  // rather than being chased through a dozen templates; new code should say
+  // money() and mean it.
+  votes: (c)=> `$${Math.floor((c||0)/100).toLocaleString('en-US')}`,
+  votesShort: (c)=> `${Math.floor((c||0)/100).toLocaleString('en-US')}`,
   votesGap: (c1,c2)=> Math.abs(Math.floor((c1||0)/100)-Math.floor((c2||0)/100)),
   fmtAgo: (iso)=>{
     if(!iso) return "—";
@@ -190,7 +262,7 @@ window.Auth = {
       <div class="inline-topup-card" style="max-width:380px;text-align:left;position:relative">
         <button id="modal-close-btn" style="position:absolute;right:14px;top:14px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
         <h2 class="display" style="font-size:22px;margin-bottom:6px">Sign in to The True GOAT</h2>
-        <p class="mono" style="font-size:12px;color:var(--muted);margin-bottom:14px">Back your GOAT with one tap. $1 = 1 vote.</p>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin-bottom:14px">Back your GOAT with one tap. $1 = 1 vote — the score is real money.</p>
         <button id="modal-google-btn" class="btn-primary" style="background:#fff;color:#111;border:1px solid var(--border);display:flex;align-items:center;gap:8px;justify-content:center;width:100%;font-weight:700">
           <span style="font-size:16px">G</span> Continue with Google
         </button>
@@ -284,9 +356,11 @@ async function refreshBalance(){
   const u = await ensureUserRow();
   const {data}=await window.supabaseClient.from('users').select('balance_cents,display_name,photo_path').eq('id', user.id).maybeSingle();
   const bal=data? data.balance_cents:0;
-  const votes=Math.floor(bal/100).toLocaleString();
-  
-  pill.innerHTML=`<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted)"><b style="color:var(--gold)">${votes} votes</b></span> <a href="/wallet" style="margin-left:6px;background:var(--gold);color:var(--bg);padding:5px 11px;border-radius:999px;font-weight:700;font-size:11px">+ Add</a> <button id="signout-btn" title="Sign out" style="margin-left:5px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:999px;cursor:pointer;font-size:11px">Out</button>`;
+  // The header pill is the fan's own credit, shown as money like everything
+  // else on screen — the vote count lives on the wallet page, where it belongs.
+  const credit=window.GOAT.money(bal);
+
+  pill.innerHTML=`<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted)"><b style="color:var(--gold)">${credit}</b></span> <a href="/wallet" style="margin-left:6px;background:var(--gold);color:var(--bg);padding:5px 11px;border-radius:999px;font-weight:700;font-size:11px">+ Add</a> <button id="signout-btn" title="Sign out" style="margin-left:5px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:999px;cursor:pointer;font-size:11px">Out</button>`;
   
   const out=document.getElementById('signout-btn');
   if(out) out.addEventListener('click', async()=>{ await window.supabaseClient.auth.signOut(); location.reload(); });

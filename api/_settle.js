@@ -82,7 +82,7 @@ export async function settleTopup(supa, { topupId, orderId, captureId, capturedC
   });
   if (error) throw new HttpError(500, `confirm_topup failed: ${error.message}`);
 
-  console.log(`[${label}] credited ${topup.amount_cents} cents (${topup.amount_cents / 100} votes) to ${topup.user_id} for capture ${captureId}; balance ${newBalance}`);
+  console.log(`[${label}] credited ${topup.amount_cents} cents (${topup.amount_cents / 100} votes of credit) to ${topup.user_id} for capture ${captureId}; balance ${newBalance}`);
   return { settled: true, topup, newBalance, credited: topup.amount_cents };
 }
 

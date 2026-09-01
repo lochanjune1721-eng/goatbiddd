@@ -60,15 +60,15 @@
   <div id="wallet-card" style="display:none">
     <div class="wallet-card">
       <div class="wallet-label mono">Wallet balance</div>
-      <div id="balance-big" class="wallet-balance">0 votes</div>
+      <div id="balance-big" class="wallet-balance">$0</div>
       <div id="wallet-rate" class="wallet-sub mono"><b>$1 = 1 vote</b> · top up once, then vote with one tap</div>
 
       <div id="payment-alert" class="notice ok" style="display:none;margin:16px 0 0"></div>
 
       <!-- One even row rather than five pills of different widths; each says
            the price and what it buys, so no button is a bare number. -->
-      <button id="add-votes" class="btn-primary wallet-cta">Add votes</button>
-      <div class="wallet-cta-sub mono" id="wallet-cta-sub">Bonus votes on every tier — $5 buys 6, $100 buys 150.</div>
+      <button id="add-votes" class="btn-primary wallet-cta">Add credit</button>
+      <div class="wallet-cta-sub mono" id="wallet-cta-sub">Bonus on every tier — $5 buys $6 of backing power, $100 buys $150.</div>
 
       <div id="payment-status" class="mono" style="font-size:12.5px;margin-top:14px;line-height:1.5"></div>
     </div>
@@ -113,8 +113,10 @@
   // Check for successful payment return
   const params = new URLSearchParams(location.search);
   if(params.get('payment') === 'success'){
-    const votes = params.get('votes') || 'some';
-    paymentAlert.textContent = `Payment confirmed! Added ${votes} votes to your wallet.`;
+    const added = params.get('votes');
+    paymentAlert.textContent = added
+      ? `Payment confirmed — $${Number(added).toLocaleString('en-US')} added to your wallet.`
+      : 'Payment confirmed — your credit has been added.';
     paymentAlert.style.display = 'block';
   }
 
@@ -132,7 +134,7 @@
     }
     const {data: u}=await sb.from('users').select('*').eq('id', user.id).maybeSingle();
     const bal=u? u.balance_cents:0;
-    balanceBig.textContent=Math.floor(bal/100).toLocaleString()+' votes';
+    balanceBig.textContent=window.GOAT.moneyAndVotes(bal);
     if(window.refreshBalance) window.refreshBalance();
     loadProfile(u);
     loadTopups(user.id);
@@ -188,7 +190,7 @@
 
   document.querySelectorAll('[data-topup]').forEach(b=> b.addEventListener('click', ()=> doTopup()));
 
-  // The homepage's inline "out of votes" prompt deep-links here as
+  // The homepage's inline "out of credit" prompt deep-links here as
   // /wallet?topup=1000&returnTo=/… — fire that top-up straight away so the
   // visitor doesn't have to pick the amount a second time. Only for a
   // signed-in user; otherwise the sign-in card is showing and this would be a
@@ -204,7 +206,7 @@
   // PayPal sends the payer back to
   // /wallet?paypal=return&topup_id=<uuid>&token=<order id>&PayerID=<payer>
   // ("token" is PayPal's name for the order id). Capturing here is what makes
-  // the votes appear straight away; the webhook settles the same order
+  // the credit appears straight away; the webhook settles the same order
   // independently, so a closed tab still gets credited and a double capture is
   // a no-op.
   // UroPay sends the payer back to /wallet?uropay=return&topup_id=<uuid>.
@@ -226,7 +228,7 @@
 
     const {data:{session}} = await sb.auth.getSession();
     if(!session){
-      paymentStatus.textContent = 'Sign in again to finish adding your votes — your payment is safe.';
+      paymentStatus.textContent = 'Sign in again to finish adding your credit — your payment is safe.';
       paymentStatus.style.color = '#e55';
       return;
     }
@@ -251,14 +253,14 @@
         return;
       }
 
-      const votes = Math.floor((j.credited || 0) / 100);
-      paymentAlert.textContent = votes
-        ? `Payment confirmed — ${votes} vote${votes === 1 ? '' : 's'} added to your wallet.`
+      const credited = Math.floor((j.credited || 0) / 100);
+      paymentAlert.textContent = credited
+        ? `Payment confirmed — $${credited.toLocaleString('en-US')} added to your wallet.`
         : 'Payment confirmed.';
       paymentAlert.style.display = 'block';
       paymentStatus.textContent = '';
 
-      if(typeof j.newBalance === 'number') balanceBig.textContent = Math.floor(j.newBalance/100).toLocaleString()+' votes';
+      if(typeof j.newBalance === 'number') balanceBig.textContent = window.GOAT.moneyAndVotes(j.newBalance);
       if(window.refreshBalance) await window.refreshBalance();
       const {data:{user}} = await sb.auth.getUser();
       if(user){ loadTopups(user.id); loadHistory(user.id); }
@@ -298,7 +300,7 @@
 
     const {data:{session}} = await sb.auth.getSession();
     if(!session){
-      paymentStatus.textContent = 'Sign in again to finish adding your votes — your payment is safe.';
+      paymentStatus.textContent = 'Sign in again to finish adding your credit — your payment is safe.';
       paymentStatus.style.color = '#e55';
       return;
     }
@@ -323,14 +325,14 @@
         return;
       }
 
-      const votes = Math.floor((j.credited || 0) / 100);
-      paymentAlert.textContent = votes
-        ? `Payment confirmed — ${votes} vote${votes === 1 ? '' : 's'} added to your wallet.`
+      const credited = Math.floor((j.credited || 0) / 100);
+      paymentAlert.textContent = credited
+        ? `Payment confirmed — $${credited.toLocaleString('en-US')} added to your wallet.`
         : 'Payment confirmed.';
       paymentAlert.style.display = 'block';
       paymentStatus.textContent = '';
 
-      if(typeof j.newBalance === 'number') balanceBig.textContent = Math.floor(j.newBalance/100).toLocaleString()+' votes';
+      if(typeof j.newBalance === 'number') balanceBig.textContent = window.GOAT.moneyAndVotes(j.newBalance);
       if(window.refreshBalance) await window.refreshBalance();
       const {data:{user}} = await sb.auth.getUser();
       if(user){ loadTopups(user.id); loadHistory(user.id); }
@@ -383,7 +385,7 @@
     }
     el.innerHTML = data.map(t => {
       const st = TOPUP_STATE[t.status] || { label: t.status, cls: 'mute' };
-      const votes = Math.floor(t.amount_cents / 100);
+      const credited = Math.floor((t.credit_cents ?? t.amount_cents) / 100);
       const charged = t.provider_currency === 'INR' && t.provider_amount != null
         ? '₹' + Number(t.provider_amount).toLocaleString('en-IN')
         : '$' + (t.amount_cents / 100).toLocaleString('en-US');
@@ -391,7 +393,7 @@
         ? '<span class="topup-ref mono" title="Your reference">' + esc(t.provider_payment_id) + '</span>' : '';
       return '<div class="topup-row">' +
         '<div class="topup-main">' +
-          '<b class="display topup-votes">' + votes + ' vote' + (votes === 1 ? '' : 's') + '</b>' +
+          '<b class="display topup-votes">$' + credited.toLocaleString('en-US') + '</b>' +
           '<span class="topup-meta mono">' + charged + ' · ' + (RAIL_NAME[t.provider] || t.provider) +
           ' · ' + window.GOAT.fmtAgo(t.created_at) + '</span>' + ref +
         '</div>' +
