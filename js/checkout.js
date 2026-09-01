@@ -97,6 +97,33 @@
   background:rgba(255,255,255,.9);color:#14141a;font-size:16px;line-height:1;display:grid;place-items:center;z-index:2}
 .gco-x:hover{background:#fff}
 
+/* ── voting, in the same frame as paying ──────────────────────────────── */
+.gco-vote{display:none;flex-direction:column;gap:13px}
+.gco-vote.show{display:flex}
+.gco-step{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;align-items:stretch}
+.gco-step button{border:1.5px solid #e4e4ea;background:#fff;border-radius:12px;font-size:22px;font-weight:600;
+  cursor:pointer;color:#14141a;line-height:1;transition:border-color .14s,background .14s}
+.gco-step button:hover{border-color:#14141a;background:#fafafb}
+.gco-step input{height:56px;border:1.5px solid #e4e4ea;border-radius:12px;text-align:center;font:inherit;
+  font-size:24px;font-weight:800;letter-spacing:-.02em;color:#14141a;background:#fff;
+  font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.gco-step input::-webkit-outer-spin-button,.gco-step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.gco-step input:focus{outline:none;border-color:#14141a}
+.gco-quick{display:flex;gap:7px;flex-wrap:wrap}
+.gco-quick button{flex:1;min-width:56px;border:1.5px solid #e4e4ea;background:#fff;border-radius:10px;padding:8px 0;
+  font:inherit;font-size:12.5px;font-weight:700;color:#4a4a58;cursor:pointer;transition:border-color .14s}
+.gco-quick button:hover{border-color:#14141a;color:#14141a}
+.gco-link{background:none;border:0;color:#5a5a68;font:inherit;font-size:12.5px;text-decoration:underline;
+  cursor:pointer;padding:2px}
+.gco-link:hover{color:#14141a}
+
+/* ── country, asked once for accounts that predate the question ────────── */
+.gco-country{display:none;flex-direction:column;gap:12px}
+.gco-country.show{display:flex}
+.gco-country select{height:46px;border:1.5px solid #e4e4ea;border-radius:12px;padding:0 12px;font:inherit;
+  font-size:14.5px;color:#14141a;background:#fff}
+.gco-country select:focus{outline:none;border-color:#14141a}
+
 /* ── the UPI step, only when nothing can confirm for us ────────────────── */
 .gco-upi{display:none;flex-direction:column;gap:13px;align-items:center;text-align:center}
 .gco-upi.show{display:flex}
@@ -119,7 +146,44 @@
 @media (max-width:380px){ .gco-tiers{grid-template-columns:repeat(2,1fr)} }
 `;
 
-  let el = null, state = null, health = null;
+  let el = null, state = null, health = null, me = null;
+
+  // The account, including the country it was opened with. Cached per page load
+  // — it decides which rail is drawn, so it must not change halfway through a
+  // checkout.
+  async function loadMe(force){
+    if(me && !force) return me;
+    try {
+      const { data:{ user } } = await window.supabaseClient.auth.getUser();
+      if(!user) return (me = null);
+      const { data } = await window.supabaseClient.from('users')
+        .select('id,country,balance_cents').eq('id', user.id).maybeSingle();
+      me = data || { id: user.id, country: null, balance_cents: 0 };
+      if(!me.country){ try { me.country = localStorage.getItem('goat_country') || null; } catch(e){} }
+    } catch(e){ me = null; }
+    return me;
+  }
+
+  // India pays by UPI, everyone else by card — one rail each, from what the fan
+  // told us at sign-in rather than from their IP. The server enforces the same
+  // rule, so this only decides what is drawn.
+  function railsForMe(){
+    const inIndia = String(me?.country || '').toUpperCase() === 'IN';
+    const canUpi = !!health?.rails?.upiProvider;
+    const canCard = !!health?.paypal?.credentialsConfigured;
+    const offer = inIndia ? (canUpi ? ['upi'] : []) : (canCard ? ['paypal'] : []);
+    return {
+      inIndia, offer,
+      preferred: offer[0] || null,
+      upiProvider: health?.rails?.upiProvider || null,
+      upiAutoConfirms: health?.rails?.upiProvider === 'uropay',
+      currency: inIndia ? 'INR' : 'USD',
+      // Said plainly rather than leaving an empty panel.
+      blocked: offer.length ? null : (inIndia
+        ? 'UPI payments are being set up and are not available yet. Nothing has been charged.'
+        : 'Card payments are being set up and are not available yet. Nothing has been charged.')
+    };
+  }
 
   function h(html){ const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; }
   function esc(v){ return String(v == null ? '' : v)
@@ -151,9 +215,9 @@
               <div class="gco-big-sub" data-big-sub></div>
             </div>
             <div class="gco-lines">
-              <div class="gco-line"><span>Votes</span><b data-l-votes>—</b></div>
+              <div class="gco-line"><span data-k-votes>Votes</span><b data-l-votes>—</b></div>
               <div class="gco-line bonus" data-l-bonus-row hidden><span>Bonus votes</span><b data-l-bonus></b></div>
-              <div class="gco-line total"><span>Total</span><b data-l-total>—</b></div>
+              <div class="gco-line total"><span data-k-total>Total</span><b data-l-total>—</b></div>
               <div class="gco-note" data-note></div>
             </div>
           </aside>
@@ -167,10 +231,27 @@
               <div class="gco-custom" style="margin-top:9px">
                 <input type="number" min="1" step="1" placeholder="Other amount in $" data-custom>
               </div>
-              <div class="gco-label" style="margin:18px 0 9px">Pay with</div>
+              <div class="gco-label" style="margin:18px 0 9px" data-methods-label>Pay with</div>
               <div class="gco-methods" data-methods></div>
               <button class="gco-pay" data-pay style="margin-top:16px">Continue</button>
               <div class="gco-fine" style="margin-top:11px" data-fine></div>
+            </div>
+            <div class="gco-vote" data-vote>
+              <div class="gco-label">How many votes</div>
+              <div class="gco-step">
+                <button type="button" data-minus aria-label="Fewer">−</button>
+                <input type="number" min="1" data-votes value="1">
+                <button type="button" data-plus aria-label="More">+</button>
+              </div>
+              <div class="gco-quick" data-quick></div>
+              <button class="gco-pay" data-cast>Cast 1 vote</button>
+              <button class="gco-link" data-buy-more>Need more votes — buy some</button>
+            </div>
+            <div class="gco-country" data-country-ask>
+              <div class="gco-label">Where are you?</div>
+              <select data-country-sel></select>
+              <p class="gco-sub" style="margin:0">This sets how you pay — UPI in India, card everywhere else.</p>
+              <button class="gco-pay" data-country-save>Continue</button>
             </div>
             <div class="gco-upi" data-upi>
               <svg data-upi-qr viewBox="0 0 1 1"></svg>
@@ -196,7 +277,33 @@
     el.querySelector('[data-utr-send]').addEventListener('click', sendUtr);
     el.querySelector('[data-copy-vpa]').addEventListener('click', e => copy(e.currentTarget, 'upi-vpa'));
     el.querySelector('[data-copy-ref]').addEventListener('click', e => copy(e.currentTarget, 'upi-ref'));
+
+    const votesInput = el.querySelector('[data-votes]');
+    el.querySelector('[data-minus]').addEventListener('click', () => {
+      votesInput.value = Math.max(1, Number(votesInput.value || 1) - 1); paintVote(); });
+    el.querySelector('[data-plus]').addEventListener('click', () => {
+      votesInput.value = Math.max(1, Number(votesInput.value || 1) + 1); paintVote(); });
+    votesInput.addEventListener('input', paintVote);
+    el.querySelector('[data-cast]').addEventListener('click', cast);
+    el.querySelector('[data-buy-more]').addEventListener('click', () => toBuy(1000));
+    el.querySelector('[data-country-save]').addEventListener('click', saveCountry);
     return el;
+  }
+
+  async function saveCountry(){
+    const sel = el.querySelector('[data-country-sel]');
+    const code = String(sel.value || '').toUpperCase();
+    if(!/^[A-Z]{2}$/.test(code)) return msg('Pick your country to continue.', 'err');
+    try { localStorage.setItem('goat_country', code); } catch(e){}
+    try {
+      const { data:{ user } } = await window.supabaseClient.auth.getUser();
+      if(user) await window.supabaseClient.from('users').update({ country: code }).eq('id', user.id);
+    } catch(e){ /* stored locally either way; the next load retries the write */ }
+    me = await loadMe(true);
+    if(me) me.country = code;
+    msg('');
+    showPanel(state.mode === 'vote' ? 'vote' : 'buy');
+    if(state.mode === 'vote') paintVote(); else paint();
   }
 
   async function copy(btn, key){
@@ -215,9 +322,9 @@
 
   function paint(){
     const t = health?.tiers || [];
-    const rails = health?.rails || { offer: [], preferred: null };
+    const rails = railsForMe();
     const perVote = health?.upi?.inrPerVote || health?.uropay?.inrPerVote || null;
-    const currency = state.method === 'upi' ? 'INR' : 'USD';
+    const currency = rails.currency;
     const q = s => el.querySelector(s);
 
     // Amount tiles.
@@ -251,6 +358,9 @@
     q('[data-methods]').querySelectorAll('.gco-method').forEach(b => b.addEventListener('click', () => {
       state.method = b.dataset.method; paint();
     }));
+    const ml = q('[data-methods-label]');
+    if(ml) ml.textContent = rails.offer.length > 1 ? 'Pay with' : 'Paying with';
+    if(rails.blocked) msg(rails.blocked, 'err');
 
     // Summary.
     const tier = t.find(x => x.cents === state.cents);
@@ -259,6 +369,8 @@
     q('[data-big]').textContent = money(state.cents, currency, perVote);
     q('[data-big-sub]').textContent = votes + ' vote' + (votes === 1 ? '' : 's')
       + (currency === 'INR' ? ' · charged in rupees' : '');
+    q('[data-k-votes]').textContent = 'Votes';
+    q('[data-k-total]').textContent = 'Total';
     q('[data-l-votes]').textContent = (votes - bonus) + '';
     q('[data-l-bonus-row]').hidden = bonus <= 0;
     q('[data-l-bonus]').textContent = '+' + bonus;
@@ -302,7 +414,7 @@
     btn.disabled = true; btn.textContent = 'Opening…';
     msg('');
 
-    const direct = state.method === 'upi' && health?.rails?.upiProvider === 'direct';
+    const direct = state.method === 'upi' && railsForMe().upiProvider === 'direct';
     const action = state.method === 'paypal' ? 'paypal-checkout' : direct ? 'upi-intent' : 'uropay-checkout';
 
     try {
@@ -363,6 +475,96 @@
     } catch(err){ msg('Error: ' + err.message, 'err'); }
   }
 
+  // ── Vote mode ─────────────────────────────────────────────────────────────
+  // Spending balance and buying it are the same job seen from two points, so
+  // they share this frame rather than the board getting a prompt() and the
+  // wallet getting a designed one.
+  function showPanel(name){
+    const p = { buy:'[data-buy]', vote:'[data-vote]', country:'[data-country-ask]', upi:'[data-upi]' };
+    for (const [k, sel] of Object.entries(p)) {
+      const node = el.querySelector(sel);
+      if(k === 'buy') node.style.display = (name === 'buy') ? '' : 'none';
+      else node.classList.toggle('show', name === k);
+    }
+  }
+
+  function paintVote(){
+    const q = s => el.querySelector(s);
+    const votes = Math.max(1, Math.floor(Number(q('[data-votes]').value) || 1));
+    const have = Math.floor((me?.balance_cents || 0) / 100);
+
+    // Jump straight to a round number, and to the whole balance — "all in" is
+    // the move people actually want on a leaderboard.
+    const quick = [1, 5, 10, 25].filter(n => n <= Math.max(have, 25));
+    if(have > 0 && !quick.includes(have)) quick.push(have);
+    const holder = q('[data-quick]');
+    const wanted = quick.join(',');
+    if(holder.dataset.for !== wanted){
+      holder.dataset.for = wanted;
+      holder.innerHTML = quick.map(n =>
+        `<button type="button" data-q="${n}">${n === have ? 'All ' + n : n}</button>`).join('');
+      holder.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+        q('[data-votes]').value = b.dataset.q; paintVote();
+      }));
+    }
+    q('[data-big]').textContent = votes.toLocaleString();
+    q('[data-big-sub]').textContent = 'vote' + (votes === 1 ? '' : 's') + ' for ' + (state.personName || 'them');
+    q('[data-k-votes]').textContent = 'Your balance';
+    q('[data-l-votes]').textContent = have.toLocaleString();
+    q('[data-l-bonus-row]').hidden = true;
+    q('[data-k-total]').textContent = 'Left after this';
+    q('[data-l-total]').textContent = Math.max(0, have - votes).toLocaleString();
+    q('[data-note]').textContent = votes > have
+      ? 'You have ' + have + '. Buy ' + (votes - have) + ' more to cast this.'
+      : 'Added to their total the moment you confirm.';
+    const cast = q('[data-cast]');
+    cast.textContent = votes > have ? 'Buy ' + (votes - have) + ' more votes' : 'Cast ' + votes + ' vote' + (votes === 1 ? '' : 's');
+    cast.dataset.short = votes > have ? String(votes - have) : '';
+  }
+
+  async function cast(){
+    const q = s => el.querySelector(s);
+    const votes = Math.max(1, Math.floor(Number(q('[data-votes]').value) || 1));
+    const short = Number(q('[data-cast]').dataset.short || 0);
+    if(short > 0){ toBuy(Math.max(100, short * 100)); return; }
+
+    const btn = q('[data-cast]');
+    btn.disabled = true; btn.textContent = 'Casting…';
+    try {
+      const { data, error } = await window.supabaseClient.rpc('place_vote',
+        { p_person_id: state.personId, p_votes: votes });
+      if(error) throw error;
+      me = await loadMe(true);
+      q('[data-title]').textContent = votes + ' vote' + (votes === 1 ? '' : 's') + ' cast';
+      q('[data-subtitle]').textContent = (state.personName || 'They') + ' now has ' +
+        Math.floor((data?.new_total ?? 0) / 100).toLocaleString() + ' votes.';
+      showPanel(null);
+      if(typeof state.onVoted === 'function') state.onVoted(data);
+      if(window.refreshBalance) window.refreshBalance();
+      setTimeout(close, 1400);
+    } catch(err){
+      const m = String(err?.message || err);
+      btn.disabled = false;
+      if(/not enough|insufficient|balance/i.test(m)){ toBuy(votes * 100); return; }
+      msg(m, 'err'); paintVote();
+    }
+  }
+
+  function toBuy(cents){
+    state.cents = Math.min(Math.max(cents || 1000, 100), 500000);
+    el.querySelector('[data-title]').textContent = state.personName ? 'Back ' + state.personName : 'Add votes';
+    el.querySelector('[data-subtitle]').textContent = state.personName
+      ? 'Your votes go straight onto their total — no wallet needed.'
+      : 'Top up once, then back anyone with one tap.';
+    // Snap up to the tier at or above what is needed, so the bonus is not missed
+    // by a dollar.
+    const t = (health?.tiers || []).map(x => x.cents).sort((a,b) => a-b);
+    const fit = t.find(c => c >= state.cents);
+    if(fit) state.cents = fit;
+    showPanel('buy');
+    paint();
+  }
+
   function close(){
     if(!el) return;
     el.classList.remove('open');
@@ -373,18 +575,19 @@
     opts = opts || {};
     if(!el) build();
     state = {
+      mode: opts.mode === 'vote' ? 'vote' : 'buy',
       cents: 1000,
       method: null,
       personId: opts.personId || null,
       personName: opts.personName || null,
+      onVoted: opts.onVoted || null,
       topupId: null
     };
 
     const q = s => el.querySelector(s);
-    q('[data-buy]').style.display = '';
-    q('[data-upi]').classList.remove('show');
     q('[data-utr]').value = '';
     q('[data-custom]').value = '';
+    q('[data-votes]').value = String(Math.max(1, Number(opts.votes) || 1));
     msg('');
 
     q('[data-for]').hidden = !state.personName;
@@ -392,12 +595,14 @@
       q('[data-for-name]').textContent = state.personName;
       const img = q('[data-for-img]');
       if(opts.personPhoto){ img.src = opts.personPhoto; img.hidden = false; } else { img.hidden = true; }
-      q('[data-title]').textContent = 'Back ' + state.personName;
-      q('[data-subtitle]').textContent = 'Your votes go straight onto their total — no wallet needed.';
-    } else {
-      q('[data-title]').textContent = 'Add votes';
-      q('[data-subtitle]').textContent = 'Top up once, then back anyone with one tap.';
     }
+    q('[data-title]').textContent = state.mode === 'vote'
+      ? 'Back ' + (state.personName || 'them')
+      : (state.personName ? 'Back ' + state.personName : 'Add votes');
+    q('[data-subtitle]').textContent = state.mode === 'vote'
+      ? 'Spend votes from your balance. They land on their total straight away.'
+      : (state.personName ? 'Your votes go straight onto their total — no wallet needed.'
+                          : 'Top up once, then back anyone with one tap.');
 
     el.classList.add('open');
     document.documentElement.style.overflow = 'hidden';
@@ -406,12 +611,34 @@
       try { health = await fetch('/api/health').then(r => r.json()); }
       catch(e){ health = null; }
     }
-    if(!health?.rails?.offer?.length){
-      msg('Payments are not available right now. Nothing has been charged.', 'err');
+    await loadMe(true);
+
+    // Paying needs a country; spending balance does not. So only the buy side
+    // stops to ask, and only for an account that predates the question.
+    if(state.mode !== 'vote' && me && !me.country){
+      const sel = q('[data-country-sel]');
+      sel.innerHTML = (window.countryOptions ? window.countryOptions(null)
+        : '<option value="">Select…</option><option value="IN">India</option>');
+      if(health?.country) sel.value = health.country;
+      q('[data-title]').textContent = 'One thing first';
+      q('[data-subtitle]').textContent = 'We ask once, and it decides how you pay.';
+      showPanel('country');
+      return;
     }
-    state.method = health?.rails?.preferred || health?.rails?.offer?.[0] || null;
+
+    if(state.mode === 'vote'){ showPanel('vote'); paintVote(); return; }
+
+    showPanel('buy');
+    const rails = railsForMe();
+    state.method = rails.preferred;
     paint();
   }
 
-  window.GoatCheckout = { open, close, reload(){ health = null; } };
+  window.GoatCheckout = {
+    open,
+    // Spend balance on a contender, in the same frame as buying more.
+    vote(opts){ return open(Object.assign({}, opts, { mode: 'vote' })); },
+    close,
+    reload(){ health = null; me = null; }
+  };
 })();

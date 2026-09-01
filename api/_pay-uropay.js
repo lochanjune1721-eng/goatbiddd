@@ -7,6 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { HttpError, requireEnv, supabaseUrl } from './_lib.js';
 import { createOrder, isConfigured } from './_uropay.js';
 import { creditCentsForCents, votesForCents, rupeesForCents } from './_pricing.js';
+import { userCountry, assertRail } from './_country.js';
 import { settleUroPayOrder } from './_uropay-settle.js';
 export async function uroPayCheckout(req, res, body){
 
@@ -28,6 +29,11 @@ export async function uroPayCheckout(req, res, body){
     if (data?.user) uid = data.user.id;
   }
   if (!uid) throw new HttpError(401, 'Sign in before topping up');
+
+  // The rail follows the country on the account, not the network the request
+  // arrived on. Enforced here as well as hidden in the UI, so a hand-made POST
+  // cannot open an order on a rail this fan was never offered.
+  assertRail(await userCountry(supa, uid), 'upi');
 
   const votes = votesBought;
   // Charged on the dollars, not on the bonused votes — the bonus is a discount,

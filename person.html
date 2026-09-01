@@ -223,6 +223,21 @@
       window.Auth.openAuthModal();
       return; 
     }
+    // Voting and paying happen in the same frame, so running short mid-vote
+    // turns into buying rather than an alert() and a trip to the wallet.
+    if(window.GoatCheckout){
+      return window.GoatCheckout.vote({
+        personId: person.id, personName: person.name, votes: v,
+        personPhoto: window.GOAT?.getPhotoUrl?.(person.photo_path),
+        onVoted(r){
+          if(r && typeof r.new_total === 'number'){
+            person.total_cents = r.new_total;
+            document.getElementById('total').textContent = window.GOAT.votes(person.total_cents);
+          }
+          if(typeof loadFansData === 'function') loadFansData();
+        }
+      });
+    }
     const prev=person.total_cents;
     person.total_cents += v*100;
     document.getElementById('total').textContent=window.GOAT.votes(person.total_cents);

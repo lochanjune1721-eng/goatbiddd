@@ -252,6 +252,22 @@
         row.style.outline='2px solid var(--gold)';
         setTimeout(()=> row.style.outline='', 600);
         btn.disabled=true; btn.textContent='…';
+        // Same frame as the person page and the wallet: one place where votes
+        // are cast and votes are bought.
+        if(window.GoatCheckout){
+          p.total_cents = prevTotal;
+          await render();
+          btn.disabled=false; btn.textContent='Vote';
+          return window.GoatCheckout.vote({
+            personId: p.id, personName: p.name, votes: v,
+            personPhoto: window.GOAT?.getPhotoUrl?.(p.photo_path),
+            onVoted(r){
+              if(r && typeof r.new_total === 'number') p.total_cents = r.new_total;
+              people.sort((a,b)=> (b.total_cents - a.total_cents) || (new Date(a.first_backed_at||0) - new Date(b.first_backed_at||0)));
+              render();
+            }
+          });
+        }
         try{
           let data, error;
           try{

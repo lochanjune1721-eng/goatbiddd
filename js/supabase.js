@@ -82,11 +82,68 @@ async function ensureUserRow(){
   if(!data){
     const display = user.user_metadata?.display_name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'Fan');
     const anon = !!user.user_metadata?.is_anonymous;
-    const {data: ins}=await window.supabaseClient.from('users').insert({id:user.id, email:user.email, display_name: display, is_anonymous: anon}).select('*').maybeSingle();
+    // The country was chosen before the magic link was sent, so it arrives in
+    // the auth metadata rather than in this session.
+    let country = user.user_metadata?.country || null;
+    if(!country){ try { country = localStorage.getItem('goat_country'); } catch(e){} }
+    if(!/^[A-Z]{2}$/.test(String(country||''))) country = null;
+    const {data: ins}=await window.supabaseClient.from('users')
+      .insert({id:user.id, email:user.email, display_name: display, is_anonymous: anon, country})
+      .select('*').maybeSingle();
     data=ins;
+  }
+  // Signed up before we asked, or signed in with Google, which carries no
+  // country: fill it from the choice made on this device rather than leaving
+  // the account unable to pay.
+  if(data && !data.country){
+    let pending = null;
+    try { pending = localStorage.getItem('goat_country'); } catch(e){}
+    if(/^[A-Z]{2}$/.test(String(pending||''))){
+      await window.supabaseClient.from('users').update({ country: pending }).eq('id', data.id);
+      data.country = pending;
+    }
   }
   return data;
 }
+
+// ── Country ──────────────────────────────────────────────────────────────────
+// Asked at sign-in because it decides which payment rail a fan is offered, and
+// a guess from their IP is wrong for anyone travelling or on a VPN — and can
+// differ between two clicks of the same checkout.
+window.GOAT_COUNTRIES = [
+  ['IN','India'],['US','United States'],['GB','United Kingdom'],['CA','Canada'],
+  ['AU','Australia'],['AE','United Arab Emirates'],['SG','Singapore'],['DE','Germany'],
+  ['FR','France'],['ES','Spain'],['IT','Italy'],['NL','Netherlands'],['IE','Ireland'],
+  ['PT','Portugal'],['BR','Brazil'],['MX','Mexico'],['AR','Argentina'],['ZA','South Africa'],
+  ['NG','Nigeria'],['KE','Kenya'],['EG','Egypt'],['SA','Saudi Arabia'],['QA','Qatar'],
+  ['PK','Pakistan'],['BD','Bangladesh'],['LK','Sri Lanka'],['NP','Nepal'],['ID','Indonesia'],
+  ['MY','Malaysia'],['PH','Philippines'],['TH','Thailand'],['VN','Vietnam'],['JP','Japan'],
+  ['KR','South Korea'],['CN','China'],['NZ','New Zealand'],['SE','Sweden'],['NO','Norway'],
+  ['DK','Denmark'],['FI','Finland'],['PL','Poland'],['CH','Switzerland'],['AT','Austria'],
+  ['BE','Belgium'],['TR','Turkey'],['IL','Israel'],['RU','Russia'],['UA','Ukraine']
+];
+window.countryOptions = function(selected){
+  return '<option value="">Select your country…</option>' + window.GOAT_COUNTRIES
+    .map(([code,name]) => '<option value="'+code+'"'+(code===selected?' selected':'')+'>'+name+'</option>')
+    .join('');
+};
+// Only ever a hint for the dropdown's initial value — never what we store.
+window.guessCountry = async function(){
+  try {
+    const h = await fetch('/api/health').then(r=>r.json());
+    return h?.country || null;
+  } catch(e){ return null; }
+};
+window.saveCountry = async function(code){
+  const c = String(code||'').trim().toUpperCase();
+  if(!/^[A-Z]{2}$/.test(c)) return null;
+  const {data:{user}} = await window.supabaseClient.auth.getUser();
+  if(!user) return null;
+  await window.supabaseClient.from('users').update({ country: c }).eq('id', user.id);
+  try { localStorage.setItem('goat_country', c); } catch(e){}
+  return c;
+};
+
 window.ensureUserRow=ensureUserRow;
 
 // Auth helpers — real sign-in (email magic link + Google OAuth), return-to-where-you-were
@@ -104,13 +161,15 @@ window.Auth = {
       if(cur !== '/wallet' && !cur.includes('/wallet')) sessionStorage.setItem('goat_returnTo', cur);
     } catch(e){}
   },
-  async signInWithEmail(email, displayName, isAnon){
+  async signInWithEmail(email, displayName, isAnon, country){
     window.Auth.rememberReturnTo();
     const returnTo = window.Auth.getReturnTo();
     const redirect = getSiteUrl() + '/wallet' + (returnTo ? '?returnTo='+encodeURIComponent(returnTo) : '');
     return window.supabaseClient.auth.signInWithOtp({
       email,
-      options:{ data:{ display_name: displayName||email.split('@')[0], is_anonymous: !!isAnon }, emailRedirectTo: redirect }
+      options:{ data:{ display_name: displayName||email.split('@')[0], is_anonymous: !!isAnon,
+                       country: /^[A-Z]{2}$/.test(String(country||'')) ? country : null },
+                emailRedirectTo: redirect }
     });
   },
   async signInWithGoogle(){
@@ -137,6 +196,10 @@ window.Auth = {
         </button>
         <div class="mono" style="text-align:center;color:var(--muted);font-size:11px;margin:12px 0">— or email magic link —</div>
         <div class="field" style="margin-bottom:8px">
+          <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Country</label>
+          <select id="modal-country"></select>
+        </div>
+        <div class="field" style="margin-bottom:8px">
           <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Email</label>
           <input id="modal-email" type="email" placeholder="you@example.com" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px">
         </div>
@@ -153,7 +216,31 @@ window.Auth = {
     modal.addEventListener('click', (e)=> { if(e.target===modal) modal.style.display='none'; });
     document.getElementById('modal-close-btn').addEventListener('click', ()=> modal.style.display='none');
 
+    // Populate the country list, pre-selecting the network's guess only as a
+    // starting point.
+    (async function(){
+      const sel=document.getElementById('modal-country');
+      if(!sel) return;
+      let pre=null; try{ pre=localStorage.getItem('goat_country'); }catch(e){}
+      sel.innerHTML=window.countryOptions(pre);
+      if(!pre){ const g=await window.guessCountry(); if(g) sel.value=g; }
+      sel.addEventListener('change',()=>{ try{ localStorage.setItem('goat_country', sel.value); }catch(e){} });
+    })();
+
+    function modalCountry(){
+      const c=document.getElementById('modal-country')?.value||'';
+      if(!c){
+        const m=document.getElementById('modal-msg');
+        m.style.display='block'; m.style.color='#e55';
+        m.textContent='Pick your country — it decides how you pay.';
+        return null;
+      }
+      try{ localStorage.setItem('goat_country', c); }catch(e){}
+      return c;
+    }
+
     document.getElementById('modal-google-btn').addEventListener('click', async()=>{
+      if(!modalCountry()) return;
       const {error} = await window.Auth.signInWithGoogle();
       if(error) {
         const m = document.getElementById('modal-msg');
@@ -165,12 +252,14 @@ window.Auth = {
       const email = document.getElementById('modal-email').value.trim();
       const name = document.getElementById('modal-name').value.trim();
       const m = document.getElementById('modal-msg');
+      const country = modalCountry();
+      if(!country) return;
       if(!email) {
         m.style.display='block'; m.style.color='#e55'; m.textContent='Please enter your email';
         return;
       }
       m.style.display='block'; m.style.color='var(--gold)'; m.textContent='Sending magic link…';
-      const {error} = await window.Auth.signInWithEmail(email, name, false);
+      const {error} = await window.Auth.signInWithEmail(email, name, false, country);
       if(error) {
         m.style.color='#e55'; m.textContent=error.message;
       } else {

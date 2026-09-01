@@ -47,6 +47,9 @@
       <span style="font-size:16px">G</span> Continue with Google
     </button>
     <div class="mono" style="text-align:center;color:var(--muted);font-size:11px;margin:12px 0">— or —</div>
+    <div class="field"><label>Country</label><select id="country"></select>
+      <div class="mono" style="font-size:11px;color:var(--muted);margin-top:5px">Sets how you pay — UPI in India, card everywhere else.</div>
+    </div>
     <div class="field"><label>Email</label><input id="email" type="email" placeholder="you@example.com"></div>
     <div class="field"><label>Display name</label><input id="display-name" placeholder="e.g. Alex"></div>
     <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:10px 0"><input type="checkbox" id="anon"> Stay anonymous (hide name on leaderboards)</label>
@@ -139,13 +142,32 @@
   sb.auth.onAuthStateChange(check);
 
   document.getElementById('google-btn').addEventListener('click', async()=>{
+    // Google gives us no country, so remember the choice here and
+    // ensureUserRow() writes it when they come back.
+    const c=document.getElementById('country')?.value||'';
+    if(!c) return show(msg,'Pick your country first — it decides how you pay.','error');
+    try { localStorage.setItem('goat_country', c); } catch(e){}
     const {error}=await window.Auth.signInWithGoogle();
     if(error) show(msg, error.message,'error');
   });
+  // Fill the country list, pre-selecting the network's guess purely as a
+  // starting point — what the fan picks is what gets stored.
+  (async function initCountry(){
+    const sel=document.getElementById('country');
+    if(!sel) return;
+    let pre=null; try { pre=localStorage.getItem('goat_country'); } catch(e){}
+    sel.innerHTML=window.countryOptions(pre);
+    if(!pre){ const g=await window.guessCountry(); if(g) sel.value=g; }
+    sel.addEventListener('change',()=>{ try{ localStorage.setItem('goat_country', sel.value); }catch(e){} });
+  })();
+
   document.getElementById('send-link').addEventListener('click', async()=>{
     const email=emailInput.value.trim(), name=nameInput.value.trim();
+    const country=document.getElementById('country')?.value||'';
     if(!email) return show(msg,'Enter email','error');
-    const {error}=await window.Auth.signInWithEmail(email, name, anonInput.checked);
+    if(!country) return show(msg,'Pick your country — it decides how you pay.','error');
+    try { localStorage.setItem('goat_country', country); } catch(e){}
+    const {error}=await window.Auth.signInWithEmail(email, name, anonInput.checked, country);
     if(error) show(msg, error.message,'error'); else show(msg,'Magic link sent — check your email.','ok');
   });
 
