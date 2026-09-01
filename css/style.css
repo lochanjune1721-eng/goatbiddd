@@ -758,3 +758,54 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 .goat-toast.in{opacity:1;transform:translate(-50%,0)}
 .goat-toast b{color:var(--gold);font-variant-numeric:tabular-nums}
 @media(max-width:640px){.goat-toast{bottom:78px;font-size:13px;padding:11px 15px}}
+
+
+/* ── Both sides share the same rows ──────────────────────────────────────────
+   Each side used to be its own flex column, so the moment the two portraits
+   differed in height — a 16:9 video playing on one side against a square
+   portrait on the other — every row below drifted out of line: one $4 sitting
+   an inch above the other $1, and the two Back buttons at different heights.
+
+   The sides now sit on the SAME grid rows via subgrid, so the count, the share
+   line and the button are level by construction, whatever the photos do. The
+   photo row takes the height of the taller one and both photos sit on its
+   bottom edge, which reads as deliberate rather than as a gap. */
+.duel-body{grid-template-rows:auto auto auto auto auto}
+.duel-side{grid-row:1 / 5;display:grid;grid-template-rows:subgrid;justify-items:center;gap:0}
+.duel-side.a{grid-column:1}
+.duel-side.b{grid-column:3}
+.duel-side .photo{align-self:end}
+.duel-side .duel-count{align-self:start}
+.duel-side .btn-vote{align-self:start}
+.duel-vs{grid-column:2;grid-row:1;align-self:center}
+.vs-bar-wrap{grid-column:1 / -1;grid-row:5}
+
+/* Safari before 16 and any browser without subgrid: hold the photo row to a
+   fixed height instead, so the rows below still start at the same place. The
+   16:9 state is letterboxed inside it rather than shortening the column. */
+@supports not (grid-template-rows: subgrid){
+  /* Safari before 16, Chrome before 117.
+     Rather than trying to out-specify every rule that sizes a portrait — and
+     index.html's inline <style> wins every tie against this file, so that is a
+     fight worth avoiding — the photo ROW is given a fixed height on the SIDE.
+     Whatever the photo's own height turns out to be, the rows beneath it start
+     at the same place on both sides, which is the only thing that has to hold.
+     max-height keeps a tall portrait from spilling into the count below it. */
+  .duel-body .duel-side{display:grid;grid-template-rows:240px auto auto auto;
+    justify-items:center;align-content:start}
+  .duel-body .duel-side > .photo{align-self:end;max-height:240px}
+  .duel-body.crazy .duel-side{grid-template-rows:260px auto auto auto}
+  .duel-body.crazy .duel-side > .photo{max-height:260px}
+  @media(max-width:768px){
+    .duel-body .duel-side{grid-template-rows:160px auto auto auto}
+    .duel-body .duel-side > .photo{max-height:160px}
+    .duel-body.crazy .duel-side{grid-template-rows:170px auto auto auto}
+    .duel-body.crazy .duel-side > .photo{max-height:170px}
+  }
+  @media(max-width:480px){
+    .duel-body .duel-side,
+    .duel-body.crazy .duel-side{grid-template-rows:calc(43vw - 8px) auto auto auto}
+    .duel-body .duel-side > .photo,
+    .duel-body.crazy .duel-side > .photo{max-height:calc(43vw - 8px)}
+  }
+}
