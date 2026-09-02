@@ -20,6 +20,7 @@ import pay from './api/pay.js';
 import paymentDone from './api/payment-done.js';
 import resolveImage from './api/resolve_image.js';
 import uropayWebhook from './api/uropay-webhook.js';
+import dodoWebhook from './api/dodo-webhook.js';
 
 const ROUTES = {
   'admin': admin,
@@ -30,7 +31,8 @@ const ROUTES = {
   'pay': pay,
   'payment-done': paymentDone,
   'resolve_image': resolveImage,
-  'uropay-webhook': uropayWebhook
+  'uropay-webhook': uropayWebhook,
+  'dodo-webhook': dodoWebhook,
 };
 
 function makeReq(request, url, rawBody){

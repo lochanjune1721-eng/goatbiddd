@@ -276,6 +276,74 @@
     }
   })();
 
+  // Dodo sends the payer back to /wallet?dodo=return&topup_id=<uuid>. Its webhook
+  // settles the same payment independently, so a closed tab still credits and a
+  // double settle is a no-op — settlement is keyed on the payment id.
+  (async function dodoReturn(){
+    if(params.get('dodo') !== 'return') return;
+    const topupId = params.get('topup_id');
+    const clean = () => history.replaceState({}, '', '/wallet');
+
+    if(!topupId){
+      paymentStatus.textContent = 'The checkout did not send a payment back. If you were charged, contact support.';
+      paymentStatus.style.color = '#e55';
+      return;
+    }
+
+    paymentStatus.textContent = 'Confirming your payment…';
+    paymentStatus.style.color = 'var(--muted)';
+
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session){
+      paymentStatus.textContent = 'Sign in again to finish adding your credit — your payment is safe.';
+      paymentStatus.style.color = '#e55';
+      return;
+    }
+
+    try {
+      const r = await fetch('/api/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ action: 'dodo-confirm', topupId })
+      });
+      const j = await r.json().catch(()=>({}));
+
+      if(!r.ok){
+        paymentStatus.textContent = j.error || 'We could not confirm that payment.';
+        paymentStatus.style.color = '#e55';
+        return;
+      }
+
+      // Not settled is not the same as failed: the card may still be clearing,
+      // and the webhook credits it when it does. Say that rather than "error".
+      if(!j.settled && !j.alreadyCredited){
+        paymentStatus.textContent = 'Payment received — your credit lands as soon as it clears.';
+        paymentStatus.style.color = 'var(--muted)';
+        clean();
+        return;
+      }
+
+      const credited = Math.floor((j.credited || 0) / 100);
+      paymentAlert.textContent = credited
+        ? `Payment confirmed — $${credited.toLocaleString('en-US')} added to your wallet.`
+        : 'Payment confirmed.';
+      paymentAlert.style.display = 'block';
+      paymentStatus.textContent = '';
+
+      if(typeof j.newBalance === 'number') balanceBig.textContent = window.GOAT.moneyAndVotes(j.newBalance);
+      if(window.refreshBalance) await window.refreshBalance();
+      const {data:{user}} = await sb.auth.getUser();
+      if(user){ loadTopups(user.id); loadHistory(user.id); }
+
+      const back = params.get('returnTo');
+      if(back && back.startsWith('/') && !back.includes('localhost')) setTimeout(()=> location.href = back, 1200);
+      else clean();
+    } catch(err) {
+      paymentStatus.textContent = 'Error confirming payment: ' + err.message;
+      paymentStatus.style.color = '#e55';
+    }
+  })();
+
   (async function paypalReturn(){
     const mode = params.get('paypal');
     if(!mode) return;

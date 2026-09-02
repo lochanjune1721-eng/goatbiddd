@@ -12,6 +12,7 @@ import { HttpError, readJsonBody, requireMethod, withHandler } from './_lib.js';
 import { payPalCheckout, payPalCapture } from './_pay-paypal.js';
 import { uroPayCheckout, uroPayConfirm } from './_pay-uropay.js';
 import { upiIntent, upiClaim } from './_pay-upi.js';
+import { dodoCheckout, dodoConfirm } from './_pay-dodo.js';
 
 const ACTIONS = {
   'paypal-checkout': payPalCheckout,   // open a PayPal order
@@ -19,7 +20,9 @@ const ACTIONS = {
   'uropay-checkout': uroPayCheckout,   // open a UroPay (UPI gateway) order
   'uropay-confirm':  uroPayConfirm,    // confirm it when the payer returns
   'upi-intent':      upiIntent,        // direct UPI: QR + deep link to our VPA
-  'upi-claim':       upiClaim          // direct UPI: payer submits their UTR
+  'upi-claim':       upiClaim,         // direct UPI: payer submits their UTR
+  'dodo-checkout':   dodoCheckout,     // open a Dodo Payments checkout
+  'dodo-confirm':    dodoConfirm       // confirm it when the payer returns
 };
 
 export default withHandler(async function handler(req, res){

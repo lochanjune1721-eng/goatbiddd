@@ -78,6 +78,7 @@
 .gco-method-mark{width:34px;height:24px;border-radius:6px;flex:0 0 auto;display:grid;place-items:center;
   font-size:10px;font-weight:800;letter-spacing:-.02em;color:#fff}
 .gco-method-mark.paypal{background:#003087}
+.gco-method-mark.card{background:linear-gradient(135deg,#3a3f52,#20232e)}
 .gco-method-mark.upi{background:linear-gradient(135deg,#0d7a3f,#f26522)}
 .gco-method-t{display:block;font-size:13.5px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
 .gco-method-s{display:block;font-size:11.5px;color:#7a7a86;line-height:1.35;margin-top:2px}
@@ -170,11 +171,16 @@
   function railsForMe(){
     const inIndia = String(me?.country || '').toUpperCase() === 'IN';
     const canUpi = !!health?.rails?.upiProvider;
-    const canCard = !!health?.paypal?.credentialsConfigured;
-    const offer = inIndia ? (canUpi ? ['upi'] : []) : (canCard ? ['paypal'] : []);
+    // "card" is the rail; which company processes it is not the payer's
+    // problem, the same way it already is not for UPI. Dodo takes it when
+    // configured, PayPal is what it falls back to.
+    const cardProvider = health?.rails?.cardProvider
+      || (health?.dodo?.configured ? 'dodo' : (health?.paypal?.credentialsConfigured ? 'paypal' : null));
+    const offer = inIndia ? (canUpi ? ['upi'] : []) : (cardProvider ? ['card'] : []);
     return {
       inIndia, offer,
       preferred: offer[0] || null,
+      cardProvider,
       upiProvider: health?.rails?.upiProvider || null,
       upiAutoConfirms: health?.rails?.upiProvider === 'uropay',
       currency: inIndia ? 'INR' : 'USD',
@@ -342,7 +348,9 @@
 
     // Methods.
     const LABEL = {
-      paypal: ['PayPal', 'paypal', 'Card, or your PayPal balance'],
+      card: rails.cardProvider === 'dodo'
+        ? ['Card', 'card', 'Visa, Mastercard, Amex and more']
+        : ['PayPal', 'paypal', 'Card, or your PayPal balance'],
       upi:    ['UPI', 'upi', rails.upiAutoConfirms
         ? 'Any UPI app. Votes land the moment it clears.'
         : 'Any UPI app. We add the credit after matching your reference.']
@@ -350,7 +358,7 @@
     q('[data-methods]').innerHTML = rails.offer.map(m => {
       const [name, cls, sub] = LABEL[m] || [m, '', ''];
       return `<button class="gco-method${m === state.method ? ' on' : ''}" data-method="${m}">
-          <span class="gco-method-mark ${cls}">${name === 'PayPal' ? 'PP' : 'UPI'}</span>
+          <span class="gco-method-mark ${cls}">${name === 'PayPal' ? 'PP' : name === 'Card' ? '\u{1F4B3}' : 'UPI'}</span>
           <span style="min-width:0"><span class="gco-method-t">${esc(name)}</span><span class="gco-method-s">${esc(sub)}</span></span>
           <span class="gco-method-tick"></span>
         </button>`;
@@ -383,8 +391,10 @@
       ? 'Pay ' + money(state.cents, currency, perVote)
       : 'Payments unavailable';
     q('[data-pay]').disabled = !rails.offer.length || !state.method;
-    q('[data-fine]').textContent = state.method === 'paypal'
-      ? 'You will finish on PayPal, then come straight back.'
+    q('[data-fine]').textContent = state.method === 'card'
+      ? (rails.cardProvider === 'dodo'
+          ? 'You will finish on our secure checkout, then come straight back.'
+          : 'You will finish on PayPal, then come straight back.')
       : rails.upiAutoConfirms ? 'You will finish in your UPI app, then come straight back.' : '';
   }
 
@@ -414,8 +424,11 @@
     btn.disabled = true; btn.textContent = 'Opening…';
     msg('');
 
-    const direct = state.method === 'upi' && railsForMe().upiProvider === 'direct';
-    const action = state.method === 'paypal' ? 'paypal-checkout' : direct ? 'upi-intent' : 'uropay-checkout';
+    const r8 = railsForMe();
+    const direct = state.method === 'upi' && r8.upiProvider === 'direct';
+    const action = state.method === 'card'
+      ? (r8.cardProvider === 'dodo' ? 'dodo-checkout' : 'paypal-checkout')
+      : direct ? 'upi-intent' : 'uropay-checkout';
 
     try {
       const r = await fetch('/api/pay', {

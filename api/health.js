@@ -2,6 +2,7 @@
 // Reports only whether each secret is PRESENT, never its value.
 import { withHandler, nearMiss, demoMode } from './_lib.js';
 import { payPalBase } from './_paypal.js';
+import { isConfigured as dodoConfigured, mode as dodoMode } from './_dodo.js';
 import { upiVpa, upiPayeeName } from './_pay-upi.js';
 import { publicTiers } from './_pricing.js';
 
@@ -32,20 +33,26 @@ export function railsFor(country, ready){
   const inIndia = country === 'IN';
   const upiProvider = ready.uropayReady ? 'uropay' : (ready.upiReady ? 'direct' : null);
 
+  // "card" is the rail; which company processes it is our problem, the same way
+  // it already is for UPI. Dodo takes it when configured, PayPal is the
+  // fallback — so switching processors changes nothing the payer sees.
+  const cardProvider = ready.dodoReady ? 'dodo' : (ready.paypalReady ? 'paypal' : null);
+
   const offer = [];
   if (upiProvider) offer.push('upi');
-  if (ready.paypalReady) offer.push('paypal');
+  if (cardProvider) offer.push('card');
 
   // Preselect what this visitor most likely wants, without hiding the other.
   const preferred = inIndia
     ? (offer.includes('upi') ? 'upi' : offer[0] || null)
-    : (offer.includes('paypal') ? 'paypal' : offer[0] || null);
+    : (offer.includes('card') ? 'card' : offer[0] || null);
 
   return {
     country: country || null,
     inIndia,
     offer,
     preferred,
+    cardProvider,
     upiProvider,
     // Direct UPI cannot confirm itself; UroPay can. The page says so rather
     // than promising votes that need a human first.
@@ -70,6 +77,19 @@ export default withHandler(async function handler(req, res){
     api: payPalBase(),
     credentialsConfigured: present('PAYPAL_CLIENT_ID') && present('PAYPAL_CLIENT_SECRET'),
     webhookConfigured: present('PAYPAL_WEBHOOK_ID')
+  };
+
+  // Dodo is the card rail when it is configured, and PayPal is what card falls
+  // back to. Both are reported whatever is set, so "which one is actually
+  // taking the money" is answerable from one page.
+  const dodo = {
+    configured: dodoConfigured(),
+    mode: dodoMode(),
+    webhookConfigured: present('DODO_WEBHOOK_SECRET'),
+    // Dodo bills against products. Without one the amount is sent on its own,
+    // which only works on accounts that allow it — worth seeing here.
+    productConfigured: present('DODO_PRODUCT_ID'),
+    ready: dodoConfigured() && present('DODO_WEBHOOK_SECRET')
   };
 
   // UPI is an additional rail, so its absence is not "unhealthy" — but a
@@ -141,11 +161,13 @@ export default withHandler(async function handler(req, res){
       ? { country, inIndia: country === 'IN', offer: [], preferred: null, upiProvider: null,
           upiAutoConfirms: false, currency: country === 'IN' ? 'INR' : 'USD',
           blocked: 'This is a demonstration build — payments are disabled.' }
-      : railsFor(country, { upiReady: upi.ready, uropayReady: uropay.ready, paypalReady: paypal.credentialsConfigured }),
+      : railsFor(country, { upiReady: upi.ready, uropayReady: uropay.ready,
+                            paypalReady: paypal.credentialsConfigured, dodoReady: dodo.configured }),
     // The price list the checkout draws its buttons from, so the page can never
     // advertise a bonus the server will not honour.
     tiers: publicTiers(),
     paypal,
+    dodo,
     uropay,
     upi,
     env: Object.fromEntries([...REQUIRED, ...OPTIONAL].map(n => [n, present(n)])),
