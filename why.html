@@ -1,0 +1,202 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Why is the fan badge empty?</title>
+<!--
+  why.html — one page that answers "why is there a crown instead of a face?"
+
+  It asks the live database exactly what the homepage badge asks it, and prints
+  the answer in plain words. It exists because that question was guessed at from
+  screenshots for several rounds; a screenshot cannot tell an empty table from a
+  page that is not running, and this can.
+
+  Reads only. Nothing here writes, and it uses the same public anon key the
+  site ships to every browser, so it can see only what any visitor can see.
+
+  Delete this file when the badge is right.
+-->
+<style>
+  :root { color-scheme: dark }
+  body { margin:0; padding:24px; background:#0d0f13; color:#e8eaed;
+         font:15px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace }
+  h1 { font-size:19px; margin:0 0 4px; color:#f0c14b }
+  .sub { color:#8b93a1; margin:0 0 20px; font-size:13px }
+  .box { border:1px solid #262b35; border-radius:10px; padding:14px 16px; margin:0 0 14px; background:#12151b }
+  .k { color:#8b93a1 }
+  .big { font-size:17px }
+  .ok { color:#5dd39e } .bad { color:#ff7a7a } .warn { color:#f0c14b }
+  table { border-collapse:collapse; width:100%; font-size:13.5px }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid #1e232c; vertical-align:top }
+  th { color:#8b93a1; font-weight:600; white-space:nowrap }
+  td.n { text-align:right; white-space:nowrap }
+  .verdict { font-weight:700 }
+  button { font:inherit; background:#f0c14b; color:#111; border:0; border-radius:8px;
+           padding:9px 14px; cursor:pointer; font-weight:700 }
+  #out { white-space:pre-wrap }
+</style>
+
+<h1>Why is the fan badge empty?</h1>
+<p class="sub">Read-only. This asks the database the same question the badge asks, and prints the answer.</p>
+
+<div class="box big">
+  <div><span class="k">This page was built:</span> <b>__BUILD_STAMP__</b></div>
+  <div><span class="k">You are looking at:</span> <b id="host">…</b></div>
+  <div><span class="k">/api/top-fans:</span> <b id="api">checking…</b></div>
+</div>
+
+<div class="box"><div id="summary">Loading…</div></div>
+<div class="box" id="tablebox" hidden><table id="tbl"></table></div>
+<p><button id="copy">Copy all of this as text</button></p>
+<div class="box" id="outbox" hidden><div id="out"></div></div>
+
+<script>
+// The same two public values js/supabase.js ships to every visitor. Repeated
+// here on purpose: a page whose job is to explain a failure must not be able to
+// fail for a reason of its own.
+const URL_ = 'https://orzcszqpnvicreqvpncu.supabase.co';
+const KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yemNzenFwbnZpY3JlcXZwbmN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDIwNDIsImV4cCI6MjEwMzIxODA0Mn0.ayMlWauR_XCT2lWV_Pg2PZTq_CuTS-bch8KdoxslvIs';
+const H = { apikey: KEY, Authorization: 'Bearer ' + KEY };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dollars = c => '$' + Math.floor((c || 0) / 100).toLocaleString('en-US');
+
+async function rest(path){
+  const r = await fetch(URL_ + '/rest/v1/' + path, { headers: H });
+  if(!r.ok) return { error: r.status + ' ' + (await r.text()).slice(0, 200) };
+  return { rows: await r.json() };
+}
+
+$('host').textContent = location.host;
+
+(async () => {
+  const lines = [];
+  const say = t => lines.push(t);
+  say('BUILT: __BUILD_STAMP__');
+  say('HOST: ' + location.host);
+
+  // 1. Is the server endpoint there at all?
+  let apiFans = null;
+  try {
+    const r = await fetch('/api/top-fans');
+    const body = await r.text();
+    if(r.status === 404){
+      $('api').innerHTML = '<span class="bad">404 — not deployed. The site is running older code.</span>';
+      say('API: 404 not deployed');
+    } else if(!r.ok){
+      $('api').innerHTML = '<span class="bad">' + r.status + ' — ' + esc(body.slice(0, 160)) + '</span>';
+      say('API: ' + r.status + ' ' + body.slice(0, 160));
+    } else {
+      $('api').innerHTML = '<span class="ok">200 — deployed and answering</span>';
+      say('API: 200 ok');
+      try { apiFans = JSON.parse(body); } catch {}
+    }
+  } catch(e){
+    $('api').innerHTML = '<span class="bad">unreachable — ' + esc(e.message) + '</span>';
+    say('API: unreachable ' + e.message);
+  }
+
+  // 2. The contenders carrying the most money — the ones on the homepage duels.
+  const people = await rest('people?select=id,name,total_cents&total_cents=gt.0&order=total_cents.desc&limit=12');
+  if(people.error){
+    $('summary').innerHTML = '<span class="bad">Cannot read people: ' + esc(people.error) + '</span>';
+    return;
+  }
+  if(!people.rows.length){
+    $('summary').innerHTML = '<span class="warn">No contender has any money on them yet. Every badge is a crown, and that is correct.</span>';
+    say('No contender has money.');
+    $('out').textContent = lines.join('\n'); $('outbox').hidden = false;
+    return;
+  }
+
+  const ids = people.rows.map(p => p.id);
+  const inList = '(' + ids.join(',') + ')';
+  const ft   = await rest('fan_totals?select=person_id,user_id,total_cents&person_id=in.' + inList);
+  const bids = await rest('bids?select=person_id,user_id,amount_cents&person_id=in.' + inList + '&limit=20000');
+
+  // Leader per contender, cache first then the record — exactly what the badge does.
+  const cache = new Map();
+  for(const r of (ft.rows || [])){
+    const cur = cache.get(r.person_id);
+    if(r.user_id && (!cur || r.total_cents > cur.total_cents)) cache.set(r.person_id, r);
+  }
+  const summed = new Map();
+  for(const b of (bids.rows || [])){
+    if(!b.user_id) continue;
+    const k = b.person_id + '|' + b.user_id;
+    summed.set(k, (summed.get(k) || 0) + (b.amount_cents || 0));
+  }
+  const fromBids = new Map(), bidCount = new Map();
+  for(const b of (bids.rows || [])) bidCount.set(b.person_id, (bidCount.get(b.person_id) || 0) + 1);
+  for(const [k, cents] of summed){
+    const cut = k.indexOf('|'), pid = k.slice(0, cut), uid = k.slice(cut + 1);
+    const cur = fromBids.get(pid);
+    if(!cur || cents > cur.total_cents) fromBids.set(pid, { user_id: uid, total_cents: cents });
+  }
+
+  // Can a visitor learn the leader's name?
+  const userIds = [...new Set([...cache.values(), ...fromBids.values()].map(r => r.user_id))];
+  let names = new Map(), namesNote = '';
+  if(userIds.length){
+    const pp = await rest('public_profiles?select=id,display_name,photo_path,social_handle&id=in.(' + userIds.join(',') + ')');
+    if(pp.error) namesNote = 'public_profiles is not readable (' + pp.error.split('\n')[0] + ')';
+    else names = new Map(pp.rows.map(u => [u.id, u]));
+  }
+
+  const rows = people.rows.map(p => {
+    const c = cache.get(p.id), b = fromBids.get(p.id);
+    const lead = c || b;
+    const apiSaid = apiFans && apiFans.fans ? apiFans.fans[p.id] : null;
+    const u = lead ? names.get(lead.user_id) : null;
+    let verdict, cls;
+    if(!lead){ verdict = 'no backer at all — the crown is correct'; cls = 'warn'; }
+    else if(apiSaid && (apiSaid.display_name || apiSaid.photo_path)){ verdict = 'server names them — face should show'; cls = 'ok'; }
+    else if(u && (u.display_name || u.photo_path)){ verdict = 'name readable — face should show'; cls = 'ok'; }
+    else { verdict = 'backer found, but no name or photo on their account'; cls = 'warn'; }
+    return { p, c, b, lead, u, apiSaid, verdict, cls };
+  });
+
+  const stuck = rows.filter(r => r.lead && r.cls !== 'ok').length;
+  const noFan = rows.filter(r => !r.lead).length;
+  const has = n => n === 1 ? ' has ' : ' have ';
+  $('summary').innerHTML =
+    '<b>' + rows.length + '</b> contenders have money on them. ' +
+    '<b class="' + (noFan ? 'warn' : 'ok') + '">' + noFan + '</b>' + has(noFan) + 'no backer at all (crown is correct). ' +
+    '<b class="' + (stuck ? 'bad' : 'ok') + '">' + stuck + '</b>' + has(stuck) + 'a backer the page cannot name.' +
+    (namesNote ? '<br><span class="warn">' + esc(namesNote) + '</span>' : '');
+  say('contenders with money: ' + rows.length + ' | no backer: ' + noFan + ' | backer but unnameable: ' + stuck);
+  if(namesNote) say('NOTE: ' + namesNote);
+
+  $('tbl').innerHTML =
+    '<tr><th>Contender</th><th class="n">On the board</th><th class="n">fan_totals</th>' +
+    '<th class="n">bids</th><th>Top backer</th><th class="n">Their $</th><th>What it means</th></tr>' +
+    rows.map(r => {
+      const who = r.apiSaid?.display_name || r.u?.display_name
+        || (r.lead ? '(no name set — ' + r.lead.user_id.slice(0, 8) + '…)' : '—');
+      return '<tr><td>' + esc(r.p.name) + '</td>' +
+        '<td class="n">' + dollars(r.p.total_cents) + '</td>' +
+        '<td class="n">' + (r.c ? 'yes' : '<span class="warn">none</span>') + '</td>' +
+        '<td class="n">' + (bidCount.get(r.p.id) || 0) + '</td>' +
+        '<td>' + esc(who) + '</td>' +
+        '<td class="n">' + (r.lead ? dollars(r.lead.total_cents) : '—') + '</td>' +
+        '<td class="verdict ' + r.cls + '">' + esc(r.verdict) + '</td></tr>';
+    }).join('');
+  $('tablebox').hidden = false;
+
+  for(const r of rows){
+    say([r.p.name, dollars(r.p.total_cents),
+         'fan_totals:' + (r.c ? 'yes' : 'none'),
+         'bids:' + (bidCount.get(r.p.id) || 0),
+         'backer:' + (r.apiSaid?.display_name || r.u?.display_name || (r.lead ? r.lead.user_id.slice(0, 8) : '-')),
+         r.verdict].join(' | '));
+  }
+  $('out').textContent = lines.join('\n');
+  $('copy').onclick = () => {
+    $('outbox').hidden = false;
+    navigator.clipboard?.writeText(lines.join('\n'))
+      .then(() => { $('copy').textContent = 'Copied — paste it to Claude'; })
+      .catch(() => { $('copy').textContent = 'Select the text below and copy it'; });
+  };
+})();
+</script>

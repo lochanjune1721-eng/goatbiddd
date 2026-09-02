@@ -77,6 +77,7 @@ for (const dir of ['css', 'js']) {
   }
 }
 
+const BUILD_STAMP = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
 let rewritten = 0;
 for (const name of fs.readdirSync(OUT)) {
   if (!name.endsWith('.html')) continue;
@@ -88,6 +89,11 @@ for (const name of fs.readdirSync(OUT)) {
   // replaces rather than fights.
   html = html.replace(/((?:href|src)=")((?:css|js)\/[A-Za-z0-9._-]+\.(?:css|js))(\?[^"]*)?"/g,
     (whole, lead, ref) => stamp.has(ref) ? `${lead}${ref}?v=${stamp.get(ref)}"` : whole);
+  // When this build ran. A page can print it, which is the only way to tell a
+  // site that is serving the newest code from one that is serving a cached copy
+  // of last week's — a distinction several rounds of "it still isn't there"
+  // turned on, with no way to check it from either end.
+  html = html.replaceAll('__BUILD_STAMP__', BUILD_STAMP);
   if (html !== before) { fs.writeFileSync(file, html); rewritten++; }
 }
 
