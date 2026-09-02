@@ -13,6 +13,8 @@
   },
   "scripts": {
     "build:assets": "node scripts/build-assets.mjs",
-    "postinstall": "node scripts/build-assets.mjs"
+    "postinstall": "node scripts/build-assets.mjs",
+    "test": "node scripts/test-top-fans.mjs",
+    "test:browser": "node server.mjs & sleep 2; node scripts/test-fan-badge.mjs"
   }
 }

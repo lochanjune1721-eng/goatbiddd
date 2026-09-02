@@ -12,6 +12,12 @@
 //
 //   node scripts/test-top-fans.mjs
 import assert from 'node:assert/strict';
+import { register } from 'node:module';
+
+// Swap the Supabase client for the in-memory stub before the handler is
+// imported. Registered here rather than installed into node_modules, so
+// `npm install` cannot restore the real client under the test.
+register('./_stub-hooks.mjs', import.meta.url);
 
 const RONALDO = '11111111-1111-4111-8111-111111111111';
 const MESSI   = '22222222-2222-4222-8222-222222222222';

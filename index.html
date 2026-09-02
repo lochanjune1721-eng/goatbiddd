@@ -1076,6 +1076,33 @@
 
       const top = new Map();
       for(const r of (totals||[])) if(!top.has(r.person_id)) top.set(r.person_id, r);
+
+      // fan_totals is a cache of bids, and the two come apart — anything that
+      // writes bids or recomputes totals outside place_bid leaves it behind, and
+      // data/demo-backing-remove.sql does exactly that. bids is the record and
+      // it is public, so ask it about whoever the cache cannot answer for. This
+      // is why a contender could show $135 and still wear an unclaimed crown.
+      const missing = ids.filter(id => !top.has(id));
+      if(missing.length){
+        const { data: raw, error: bErr } = await sb.from('bids')
+          .select('person_id,user_id,amount_cents').in('person_id', missing).limit(20000);
+        if(bErr) console.warn('[gfoat] cannot read bids:', bErr.message);
+        const sums = new Map();
+        for(const b of (raw||[])){
+          if(!b.user_id) continue;
+          const k = b.person_id + '|' + b.user_id;
+          sums.set(k, (sums.get(k)||0) + (b.amount_cents||0));
+        }
+        for(const [k, cents] of sums){
+          const cut = k.indexOf('|');
+          const pid = k.slice(0, cut), uid = k.slice(cut + 1);
+          const cur = top.get(pid);
+          if(cents > 0 && (!cur || cents > cur.total_cents)){
+            top.set(pid, { person_id: pid, user_id: uid, total_cents: cents });
+          }
+        }
+      }
+
       const who = await (window.GOAT?.profiles?.([...top.values()].map(r => r.user_id)) || new Map());
 
       rows = [...top.values()].map(r => {
