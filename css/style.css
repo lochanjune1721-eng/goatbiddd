@@ -846,8 +846,18 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
    relied on :empty { display:none } plus opacity:0 until JavaScript filled it —
    so any failure anywhere in that path showed nothing at all, which is
    indistinguishable from the feature not existing. */
-.face-fan{position:absolute;right:10px;bottom:10px;z-index:4;display:block;
-  width:84px;height:84px;border-radius:50%;text-decoration:none;
+/* ── Sized against the frame, not in fixed pixels ──────────────────────────
+   The frame is 9:16 and its height is a clamp, so its width runs from about
+   150px on a phone to about 240px on a wide card. A badge fixed at 84px was a
+   third of the frame on a big card and two thirds on a small one — too small
+   where there was room and crowding where there was not.
+
+   So it is a fraction of the frame's own height, which every one of these rules
+   then works from: one number to change, and the crown, the ring and the chip
+   all follow it. --frame-h is set on .photo, and this is inside it. */
+.face-fan{--fan: clamp(62px, calc(var(--frame-h, 300px) * .30), 135px);
+  position:absolute;right:10px;bottom:10px;z-index:4;display:block;
+  width:var(--fan);height:var(--fan);border-radius:50%;text-decoration:none;
   transition:transform .18s ease}
 .face-fan:hover{transform:scale(1.05)}
 .face-fan:active{transform:scale(.99)}
@@ -855,24 +865,27 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 /* Initials are a portrait here, not a fallback that looks like one failed:
    same circle, same ring, same weight, with a lit ground behind the letters so
    it reads as a picture of somebody rather than an empty slot. */
-.face-fan img,.face-fan .face-fan-initials{width:84px;height:84px;border-radius:50%;object-fit:cover;
-  display:grid;place-items:center;
+.face-fan img,.face-fan .face-fan-initials{width:var(--fan);height:var(--fan);
+  border-radius:50%;object-fit:cover;display:grid;place-items:center;
   background:radial-gradient(120% 120% at 50% 28%, #33291d 0%, #14110d 68%);
-  border:3px solid var(--gold);
+  border:max(2px, calc(var(--fan) * .035)) solid var(--gold);
   box-shadow:0 6px 22px rgba(0,0,0,.7),0 0 0 4px rgba(8,8,10,.6);
-  font-family:'Anton',sans-serif;font-size:30px;letter-spacing:.02em;color:var(--gold)}
+  font-family:'Anton',sans-serif;font-size:calc(var(--fan) * .38);
+  letter-spacing:.02em;color:var(--gold)}
 
 /* A fan with no account linked is still shown — there is just nowhere to go. */
 .face-fan.no-link{cursor:default}
 .face-fan.no-link:hover{transform:none}
 
 /* The crown rides the rim, so the badge reads as a title rather than an avatar. */
-.face-fan-crown{position:absolute;top:-8px;left:-6px;font-size:26px;line-height:1;
+.face-fan-crown{position:absolute;top:calc(var(--fan) * -.10);left:calc(var(--fan) * -.08);
+  font-size:calc(var(--fan) * .31);line-height:1;
   filter:drop-shadow(0 2px 4px rgba(0,0,0,.8));pointer-events:none}
 
 /* What they have down, on a chip across the bottom of the rim. */
-.face-fan-sum{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);
-  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--bg);
+.face-fan-sum{position:absolute;left:50%;bottom:calc(var(--fan) * -.09);transform:translateX(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:max(9px, calc(var(--fan) * .125));
+  font-weight:700;color:var(--bg);
   background:var(--gold);border-radius:999px;padding:2px 9px;white-space:nowrap;
   box-shadow:0 2px 8px rgba(0,0,0,.55);pointer-events:none}
 
@@ -885,18 +898,28 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
   background:radial-gradient(120% 120% at 50% 28%, rgba(201,168,106,.16) 0%, rgba(8,8,10,.72) 70%);
   backdrop-filter:blur(4px)}
 .face-fan.none:hover .face-fan-initials{border-style:solid;background:radial-gradient(120% 120% at 50% 28%, rgba(201,168,106,.3) 0%, rgba(8,8,10,.7) 70%)}
-.face-fan.none .face-fan-sum{background:var(--gold);color:var(--bg);font-size:9.5px;padding:2px 8px}
-@media(max-width:640px){ .face-fan.none .face-fan-sum{font-size:8px;padding:1px 6px} }
+/* "$1 · be first" is four times the width of "$135", so it gets its own,
+   smaller size or it runs off both sides of the badge. */
+.face-fan.none .face-fan-sum{background:var(--gold);color:var(--bg);
+  font-size:max(8px, calc(var(--fan) * .105));padding:2px 8px}
 
-@media(max-width:900px){
-  .face-fan,.face-fan img,.face-fan .face-fan-initials{width:66px;height:66px}
-  .face-fan img,.face-fan .face-fan-initials{font-size:22px;border-width:2.5px}
-  .face-fan-crown{font-size:21px;top:-7px;left:-5px}
-}
 @media(max-width:640px){
   .face-fan{right:6px;bottom:6px}
-  .face-fan,.face-fan img,.face-fan .face-fan-initials{width:50px;height:50px}
-  .face-fan img,.face-fan .face-fan-initials{font-size:17px;border-width:2px}
-  .face-fan-crown{font-size:16px;top:-5px;left:-4px}
-  .face-fan-sum{font-size:9px;padding:1px 7px;bottom:-6px}
+}
+
+
+/* ── Where the money goes ───────────────────────────────────────────────────
+   A standing line under the topbar on every page, not a banner that is
+   dismissed once and never seen again. It is the first thing a payer should
+   read, so it sits above the boards rather than on a page they have to find. */
+.relief-bar{position:relative;z-index:40;display:flex;align-items:center;justify-content:center;
+  gap:8px;padding:7px 14px;text-align:center;
+  background:linear-gradient(90deg, rgba(220,20,60,.16), rgba(0,53,148,.16));
+  border-bottom:1px solid var(--border);
+  font-size:12.5px;font-weight:700;letter-spacing:.01em;color:var(--ink)}
+.relief-bar b{color:var(--gold)}
+.relief-bar .flag{font-size:14px;line-height:1}
+@media(max-width:640px){
+  .relief-bar{font-size:10.5px;padding:6px 10px;gap:6px}
+  .relief-bar .flag{font-size:12px}
 }
