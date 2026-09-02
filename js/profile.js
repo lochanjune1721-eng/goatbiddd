@@ -176,16 +176,36 @@
           patch.is_anonymous = !!modal.querySelector('#pf-anon').checked;
         }
         // A photo is a bonus, never a blocker: a failed upload still saves the
-        // rest rather than losing the whole form.
+        // name and email rather than losing the whole form. But it is SAID.
+        // This used to console.warn and close, so a picture that never uploaded
+        // looked exactly like one that did — the form closed, the name was
+        // saved, and the face silently was not.
+        let photoError = null;
         if(pickedFile){
-          try { const url = await uploadAvatar(pickedFile, user.id); if(url) patch.photo_path = url; }
-          catch(e){ console.warn('[profile] avatar upload failed:', e?.message || e); }
+          try {
+            const url = await uploadAvatar(pickedFile, user.id);
+            if(url) patch.photo_path = url; else photoError = 'the upload returned no URL';
+          } catch(e){
+            photoError = String(e?.message || e);
+            // The overwhelmingly likely cause, and it has a fix with a name.
+            if(/bucket|not found|does not exist|404/i.test(photoError))
+              photoError = 'the avatars bucket does not exist yet — run supabase-profile-gate.sql';
+            else if(/row-level security|policy|permission|403|401/i.test(photoError))
+              photoError = 'storage refused the upload — run supabase-profile-gate.sql, which adds the policy';
+          }
         }
 
         const { error } = await sb().from('users').upsert(Object.assign({ id: user.id }, patch));
         if(error) throw error;
         await load(true);
         if(window.refreshBalance) window.refreshBalance();
+
+        // Held open on a photo failure so the reason is read rather than
+        // flashed past.
+        if(photoError){
+          btn.disabled = false;
+          return say('Saved your name and email. Photo not saved: ' + photoError, '#e55');
+        }
         close(true);
       }catch(e){
         btn.disabled = false;

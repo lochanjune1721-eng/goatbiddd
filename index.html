@@ -334,7 +334,6 @@
 <script src="js/optimized-image.js"></script>
 <script src="js/portrait-fallback.js"></script>
 <script src="js/video-hover.js?v=single_audio_v5"></script>
-<script src="js/goat-corner.js"></script>
 <script>
 (async function(){
   const sb = window.supabaseClient;
@@ -711,7 +710,8 @@
     // so the card does not jump when a video starts.
     const side = (p, cls) => `
         <div class="duel-side ${cls} ${(cls==='a'?v1>v2:v2>v1) ? 'leader' : ''}">
-          <div class="photo">${cls==='a'?p1Photo:p2Photo}</div>
+          <div class="photo">${cls==='a'?p1Photo:p2Photo}${
+            p ? `<a class="face-fan" data-face-fan="${p.id}" href="/person?slug=${esc(p.slug)}#fans"></a>` : ''}</div>
         </div>`;
 
     // Each contender's tile: who, what share, how much, who leads their fans,
@@ -1031,9 +1031,9 @@
   // on a homepage of a hundred duels. Filled in after the duels paint, so a slow
   // answer delays a face and nothing else.
   async function paintGfoat(){
-    const slots = [...document.querySelectorAll('.poll-gfoat[data-gfoat]:not([data-gfoat-done])')];
+    const slots = [...document.querySelectorAll('.poll-gfoat[data-gfoat]:not([data-gfoat-done]), .face-fan[data-face-fan]:not([data-gfoat-done])')];
     if(!slots.length) return;
-    const ids = [...new Set(slots.map(el => el.dataset.gfoat))];
+    const ids = [...new Set(slots.map(el => el.dataset.gfoat || el.dataset.faceFan))];
 
     let rows = null;
     try {
@@ -1058,36 +1058,80 @@
       rows = [...best.values()];
     }
 
+    // What the viewer already has down on each of them, so the crown is priced
+    // against their own position rather than from zero. One query for the page.
+    const mine = new Map();
+    try {
+      const { data:{ user } } = await sb.auth.getUser();
+      if(user){
+        const { data } = await sb.from('fan_totals')
+          .select('person_id,total_cents').eq('user_id', user.id).in('person_id', ids);
+        for(const r of (data||[])) mine.set(r.person_id, r.total_cents||0);
+      }
+    } catch(e){}
+
     const byPerson = new Map((rows||[]).map(r => [r.person_id, r]));
+
     for(const el of slots){
       el.dataset.gfoatDone = '1';
-      const f = byPerson.get(el.dataset.gfoat);
+      const pid = el.dataset.gfoat || el.dataset.faceFan;
+      const f = byPerson.get(pid);
+      const face = el.classList.contains('face-fan');
+
       if(!f){
-        el.innerHTML = '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
+        if(face){
+          el.classList.add('none');
+          el.innerHTML = '<span class="face-fan-name">👑 No fan yet — $1 claims it</span>';
+          requestAnimationFrame(()=> el.classList.add('in'));
+        } else {
+          el.innerHTML = '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
+        }
+        priceCrown(pid, 1);
         continue;
       }
+
       const name = f.display_name || 'Anonymous';
-      const url = f.photo_path ? (window.GOAT?.getPhotoUrl?.(f.photo_path) || f.photo_path) : null;
-      const face = url
-        ? `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'poll-gfoat-initials',textContent:${JSON.stringify(initialsOf(name))}}))">`
-        : `<span class="poll-gfoat-initials">${esc(initialsOf(name))}</span>`;
-      // The amount rides on the label line, not the name line: at tile width the
-      // two together truncated the name to make room for a figure nobody could
-      // read the end of anyway.
       const down = '$' + Math.floor((f.total_cents||0)/100).toLocaleString('en-US');
-      el.title = `${name} — ${down} on this contender`;
-      el.innerHTML = `${face}<span class="poll-gfoat-copy">
-          <span class="poll-gfoat-label">GOAT fan · ${esc(down)}</span>
-          <span class="poll-gfoat-name">${esc(name)}</span>
-        </span>`;
+      const url = f.photo_path ? (window.GOAT?.getPhotoUrl?.(f.photo_path) || f.photo_path) : null;
+      const initialsHtml = cls => `<span class="${cls}">${esc(initialsOf(name))}</span>`;
+      const img = cls => url
+        ? `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:${JSON.stringify(cls)},textContent:${JSON.stringify(initialsOf(name))}}))">`
+        : initialsHtml(cls);
+
+      // Beating them costs the gap plus a dollar, from wherever the viewer
+      // already stands.
+      const need = Math.max(1, Math.floor(((f.total_cents||0) - (mine.get(pid)||0)) / 100) + 1);
+      priceCrown(pid, need);
+
+      el.title = `${name} — ${down} on this contender · $${need.toLocaleString('en-US')} takes the crown`;
+      if(face){
+        el.innerHTML = `${img('face-fan-initials')}<span class="face-fan-copy">
+            <span class="face-fan-name">👑 ${esc(name)}</span>
+            <span class="face-fan-sum">${esc(down)} · $${need.toLocaleString('en-US')} to take it</span>
+          </span>`;
+        requestAnimationFrame(()=> el.classList.add('in'));
+      } else {
+        el.innerHTML = `${img('poll-gfoat-initials')}<span class="poll-gfoat-copy">
+            <span class="poll-gfoat-label">GOAT fan · ${esc(down)}</span>
+            <span class="poll-gfoat-name">${esc(name)}</span>
+          </span>`;
+      }
+    }
+  }
+
+  // The crown button stops saying "any amount" and starts saying the number.
+  function priceCrown(personId, need){
+    for(const b of document.querySelectorAll(`[data-back-more="${CSS.escape(personId)}"]`)){
+      b.textContent = `👑 $${need.toLocaleString('en-US')} to take the crown`;
+      b.dataset.crownPrice = String(need);
     }
   }
 
   // Duels are painted from four places — the hero, the featured strip, the
   // groups and the filtered list — and re-painted on every vote and every
-  // filter change. Rather than remembering to call this from each of them and
-  // missing one, watch for tiles arriving. paintGfoat only touches slots it has
-  // not already filled, so firing it often costs nothing.
+  // filter change. Rather than calling this from each of them and missing one,
+  // watch for the slots arriving. paintGfoat only touches slots it has not
+  // already filled, so firing it often costs nothing.
   (function watchForTiles(){
     let queued = null;
     const run = () => { queued = null; paintGfoat(); };
@@ -1095,7 +1139,7 @@
       if(queued) return;
       for(const m of muts){
         for(const n of m.addedNodes){
-          if(n.nodeType === 1 && (n.matches?.('.poll-gfoat') || n.querySelector?.('.poll-gfoat'))){
+          if(n.nodeType === 1 && (n.matches?.('.poll-gfoat, .face-fan') || n.querySelector?.('.poll-gfoat, .face-fan'))){
             queued = setTimeout(run, 60);
             return;
           }
