@@ -13,6 +13,7 @@
 // signature checks still see the exact bytes that were sent.
 import admin from './api/admin.js';
 import fans from './api/fans.js';
+import topFans from './api/top-fans.js';
 import health from './api/health.js';
 import img from './api/img.js';
 import pay from './api/pay.js';
@@ -23,6 +24,7 @@ import uropayWebhook from './api/uropay-webhook.js';
 const ROUTES = {
   'admin': admin,
   'fans': fans,
+  'top-fans': topFans,
   'health': health,
   'img': img,
   'pay': pay,

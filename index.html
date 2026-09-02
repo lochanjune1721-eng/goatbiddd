@@ -1034,26 +1034,41 @@
     if(!slots.length) return;
     const ids = [...new Set(slots.map(el => el.dataset.gfoat || el.dataset.faceFan))];
 
+    // ── Where the fan comes from ─────────────────────────────────────────────
+    //
+    // /api/top-fans runs on the server with the service key, the same way
+    // /api/fans already does. That matters because the browser cannot answer
+    // this question at all: fan_totals is public, so a page can see THAT a
+    // contender has a fan, but users is self-read-only, so it cannot see WHO.
+    // Every browser-side route needed something installed first — a SECURITY
+    // DEFINER function, a public view — and until it was, every frame showed an
+    // unclaimed crown however much money was on the board.
+    //
+    // This needs nothing installed. The two paths below stay as fallbacks for a
+    // deployment without the endpoint yet.
     let rows = null;
     try {
-      const { data, error } = await sb.rpc('top_fans', { p_person_ids: ids });
-      if(error) console.warn('[gfoat] top_fans unavailable, reading fan_totals instead:', error.message);
-      else rows = data;
-    } catch(e){ console.warn('[gfoat] top_fans threw, reading fan_totals instead:', e?.message || e); }
+      const r = await fetch('/api/top-fans?ids=' + encodeURIComponent(ids.join(',')));
+      if(r.ok){
+        const j = await r.json();
+        if(j && j.fans) rows = Object.entries(j.fans).map(([person_id, f]) => Object.assign({ person_id }, f));
+      } else {
+        console.warn('[gfoat] /api/top-fans answered ' + r.status + ' — trying the database directly');
+      }
+    } catch(e){ console.warn('[gfoat] /api/top-fans unreachable:', e?.message || e); }
 
-    // An empty answer is not the same as an answer. top_fans returning zero
-    // rows — because the function is an older shape, or PostgREST has not picked
-    // it up yet — is indistinguishable from "nobody has backed anyone", and the
-    // page drew a crown either way. Anything short of rows falls through.
+    if(!rows){
+      try {
+        const { data, error } = await sb.rpc('top_fans', { p_person_ids: ids });
+        if(error) console.warn('[gfoat] top_fans unavailable:', error.message);
+        else rows = data;
+      } catch(e){ console.warn('[gfoat] top_fans threw:', e?.message || e); }
+    }
+
     if(!rows || !rows.length){
-      // Two reads rather than one embed. fan_totals is public, so who leads a
-      // contender comes back fine; the fan's NAME does not, because users
-      // carries "users self read" and an embedded users(...) is refused outright
-      // — taking the whole read down with it and leaving every badge blank.
-      //
-      // public_profiles (supabase-public-profiles.sql) is a view of the four
-      // columns a fan's identity actually consists of, readable by anyone.
-      // Email and balance are not in it and stay private.
+      // Last resort, and the one that needs supabase-public-profiles.sql: two
+      // reads rather than an embed, because an embedded users(...) is refused
+      // outright and takes the whole query down with it.
       const { data: totals, error: tErr } = await sb.from('fan_totals')
         .select('person_id,user_id,total_cents')
         .in('person_id', ids).order('total_cents', { ascending:false }).limit(5000);
@@ -1061,28 +1076,10 @@
 
       const top = new Map();
       for(const r of (totals||[])) if(!top.has(r.person_id)) top.set(r.person_id, r);
-      const userIds = [...new Set([...top.values()].map(r => r.user_id).filter(Boolean))];
-
-      let profiles = new Map();
-      if(userIds.length){
-        const { data: profs, error: pErr } = await sb.from('public_profiles')
-          .select('id,display_name,photo_path,social_handle,social_platform').in('id', userIds);
-        if(pErr){
-          console.error(
-            '[gfoat] cannot read public_profiles: ' + pErr.message +
-            '\n  fan_totals says who leads each contender, but naming them needs' +
-            '\n  public_profiles — a view of display_name, photo_path and handle.' +
-            '\n  Fix: run supabase-public-profiles.sql once. It exposes those four' +
-            '\n  columns and nothing else; email and balance stay private.');
-          // The money is still known, so show the crown with what it costs
-          // rather than nothing at all.
-        } else {
-          profiles = new Map((profs||[]).map(u => [u.id, u]));
-        }
-      }
+      const who = await (window.GOAT?.profiles?.([...top.values()].map(r => r.user_id)) || new Map());
 
       rows = [...top.values()].map(r => {
-        const u = profiles.get(r.user_id) || {};
+        const u = who.get(r.user_id) || {};
         return { person_id:r.person_id, user_id:r.user_id, total_cents:r.total_cents,
                  display_name: u.display_name, photo_path: u.photo_path,
                  social_handle: u.social_handle, social_platform: u.social_platform };

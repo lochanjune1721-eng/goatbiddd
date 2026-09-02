@@ -34,9 +34,10 @@ await p.addInitScript(({MESSI,RONALDO,CAT,PHILIP,FACE}) => {
       { id:RONALDO, slug:'cristiano-ronaldo', category_id:CAT, name:'Cristiano Ronaldo', total_cents:5000, first_backed_at:'2026-01-02', photo_path:null, blurb:'' }],
     // Shaped as the database really answers: fan_totals is public and carries
     // no names, and the identity comes from public_profiles.
-    fan_totals: [{ person_id:MESSI, user_id:PHILIP, total_cents:9800 }],
-    public_profiles: [{ id:PHILIP, display_name:'Philip', photo_path:FACE,
-                        social_handle:'philip', social_platform:'x' }],
+    // Deliberately empty. If the badge fills, it did so from the endpoint
+    // alone — which is the whole point: no function, no view, no policy change.
+    fan_totals: [],
+    public_profiles: [],
     bids: [], site_stats: [{ visitor_count: 1 }]
   };
   const res = data => Promise.resolve({ data, error:null });
@@ -67,8 +68,13 @@ await p.addInitScript(({MESSI,RONALDO,CAT,PHILIP,FACE}) => {
   window.supabase = { createClient: () => client };
 }, {MESSI,RONALDO,CAT,PHILIP,FACE});
 
-await p.route('**/api/fans*', r => r.fulfill({ json:{ ok:true, fans:[] } }));
-await p.route('**/api/**',   r => r.fulfill({ json:{ ok:true } }));
+// Playwright gives precedence to the LAST route registered, so the catch-all
+// goes first and the specific ones after it.
+await p.route('**/api/**',        r => r.fulfill({ json:{ ok:true } }));
+await p.route('**/api/fans*',     r => r.fulfill({ json:{ ok:true, fans:[] } }));
+await p.route('**/api/top-fans*', r => r.fulfill({ json:{ ok:true, fans:{
+  [MESSI]: { user_id:PHILIP, total_cents:9800, display_name:'Philip', photo_path:FACE,
+             social_handle:'philip', social_platform:'x' } } } }));
 await p.goto('http://127.0.0.1:3000/index.html', { waitUntil:'domcontentloaded' });
 await p.waitForTimeout(7000);
 
