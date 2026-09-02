@@ -1081,10 +1081,14 @@
 
       if(!f){
         if(face){
-          el.classList.add('none');
-          el.href = '/person?slug=' + encodeURIComponent(el.dataset.slug || '') + '#fans';
+          // Not a link to the contender. The badge is about the fan, so with no
+          // fan there is nowhere of theirs to go — sending someone to Ronaldo's
+          // page from a crown that means "no fan yet" answers a question nobody
+          // asked.
+          el.classList.add('none', 'no-link');
+          el.removeAttribute('href'); el.removeAttribute('target');
           el.innerHTML = '<span class="face-fan-initials">👑</span>';
-          el.title = 'No Greatest Fan yet — $1 claims the crown';
+          el.title = 'No Greatest Fan of All Time yet — $1 claims the crown';
         } else {
           el.innerHTML = '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
         }
@@ -1105,14 +1109,21 @@
       const need = Math.max(1, Math.floor(((f.total_cents||0) - (mine.get(pid)||0)) / 100) + 1);
       priceCrown(pid, need);
 
-      el.title = `${name} — ${down} on this contender · $${need.toLocaleString('en-US')} takes the crown`;
+      el.title = `Greatest Fan of All Time: ${name} — ${down} down · $${need.toLocaleString('en-US')} takes the crown`
+              + (socialUrl(f.social_platform, f.social_handle) ? '' : ' · no social account linked');
       if(face){
-        // The face IS the badge. Clicking it goes where that person actually
-        // is; with no handle it falls back to the contender's fan list, which
-        // is the next most useful place rather than a dead link.
+        // The face IS the badge, and it goes to that person's own account or it
+        // goes nowhere. It used to fall back to the contender's fan list, so
+        // clicking the Greatest Fan of All Time opened Ronaldo — the wrong
+        // person entirely, and the one place the badge is not about.
         const social = socialUrl(f.social_platform, f.social_handle);
-        el.href = social || ('/person?slug=' + encodeURIComponent(el.dataset.slug || '') + '#fans');
-        if(social){ el.target = '_blank'; el.rel = 'noopener'; }
+        if(social){
+          el.href = social; el.target = '_blank'; el.rel = 'noopener';
+          el.classList.remove('no-link');
+        } else {
+          el.removeAttribute('href'); el.removeAttribute('target');
+          el.classList.add('no-link');
+        }
         el.classList.toggle('has-social', !!social);
         el.innerHTML = `${img('face-fan-initials')}<span class="face-fan-crown">👑</span>`
           + `<span class="face-fan-sum">${esc(down)}</span>`;

@@ -852,11 +852,19 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 .face-fan:hover{transform:scale(1.05)}
 .face-fan:active{transform:scale(.99)}
 
+/* Initials are a portrait here, not a fallback that looks like one failed:
+   same circle, same ring, same weight, with a lit ground behind the letters so
+   it reads as a picture of somebody rather than an empty slot. */
 .face-fan img,.face-fan .face-fan-initials{width:84px;height:84px;border-radius:50%;object-fit:cover;
-  display:grid;place-items:center;background:var(--surface-3);
+  display:grid;place-items:center;
+  background:radial-gradient(120% 120% at 50% 28%, #33291d 0%, #14110d 68%);
   border:3px solid var(--gold);
   box-shadow:0 6px 22px rgba(0,0,0,.7),0 0 0 4px rgba(8,8,10,.6);
-  font-family:'Anton',sans-serif;font-size:28px;color:var(--gold)}
+  font-family:'Anton',sans-serif;font-size:30px;letter-spacing:.02em;color:var(--gold)}
+
+/* A fan with no account linked is still shown — there is just nowhere to go. */
+.face-fan.no-link{cursor:default}
+.face-fan.no-link:hover{transform:none}
 
 /* The crown rides the rim, so the badge reads as a title rather than an avatar. */
 .face-fan-crown{position:absolute;top:-8px;left:-6px;font-size:26px;line-height:1;
