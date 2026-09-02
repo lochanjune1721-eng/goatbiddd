@@ -99,23 +99,29 @@ for(const missing of ['webhook-id', 'webhook-timestamp', 'webhook-signature']){
 
 console.log('PASS — the webhook only credits bodies Dodo actually signed');
 
-// ── Which processor the checkout calls ──────────────────────────────────────
+// ── Which rail the checkout offers ─────────────────────────────────────────
 {
-  const both = railsFor('US', { dodoReady:true, paypalReady:true, upiReady:false, uropayReady:false });
-  assert.equal(both.cardProvider, 'dodo', 'Dodo takes the card rail when it is configured');
-  assert.deepEqual(both.offer, ['card'], 'the payer is offered a rail, not a company');
-  assert.equal(both.preferred, 'card');
+  const ready = railsFor('US', { dodoReady:true, upiReady:false });
+  assert.equal(ready.cardProvider, 'dodo', 'Dodo is the card processor');
+  assert.deepEqual(ready.offer, ['card'], 'the payer is offered a rail, not a company');
+  assert.equal(ready.preferred, 'card');
+  assert.equal(ready.currency, 'USD');
 
-  const fallback = railsFor('US', { dodoReady:false, paypalReady:true, upiReady:false, uropayReady:false });
-  assert.equal(fallback.cardProvider, 'paypal', 'PayPal still takes it when Dodo is not configured');
-  assert.deepEqual(fallback.offer, ['card']);
+  // Card is preferred in India too: Dodo's checkout offers UPI there and
+  // confirms it, where direct UPI needs a person to match the reference.
+  const india = railsFor('IN', { dodoReady:true, upiReady:true });
+  assert.equal(india.preferred, 'card', 'an Indian payer lands on the rail that confirms itself');
+  assert.deepEqual(india.offer, ['card', 'upi'], 'direct UPI is still there, just not the default');
+  assert.equal(india.upiAutoConfirms, false, 'direct UPI can never confirm itself');
 
-  const none = railsFor('US', { dodoReady:false, paypalReady:false, upiReady:false, uropayReady:false });
-  assert.deepEqual(none.offer, [], 'no processor means no card rail rather than a broken button');
-  assert.equal(none.cardProvider, null);
+  // With no card processor the rail is simply absent, not a button that fails.
+  const upiOnly = railsFor('IN', { dodoReady:false, upiReady:true });
+  assert.deepEqual(upiOnly.offer, ['upi']);
+  assert.equal(upiOnly.cardProvider, null, 'there is no processor to fall back to any more');
+  assert.equal(upiOnly.currency, 'INR');
 
-  const india = railsFor('IN', { dodoReady:true, paypalReady:false, upiReady:true, uropayReady:true });
-  assert.equal(india.preferred, 'upi', 'an Indian account still lands on UPI');
-  assert.deepEqual(india.offer, ['upi', 'card'], 'and card is still there, not hidden');
+  const none = railsFor('US', { dodoReady:false, upiReady:false });
+  assert.deepEqual(none.offer, [], 'nothing configured means no rail rather than a broken button');
+  assert.equal(none.preferred, null);
 }
-console.log('PASS — the card rail resolves to Dodo, and falls back rather than breaking');
+console.log('PASS — card is the rail, Dodo is the only thing behind it');

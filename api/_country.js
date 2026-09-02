@@ -13,7 +13,7 @@ export const INDIA = 'IN';
 // two are not interchangeable — a UPI order is denominated in rupees and a UPI
 // app only exists on an Indian bank account.
 export function railForCountry(country){
-  return country === INDIA ? 'upi' : 'paypal';
+  return country === INDIA ? 'upi' : 'card';
 }
 
 export async function userCountry(supa, uid){

@@ -5,24 +5,18 @@
 // them bought nothing at runtime, since they share their auth, their body
 // parsing and their settlement path anyway.
 //
-// The two provider webhooks stay on their own routes: they are called by
-// PayPal and UroPay at fixed URLs with provider-defined bodies, so they cannot
-// carry an `action` and must not share this one's assumptions.
+// Dodo's webhook stays on its own route: it is called at a fixed URL with a
+// provider-defined body, so it cannot carry an `action` and must not share this
+// one's assumptions.
 import { HttpError, readJsonBody, requireMethod, withHandler } from './_lib.js';
-import { payPalCheckout, payPalCapture } from './_pay-paypal.js';
-import { uroPayCheckout, uroPayConfirm } from './_pay-uropay.js';
 import { upiIntent, upiClaim } from './_pay-upi.js';
 import { dodoCheckout, dodoConfirm } from './_pay-dodo.js';
 
 const ACTIONS = {
-  'paypal-checkout': payPalCheckout,   // open a PayPal order
-  'paypal-capture':  payPalCapture,    // capture it when the payer returns
-  'uropay-checkout': uroPayCheckout,   // open a UroPay (UPI gateway) order
-  'uropay-confirm':  uroPayConfirm,    // confirm it when the payer returns
-  'upi-intent':      upiIntent,        // direct UPI: QR + deep link to our VPA
-  'upi-claim':       upiClaim,         // direct UPI: payer submits their UTR
-  'dodo-checkout':   dodoCheckout,     // open a Dodo Payments checkout
-  'dodo-confirm':    dodoConfirm       // confirm it when the payer returns
+  'dodo-checkout': dodoCheckout,   // open a Dodo Payments checkout
+  'dodo-confirm':  dodoConfirm,    // confirm it when the payer returns
+  'upi-intent':    upiIntent,      // direct UPI: QR + deep link to our VPA
+  'upi-claim':     upiClaim        // direct UPI: payer submits their UTR
 };
 
 export default withHandler(async function handler(req, res){

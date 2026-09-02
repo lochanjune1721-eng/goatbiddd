@@ -14,7 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 import { HttpError, requireEnv, supabaseUrl, refuseInDemoMode } from './_lib.js';
 import { rupeesForCents, votesForCents, creditCentsForCents } from './_pricing.js';
 import { userCountry, assertRail } from './_country.js';
-// UroPay's dashboard calls the payee address UROPAY_VPA; accept either name so
+// UROPAY_VPA is the older name for this setting; accept either so
 // the variables it hands you work without being renamed. The payee name is the
 // site's own, so it defaults rather than being a fifth thing to configure.
 export function upiVpa(){
@@ -34,7 +34,7 @@ export async function upiIntent(req, res, body){
 
   const UPI_VPA = upiVpa();
   const UPI_PAYEE_NAME = upiPayeeName();
-  if (!UPI_VPA) throw new HttpError(503, 'UPI is not configured yet: set UROPAY_VPA (or UPI_VPA) to the UPI address payments should go to. Nothing has been charged.');
+  if (!UPI_VPA) throw new HttpError(503, 'UPI is not configured yet: set UPI_VPA to the UPI address payments should go to. Nothing has been charged.');
 
   const { userId, amountCents, amount_cents, personId } = body;
   const cents = Number(amountCents ?? amount_cents);

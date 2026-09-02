@@ -1,20 +1,16 @@
 // /api/health.js — deployment diagnostics.
 // Reports only whether each secret is PRESENT, never its value.
 import { withHandler, nearMiss, demoMode } from './_lib.js';
-import { payPalBase } from './_paypal.js';
 import { isConfigured as dodoConfigured, mode as dodoMode } from './_dodo.js';
 import { upiVpa, upiPayeeName } from './_pay-upi.js';
 import { publicTiers } from './_pricing.js';
 
-// All three PayPal values are required, not optional: without the client
-// credentials a top-up cannot start, and without the webhook id the webhook
-// refuses to credit a wallet. A site that cannot take money is not healthy,
-// so say so here rather than letting the first paying visitor discover it.
-const REQUIRED = ['SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_WEBHOOK_ID'];
-const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET',
-  'UROPAY_API_KEY', 'UROPAY_API_SECRET', 'UROPAY_WEBHOOK_SECRET',
-  'INR_PER_VOTE', 'UROPAY_INR_PER_VOTE',
-  'UROPAY_VPA', 'UPI_VPA', 'UPI_PAYEE_NAME',
+// Required means the site cannot serve at all without it. A payment rail is not
+// on that list: a missing key closes the checkout, which the rail blocks below
+// report plainly, rather than making the whole site read as unhealthy.
+const REQUIRED = ['SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD'];
+const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'RESOLVER_SECRET',
+  'INR_PER_VOTE', 'UPI_VPA', 'UPI_PAYEE_NAME',
   // Listed so "did the secret actually land on the Worker" is answerable from
   // this page. A secret set on the wrong project, or saved as a plaintext
   // Variable and then wiped by the next deploy, both read as false here.
@@ -25,42 +21,37 @@ const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV',
 // The page sees two ideas: "card" and "UPI". Which company processes the UPI
 // payment is our problem, not the payer's, so it is resolved here:
 //
-//   uropay — a hosted UPI checkout with a webhook, so votes land by themselves.
 //   direct — pay our VPA straight. No callback exists for that, so it can only
-//            be settled by a human matching the reference. The fallback for
-//            when UroPay is not configured, never the default.
+//            be settled by a human matching the reference. A fallback, never
+//            the default.
 //
 // Both rails are offered wherever both work; the country only decides which one
 // is preselected, because a UPI app is what an Indian payer reaches for and a
 // card is what everyone else reaches for.
 export function railsFor(country, ready){
   const inIndia = country === 'IN';
-  const upiProvider = ready.uropayReady ? 'uropay' : (ready.upiReady ? 'direct' : null);
-
-  // "card" is the rail; which company processes it is our problem, the same way
-  // it already is for UPI. Dodo takes it when configured, PayPal is the
-  // fallback — so switching processors changes nothing the payer sees.
-  const cardProvider = ready.dodoReady ? 'dodo' : (ready.paypalReady ? 'paypal' : null);
 
   const offer = [];
-  if (upiProvider) offer.push('upi');
-  if (cardProvider) offer.push('card');
+  if (ready.dodoReady) offer.push('card');
+  if (ready.upiReady) offer.push('upi');
 
-  // Preselect what this visitor most likely wants, without hiding the other.
-  const preferred = inIndia
-    ? (offer.includes('upi') ? 'upi' : offer[0] || null)
-    : (offer.includes('card') ? 'card' : offer[0] || null);
+  // Card is preferred wherever it works, including India — Dodo's own checkout
+  // offers UPI to an Indian payer and confirms it by itself. Direct UPI is the
+  // fallback and cannot confirm anything: it is our VPA, with no callback, so a
+  // person has to match the reference by hand. Preselecting that would make
+  // every Indian top-up a manual job.
+  const preferred = offer.includes('card') ? 'card' : (offer[0] || null);
 
   return {
     country: country || null,
     inIndia,
     offer,
     preferred,
-    cardProvider,
-    upiProvider,
-    // Direct UPI cannot confirm itself; UroPay can. The page says so rather
-    // than promising votes that need a human first.
-    upiAutoConfirms: upiProvider === 'uropay',
+    cardProvider: ready.dodoReady ? 'dodo' : null,
+    upiProvider: ready.upiReady ? 'direct' : null,
+    // Direct UPI cannot confirm itself. The page says so rather than promising
+    // votes that need a human first.
+    upiAutoConfirms: false,
     currency: preferred === 'upi' ? 'INR' : 'USD'
   };
 }
@@ -73,19 +64,8 @@ export default withHandler(async function handler(req, res){
   try { await import('@supabase/supabase-js'); }
   catch (err) { checks.supabaseClient = `failed: ${err?.message || err}`; }
 
-  // Live credentials do not work against sandbox and vice versa, and the error
-  // PayPal returns for the mismatch is an unhelpful 401. Say plainly which one
-  // this deployment is pointed at.
-  const paypal = {
-    env: process.env.PAYPAL_ENV === 'sandbox' ? 'sandbox' : 'live',
-    api: payPalBase(),
-    credentialsConfigured: present('PAYPAL_CLIENT_ID') && present('PAYPAL_CLIENT_SECRET'),
-    webhookConfigured: present('PAYPAL_WEBHOOK_ID')
-  };
-
-  // Dodo is the card rail when it is configured, and PayPal is what card falls
-  // back to. Both are reported whatever is set, so "which one is actually
-  // taking the money" is answerable from one page.
+  // The only card processor. Reported whatever is set, so "is the rail actually
+  // able to take money" is answerable from one page rather than by trying it.
   const dodo = {
     configured: dodoConfigured(),
     mode: dodoMode(),
@@ -96,21 +76,8 @@ export default withHandler(async function handler(req, res){
     ready: dodoConfigured() && present('DODO_WEBHOOK_SECRET')
   };
 
-  // UPI is an additional rail, so its absence is not "unhealthy" — but a
-  // half-configured one is worth surfacing, since the checkout refuses without
-  // a rupee price and the account's KYC state decides TEST vs PRODUCTION.
-  const inrPerVote = Number(process.env.INR_PER_VOTE || process.env.UROPAY_INR_PER_VOTE) || null;
-  const uropay = {
-    configured: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET'),
-    inrPerVote,
-    // Which secret verifies inbound webhooks, so a mismatch is visible.
-    webhookSecret: present('UROPAY_WEBHOOK_SECRET') ? 'UROPAY_WEBHOOK_SECRET' : 'UROPAY_API_SECRET',
-    ready: present('UROPAY_API_KEY') && present('UROPAY_API_SECRET') && inrPerVote > 0
-  };
-
   // Direct UPI needs only a VPA and a price. It cannot confirm payments by
   // itself, so it is always a reviewed rail — see api/_pay-upi.js.
-  // UROPAY_VPA and UPI_VPA are the same setting under two names.
   const vpa = upiVpa();
   const upi = {
     configured: Boolean(vpa),
@@ -136,8 +103,8 @@ export default withHandler(async function handler(req, res){
   const country = req?.cf?.country || null;
 
   // A variable can be set correctly and still read as missing because it is
-  // under a near-miss name — VITE_PAYPAL_CLIENT_ID rather than
-  // PAYPAL_CLIENT_ID, say. Reporting only `false` sends you to re-check a
+  // under a near-miss name — VITE_DODO_API_KEY rather than
+  // DODO_API_KEY, say. Reporting only `false` sends you to re-check a
   // dashboard that already looks right, so name the value that is actually
   // there. Only names, never values.
   const renameTo = {};
@@ -165,14 +132,11 @@ export default withHandler(async function handler(req, res){
       ? { country, inIndia: country === 'IN', offer: [], preferred: null, upiProvider: null,
           upiAutoConfirms: false, currency: country === 'IN' ? 'INR' : 'USD',
           blocked: 'This is a demonstration build — payments are disabled.' }
-      : railsFor(country, { upiReady: upi.ready, uropayReady: uropay.ready,
-                            paypalReady: paypal.credentialsConfigured, dodoReady: dodo.configured }),
+      : railsFor(country, { upiReady: upi.ready, dodoReady: dodo.configured }),
     // The price list the checkout draws its buttons from, so the page can never
     // advertise a bonus the server will not honour.
     tiers: publicTiers(),
-    paypal,
     dodo,
-    uropay,
     upi,
     env: Object.fromEntries([...REQUIRED, ...OPTIONAL].map(n => [n, present(n)])),
     missingRequired: missing,

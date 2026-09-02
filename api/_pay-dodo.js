@@ -1,7 +1,6 @@
 // api/_pay-dodo.js — Dodo Payments: opens a checkout for a wallet top-up.
 //
-// Mirrors the PayPal and UroPay rails, and for the same reason: this route
-// moves no money. It records what was asked for and returns a URL to send the
+// This route moves no money, deliberately: It records what was asked for and returns a URL to send the
 // payer to. Credit is granted later, and only against a payment Dodo itself
 // reports as succeeded — never against the payer coming back to the site,
 // which anyone can do by typing the return URL.

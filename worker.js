@@ -17,9 +17,7 @@ import topFans from './api/top-fans.js';
 import health from './api/health.js';
 import img from './api/img.js';
 import pay from './api/pay.js';
-import paymentDone from './api/payment-done.js';
 import resolveImage from './api/resolve_image.js';
-import uropayWebhook from './api/uropay-webhook.js';
 import dodoWebhook from './api/dodo-webhook.js';
 
 const ROUTES = {
@@ -29,9 +27,7 @@ const ROUTES = {
   'health': health,
   'img': img,
   'pay': pay,
-  'payment-done': paymentDone,
   'resolve_image': resolveImage,
-  'uropay-webhook': uropayWebhook,
   'dodo-webhook': dodoWebhook,
 };
 

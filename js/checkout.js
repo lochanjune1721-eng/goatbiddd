@@ -77,7 +77,6 @@
 .gco-method.on{border-color:#14141a;background:#fafafb}
 .gco-method-mark{width:34px;height:24px;border-radius:6px;flex:0 0 auto;display:grid;place-items:center;
   font-size:10px;font-weight:800;letter-spacing:-.02em;color:#fff}
-.gco-method-mark.paypal{background:#003087}
 .gco-method-mark.card{background:linear-gradient(135deg,#3a3f52,#20232e)}
 .gco-method-mark.upi{background:linear-gradient(135deg,#0d7a3f,#f26522)}
 .gco-method-t{display:block;font-size:13.5px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
@@ -171,23 +170,25 @@
   function railsForMe(){
     const inIndia = String(me?.country || '').toUpperCase() === 'IN';
     const canUpi = !!health?.rails?.upiProvider;
-    // "card" is the rail; which company processes it is not the payer's
-    // problem, the same way it already is not for UPI. Dodo takes it when
-    // configured, PayPal is what it falls back to.
+    // "card" is the rail; which company processes it is not the payer's problem.
     const cardProvider = health?.rails?.cardProvider
-      || (health?.dodo?.configured ? 'dodo' : (health?.paypal?.credentialsConfigured ? 'paypal' : null));
-    const offer = inIndia ? (canUpi ? ['upi'] : []) : (cardProvider ? ['card'] : []);
+      || (health?.dodo?.configured ? 'dodo' : null);
+    // Card first wherever it works, India included — the checkout offers UPI
+    // there itself and confirms it. Direct UPI is our own VPA with no callback,
+    // so it needs a person to match the reference, and it is the fallback.
+    const offer = [];
+    if (cardProvider) offer.push('card');
+    if (canUpi) offer.push('upi');
     return {
       inIndia, offer,
       preferred: offer[0] || null,
       cardProvider,
       upiProvider: health?.rails?.upiProvider || null,
-      upiAutoConfirms: health?.rails?.upiProvider === 'uropay',
+      upiAutoConfirms: false,
       currency: inIndia ? 'INR' : 'USD',
       // Said plainly rather than leaving an empty panel.
-      blocked: offer.length ? null : (inIndia
-        ? 'UPI payments are being set up and are not available yet. Nothing has been charged.'
-        : 'Card payments are being set up and are not available yet. Nothing has been charged.')
+      blocked: offer.length ? null
+        : 'Payments are being set up and are not available yet. Nothing has been charged.'
     };
   }
 
@@ -329,7 +330,7 @@
   function paint(){
     const t = health?.tiers || [];
     const rails = railsForMe();
-    const perVote = health?.upi?.inrPerVote || health?.uropay?.inrPerVote || null;
+    const perVote = health?.upi?.inrPerVote || null;
     const currency = rails.currency;
     const q = s => el.querySelector(s);
 
@@ -348,9 +349,7 @@
 
     // Methods.
     const LABEL = {
-      card: rails.cardProvider === 'dodo'
-        ? ['Card', 'card', 'Visa, Mastercard, Amex and more']
-        : ['PayPal', 'paypal', 'Card, or your PayPal balance'],
+      card: ['Card', 'card', 'Visa, Mastercard, UPI and more'],
       upi:    ['UPI', 'upi', rails.upiAutoConfirms
         ? 'Any UPI app. Votes land the moment it clears.'
         : 'Any UPI app. We add the credit after matching your reference.']
@@ -358,7 +357,7 @@
     q('[data-methods]').innerHTML = rails.offer.map(m => {
       const [name, cls, sub] = LABEL[m] || [m, '', ''];
       return `<button class="gco-method${m === state.method ? ' on' : ''}" data-method="${m}">
-          <span class="gco-method-mark ${cls}">${name === 'PayPal' ? 'PP' : name === 'Card' ? '\u{1F4B3}' : 'UPI'}</span>
+          <span class="gco-method-mark ${cls}">${name === 'Card' ? '\u{1F4B3}' : 'UPI'}</span>
           <span style="min-width:0"><span class="gco-method-t">${esc(name)}</span><span class="gco-method-s">${esc(sub)}</span></span>
           <span class="gco-method-tick"></span>
         </button>`;
@@ -392,10 +391,8 @@
       : 'Payments unavailable';
     q('[data-pay]').disabled = !rails.offer.length || !state.method;
     q('[data-fine]').textContent = state.method === 'card'
-      ? (rails.cardProvider === 'dodo'
-          ? 'You will finish on our secure checkout, then come straight back.'
-          : 'You will finish on PayPal, then come straight back.')
-      : rails.upiAutoConfirms ? 'You will finish in your UPI app, then come straight back.' : '';
+      ? 'You will finish on our secure checkout, then come straight back.'
+      : state.method === 'upi' ? 'Pay from any UPI app, then send us the reference.' : '';
   }
 
   function onCustom(e){
@@ -424,11 +421,7 @@
     btn.disabled = true; btn.textContent = 'Opening…';
     msg('');
 
-    const r8 = railsForMe();
-    const direct = state.method === 'upi' && r8.upiProvider === 'direct';
-    const action = state.method === 'card'
-      ? (r8.cardProvider === 'dodo' ? 'dodo-checkout' : 'paypal-checkout')
-      : direct ? 'upi-intent' : 'uropay-checkout';
+    const action = state.method === 'card' ? 'dodo-checkout' : 'upi-intent';
 
     try {
       const r = await fetch('/api/pay', {
@@ -443,7 +436,7 @@
       const j = await r.json().catch(() => ({}));
       if(!r.ok){ msg(j.error || 'That did not go through. Nothing has been charged.', 'err'); paint(); return; }
 
-      if(j.url){ location.href = j.url; return; }          // PayPal / UroPay hosted page
+      if(j.url){ location.href = j.url; return; }          // the hosted checkout
       if(j.upiUrl){ showDirectUpi(j); return; }             // fallback rail only
       msg('Payment started. Your credit will appear shortly.', 'info');
       paint();

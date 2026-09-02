@@ -1,13 +1,13 @@
-// api/_settle.js — the single place a completed PayPal payment turns into
-// wallet credit. Both the return-from-PayPal capture and the webhook go
-// through here so the two cannot disagree about the rules.
+// api/_settle.js — the single place a completed payment turns into wallet
+// credit. The browser return and the provider's webhook both go through here,
+// so the two cannot disagree about the rules and neither can credit twice.
 import { HttpError } from './_lib.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Locates the pending top-up a capture belongs to. The custom_id PayPal echoes
-// back is the primary key; the order id is the fallback for a payload that
-// somehow lost it.
+// Locates the pending top-up a payment belongs to. The id we sent in metadata
+// and get echoed back is the primary key; the provider's own order and payment
+// ids are the fallbacks for a payload that somehow lost it.
 async function findTopup(supa, { topupId, orderId, captureId }){
   if (topupId && UUID.test(String(topupId))) {
     const { data } = await supa.from('topups').select('*').eq('id', topupId).maybeSingle();
@@ -25,17 +25,17 @@ async function findTopup(supa, { topupId, orderId, captureId }){
 }
 
 /**
- * Credits a wallet for a capture PayPal has confirmed as COMPLETED.
+ * Credits a wallet for a payment the provider has confirmed as succeeded.
  *
  * The credited amount always comes from our own pending row, never from the
  * payload — a payer who tampers with the order cannot decide what they get.
  * The captured total is checked against it and a short payment is refused.
  *
  * `requireUserId`, when set, asserts the caller owns the top-up. The webhook
- * leaves it unset (PayPal is not a signed-in user); the browser return path
- * sets it, so one signed-in user cannot settle another's order.
+ * leaves it unset (the provider is not a signed-in user); the browser return
+ * path sets it, so one signed-in user cannot settle another's payment.
  */
-export async function settleTopup(supa, { topupId, orderId, captureId, capturedCents, capturedProviderAmount, requireUserId, provider = 'paypal', label = 'settle' }){
+export async function settleTopup(supa, { topupId, orderId, captureId, capturedCents, capturedProviderAmount, requireUserId, provider = 'dodo', label = 'settle' }){
   if (!captureId) return { settled: false, reason: 'no capture id' };
 
   const topup = await findTopup(supa, { topupId, orderId, captureId });
