@@ -38,6 +38,18 @@
     // a button.
     "DEMO_MODE": "0",
 
+    // Which Dodo Payments environment the card rail talks to: "test" or "live".
+    // It lives here rather than in the dashboard because `wrangler deploy`
+    // treats this file as the source of truth for plaintext vars and wipes any
+    // set only in the dashboard — so a value put there would quietly revert to
+    // test on the next deploy, which is the harmless direction but still a
+    // surprise. Secrets are unaffected: DODO_API_KEY and DODO_WEBHOOK_SECRET
+    // belong in the dashboard as encrypted Secrets, never here.
+    //
+    // It must match the key. A live key against the test host, or the reverse,
+    // fails as an unhelpful 401.
+    "DODO_MODE": "test",
+
     "INR_PER_VOTE": "60",
     "UPI_PAYEE_NAME": "The True GOAT",
     // The apex, not www. www.thetruegoat.com has no DNS record — it answers
