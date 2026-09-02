@@ -34,7 +34,7 @@
 
     const { data, error } = await client
       .from('fan_totals')
-      .select('user_id,total_cents,users(display_name,is_anonymous)')
+      .select('user_id,total_cents,users(display_name)')
       .eq('person_id', personId)
       .order('total_cents', { ascending:false })
       .limit(50);
@@ -44,7 +44,7 @@
     const top = data[0];
     out.topTotal = top ? (top.total_cents||0) : 0;
     out.secondTotal = data[1] ? (data[1].total_cents||0) : 0;
-    out.topName = top ? (top.users?.is_anonymous ? 'Anonymous' : (top.users?.display_name || 'a fan')) : null;
+    out.topName = top ? (top.users?.display_name || 'a fan') : null;
 
     let me = null;
     try { const { data:{ user } } = await client.auth.getUser(); if(user) me = user.id; } catch(e){}

@@ -28,7 +28,7 @@
     if(!user) { cached = null; return null; }
 
     let { data } = await client.from('users')
-      .select('id,email,display_name,photo_path,country,social_handle,social_platform,is_anonymous').eq('id', user.id).maybeSingle();
+      .select('id,email,display_name,photo_path,country,social_handle,social_platform').eq('id', user.id).maybeSingle();
 
     // Google hands us a name and a picture. Taking them here means a Google
     // signer never sees this form at all, which is the whole point of asking
@@ -124,10 +124,10 @@
             <input id="pf-handle" value="${esc(p.social_handle||'')}" placeholder="@you" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px">
           </div>
         </div>
-        <label style="display:flex;gap:9px;align-items:flex-start;margin:12px 0 4px;cursor:pointer">
-          <input id="pf-anon" type="checkbox"${p.is_anonymous?' checked':''} style="margin-top:2px">
-          <span style="font-size:12px;color:var(--muted);line-height:1.35">Back anonymously — your money still counts and still wins the crown, but your name and face are not shown.</span>
-        </label>` : ''}
+        <p style="font-size:11.5px;color:var(--muted);line-height:1.4;margin:12px 0 2px">
+          Everything here is public. Your name and picture appear on every contender you
+          lead, and your handle is how people find you.
+        </p>` : ''}
 
         <button id="pf-save" class="btn-primary" style="width:100%;margin-top:8px">${full ? 'Save' : 'Save and continue →'}</button>
         <div id="pf-msg" style="display:none;margin-top:10px;font-size:12px;text-align:center" class="mono"></div>
@@ -173,7 +173,6 @@
           const handle = modal.querySelector('#pf-handle').value.trim().replace(/^@+/, '');
           patch.social_handle = handle || null;
           patch.social_platform = handle ? (modal.querySelector('#pf-platform').value || 'x') : null;
-          patch.is_anonymous = !!modal.querySelector('#pf-anon').checked;
         }
         // A photo is a bonus, never a blocker: a failed upload still saves the
         // name and email rather than losing the whole form. But it is SAID.

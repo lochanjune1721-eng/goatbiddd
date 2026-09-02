@@ -173,14 +173,14 @@ async function ensureUserRow(){
   let {data}=await window.supabaseClient.from('users').select('*').eq('id', user.id).maybeSingle();
   if(!data){
     const display = user.user_metadata?.display_name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'Fan');
-    const anon = !!user.user_metadata?.is_anonymous;
     // The country was chosen before the magic link was sent, so it arrives in
     // the auth metadata rather than in this session.
     let country = user.user_metadata?.country || null;
     if(!country){ try { country = localStorage.getItem('goat_country'); } catch(e){} }
     if(!/^[A-Z]{2}$/.test(String(country||''))) country = null;
     const {data: ins}=await window.supabaseClient.from('users')
-      .insert({id:user.id, email:user.email, display_name: display, is_anonymous: anon, country})
+      // Everything on this site is public, so a new row is created public.
+      .insert({id:user.id, email:user.email, display_name: display, is_anonymous: false, country})
       .select('*').maybeSingle();
     data=ins;
   }
@@ -253,13 +253,13 @@ window.Auth = {
       if(cur !== '/wallet' && !cur.includes('/wallet')) sessionStorage.setItem('goat_returnTo', cur);
     } catch(e){}
   },
-  async signInWithEmail(email, displayName, isAnon, country){
+  async signInWithEmail(email, displayName, _unusedAnon, country){
     window.Auth.rememberReturnTo();
     const returnTo = window.Auth.getReturnTo();
     const redirect = getSiteUrl() + '/wallet' + (returnTo ? '?returnTo='+encodeURIComponent(returnTo) : '');
     return window.supabaseClient.auth.signInWithOtp({
       email,
-      options:{ data:{ display_name: displayName||email.split('@')[0], is_anonymous: !!isAnon,
+      options:{ data:{ display_name: displayName||email.split('@')[0], is_anonymous: false,
                        country: /^[A-Z]{2}$/.test(String(country||'')) ? country : null },
                 emailRedirectTo: redirect }
     });

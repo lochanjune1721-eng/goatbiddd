@@ -35,14 +35,12 @@ as $$
   select distinct on (f.person_id)
          f.person_id,
          f.user_id,
-         -- Anonymous backers stay anonymous on the card. Their money still
-         -- counts and still wins the crown; their face and name do not appear.
-         case when u.is_anonymous then 'Anonymous' else u.display_name end,
-         case when u.is_anonymous then null        else u.photo_path   end,
-         -- Where the face goes when it is clicked. Anonymous keeps the crown
-         -- and the money and gives up the link along with the name.
-         case when u.is_anonymous then null        else u.social_handle   end,
-         case when u.is_anonymous then null        else u.social_platform end,
+         -- Everyone is public here. The board is a record of who put money
+         -- behind whom, and a row that hides half of that is not a record.
+         u.display_name,
+         u.photo_path,
+         u.social_handle,
+         u.social_platform,
          f.total_cents
     from fan_totals f
     join users u on u.id = f.user_id

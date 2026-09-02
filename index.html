@@ -1062,10 +1062,10 @@
       for(const r of (data||[])){
         if(best.has(r.person_id)) continue;
         best.set(r.person_id, { person_id:r.person_id, total_cents:r.total_cents,
-          display_name: r.users?.is_anonymous ? 'Anonymous' : r.users?.display_name,
-          photo_path:   r.users?.is_anonymous ? null       : r.users?.photo_path,
-          social_handle:   r.users?.is_anonymous ? null : r.users?.social_handle,
-          social_platform: r.users?.is_anonymous ? null : r.users?.social_platform });
+          display_name:    r.users?.display_name,
+          photo_path:      r.users?.photo_path,
+          social_handle:   r.users?.social_handle,
+          social_platform: r.users?.social_platform });
       }
       rows = [...best.values()];
     }
@@ -1120,7 +1120,7 @@
         continue;
       }
 
-      const name = f.display_name || 'Anonymous';
+      const name = f.display_name || 'A backer';
       const down = '$' + Math.floor((f.total_cents||0)/100).toLocaleString('en-US');
       const url = f.photo_path ? (window.GOAT?.getAvatarUrl?.(f.photo_path) || f.photo_path) : null;
       const initialsHtml = cls => `<span class="${cls}">${esc(initialsOf(name))}</span>`;
@@ -1271,13 +1271,12 @@
       function fanName(b){
         const u = b.users;
         if(!u) return 'A backer';
-        if(u.is_anonymous) return 'Anonymous';
         return u.display_name || 'A backer';
       }
       function fanAvatar(b, px){
         const u = b.users || {};
         const name = fanName(b);
-        const url = (!u.is_anonymous && u.photo_path && window.GOAT.getAvatarUrl)
+        const url = (u.photo_path && window.GOAT.getAvatarUrl)
           ? window.GOAT.getAvatarUrl(u.photo_path) : null;
         const box = `width:${px}px;height:${px}px;border-radius:50%;flex:0 0 auto;overflow:hidden;border:1px solid var(--border)`;
         if(url) return `<img src="${esc(url)}" alt="" loading="lazy" style="${box};object-fit:cover">`;
@@ -1330,20 +1329,20 @@
             tiktok:'https://www.tiktok.com/@', youtube:'https://www.youtube.com/@' };
           function socialUrl(u){
             const h = String(u.social_handle||'').trim().replace(/^@/,'');
-            if(!h || u.is_anonymous) return null;
+            if(!h) return null;
             if(/^https?:\/\//i.test(h)) return h;
             const base = SOCIAL[u.social_platform];
             return base ? base + encodeURIComponent(h) : null;
           }
           leadingFansEl.innerHTML = topFans.map((u, i) => {
-            const name = u.is_anonymous ? 'Anonymous' : (u.display_name || 'Supporter');
-            const photoUrl = (!u.is_anonymous && u.photo_path) ? (window.GOAT.getAvatarUrl(u.photo_path)||u.photo_path) : null;
+            const name = u.display_name || 'Supporter';
+            const photoUrl = u.photo_path ? (window.GOAT.getAvatarUrl(u.photo_path)||u.photo_path) : null;
             const face = photoUrl
               ? `<img src="${esc(photoUrl)}" alt="" loading="lazy">`
               : `<span class="fan-face-initials">${esc(window.GOAT.initials(name))}</span>`;
             const spent = window.GOAT.money(u.total_spent_cents||0);
             const href = socialUrl(u);
-            const handle = (!u.is_anonymous && u.social_handle)
+            const handle = (u.social_handle)
               ? '@' + esc(String(u.social_handle).replace(/^@/,'')) : null;
 
             const b = u.backing;
@@ -1394,7 +1393,7 @@
       items.push(`👑 <b>${esc(top.display_name||'Supporter')}</b> is #1 Leading Fan with <span class="g">${window.GOAT.money(top.total_spent_cents)}</span> down`);
     }
     (bids||[]).slice(0, 5).forEach(b => {
-      items.push(`⚡ <b>${esc(b.users?.is_anonymous ? 'Anonymous' : (b.users?.display_name || 'A backer'))}</b> put <span class="g">$${Math.floor(b.amount_cents/100).toLocaleString('en-US')}</span> behind <b>${esc(b.people?.name)}</b>`);
+      items.push(`⚡ <b>${esc(b.users?.display_name || 'A backer')}</b> put <span class="g">$${Math.floor(b.amount_cents/100).toLocaleString('en-US')}</span> behind <b>${esc(b.people?.name)}</b>`);
     });
     items.push(`🏆 <b>${cats.length.toLocaleString()}</b> boards · $1 = 1 vote · no judges, no algorithms`);
 

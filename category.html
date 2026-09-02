@@ -206,7 +206,7 @@
       let fanHtml='';
       if(topFan){
         const u=topFan.users||{};
-        const fanName = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
+        const fanName = u.display_name || 'A backer';
         const handle = u.social_handle ? `<a href="https://${u.social_platform==='x'?'x.com': u.social_platform+'.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,'') )}" target="_blank" rel="noopener">${u.social_handle.startsWith('@')?u.social_handle:'@'+u.social_handle} ${platformIcon(u.social_platform)}</a>` : '';
         // A fan's face is in the avatars bucket, not the contender bucket that
         // OptimizedImage resolves against — routing it through there 404'd every

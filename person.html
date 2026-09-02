@@ -130,7 +130,7 @@
     }
     el.innerHTML=list.map((f,i)=>{
       const u=f.users||{};
-      const name = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
+      const name = u.display_name || 'A backer';
       const handle = u.social_handle ? `<a href="https://${u.social_platform==='instagram'?'instagram.com':'x.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,''))}" target="_blank" rel="noopener" style="color:var(--gold);font-size:11px">@${u.social_handle.replace(/^@/,'')}</a>` : '';
       const initials = window.GOAT.initials(name);
       const photoUrl = u.photo_path ? (window.GOAT.getAvatarUrl(u.photo_path)||u.photo_path) : null;
