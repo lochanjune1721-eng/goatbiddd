@@ -7,9 +7,21 @@
 -- A category whose slug is not found is silently skipped, so a slug guessed
 -- wrong here simply produces no rows for that board rather than bad data.
 --
--- Run the REPORT block first to see what it would add.
+-- ── Two things were wrong with this file, and between them it never once put a
+-- contender on a board ──────────────────────────────────────────────────────
+--
+-- The list lived in a TEMP table with ON COMMIT DROP. The SQL editor talks to
+-- the database through a connection pooler and can run two statements of one
+-- script on two different backends, so by the time anything read canon_top20 it
+-- was gone: "relation canon_top20 does not exist", and a run that looked like it
+-- had done something. A plain table survives that, and is dropped at the end.
+--
+-- And the INSERT that does the work was commented out. The file reported what
+-- was missing and then added none of it. Both are fixed below, so this now
+-- fills the boards rather than describing how empty they are.
 
-create temp table if not exists canon_top20 (cat_slugs text[], rank int, name text) on commit drop;
+drop table if exists canon_top20;
+create table canon_top20 (cat_slugs text[], rank int, name text);
 insert into canon_top20 (cat_slugs, rank, name) values
 (ARRAY['greatest-footballer','footballers','footballer'],1,'Lionel Messi'),
 (ARRAY['greatest-footballer','footballers','footballer'],2,'Cristiano Ronaldo'),
@@ -2952,27 +2964,40 @@ insert into canon_top20 (cat_slugs, rank, name) values
 (ARRAY['greatest-f1-car','f1-cars','cars','f1-car'],19,'Red Bull RB7'),
 (ARRAY['greatest-f1-car','f1-cars','cars','f1-car'],20,'Mercedes W196');
 
--- ============ REPORT: what is missing, per board ============
-select c.slug,
-       count(*) filter (where p.id is null) as missing,
-       count(*)                             as canonical_total
-from canon_top20 k
-join categories c on c.slug = any(k.cat_slugs)
-left join people p on p.category_id = c.id and lower(p.name) = lower(k.name)
-group by c.slug
-having count(*) filter (where p.id is null) > 0
-order by missing desc;
+-- ============ BACKFILL ============
+--
+-- Only inserts. Nothing is updated and nothing is deleted, and a contender
+-- already on that board under the same name (case aside) is skipped — so this
+-- is safe to run as often as you like, and a board that is already full gains
+-- nothing. A slug that matches no board simply produces no rows for it.
+--
+-- The generated slug carries the board, so the same person can stand on two
+-- boards without colliding on people.slug.
+insert into people (slug, category_id, name, wikipedia_url, total_cents)
+select lower(regexp_replace(k.name, '[^a-zA-Z0-9]+', '-', 'g')) || '-' || c.slug,
+       c.id,
+       k.name,
+       'https://en.wikipedia.org/wiki/' || replace(k.name, ' ', '_'),
+       0
+  from canon_top20 k
+  join categories c on c.slug = any(k.cat_slugs)
+ where not exists (
+   select 1 from people p
+    where p.category_id = c.id and lower(p.name) = lower(k.name))
+   on conflict (slug) do nothing;
 
--- ============ BACKFILL: uncomment the block below to apply ============
--- insert into people (slug, category_id, name, wikipedia_url, total_cents)
--- select lower(regexp_replace(k.name, '[^a-zA-Z0-9]+', '-', 'g')) || '-' || c.slug,
---        c.id,
---        k.name,
---        'https://en.wikipedia.org/wiki/' || replace(k.name, ' ', '_'),
---        0
--- from canon_top20 k
--- join categories c on c.slug = any(k.cat_slugs)
--- where not exists (
---   select 1 from people p
---   where p.category_id = c.id and lower(p.name) = lower(k.name)
--- );
+-- ============ WHAT IS STILL MISSING ============
+-- Boards listed here are short of their canonical twenty. A board that appears
+-- with a high count has a slug the list does not know — check its slug against
+-- the cat_slugs arrays above rather than adding contenders by hand.
+select c.slug,
+       count(*) filter (where p.id is null) as still_missing,
+       count(*)                             as canonical_total
+  from canon_top20 k
+  join categories c on c.slug = any(k.cat_slugs)
+  left join people p on p.category_id = c.id and lower(p.name) = lower(k.name)
+ group by c.slug
+having count(*) filter (where p.id is null) > 0
+ order by still_missing desc;
+
+drop table canon_top20;
