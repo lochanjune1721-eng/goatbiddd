@@ -925,3 +925,25 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
   .relief-bar{font-size:10.5px;padding:6px 10px;gap:6px}
   .relief-bar .flag{font-size:12px}
 }
+
+
+/* ── The certificate ────────────────────────────────────────────────────────
+   Shown at the size it will be posted at, with the two things anyone does with
+   it — save it, send it — as the only buttons. */
+.goat-cert-modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(4,4,6,.82);backdrop-filter:blur(6px);overflow:auto}
+.goat-cert-sheet{position:relative;width:min(440px,100%);background:var(--surface);border:1px solid var(--gold);
+  border-radius:18px;padding:16px;box-shadow:0 30px 80px -20px rgba(0,0,0,.9)}
+.goat-cert-close{position:absolute;top:8px;right:10px;width:34px;height:34px;border-radius:50%;border:0;
+  background:transparent;color:var(--muted);font-size:24px;line-height:1;cursor:pointer}
+.goat-cert-close:hover{color:var(--ink)}
+.goat-cert-canvas{min-height:180px;display:grid;place-items:center}
+.goat-cert-loading{color:var(--muted);font-size:13px;padding:40px 0}
+.goat-cert-acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.goat-cert-btn{flex:1 1 120px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;
+  padding:0 14px;border-radius:999px;border:1px solid var(--border-2);background:transparent;color:var(--ink);
+  font:inherit;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s}
+.goat-cert-btn:hover{border-color:var(--gold);color:var(--gold)}
+.goat-cert-btn.primary{background:var(--gold);border-color:var(--gold);color:#12100b}
+.goat-cert-btn.primary:hover{color:#12100b;filter:brightness(1.06)}
+.goat-cert-note{margin:10px 2px 0;font-size:11px;color:var(--muted);text-align:center}

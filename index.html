@@ -116,6 +116,10 @@
   color:var(--gold);margin-top:5px;letter-spacing:-.01em}
 .crown-offer-note{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--muted)}
+.crown-cert{grid-column:1 / -1;min-height:44px;border:0;border-top:1px solid rgba(201,168,106,.3);
+  background:rgba(201,168,106,.1);color:var(--gold);font:inherit;font-weight:800;font-size:13px;
+  letter-spacing:.02em;cursor:pointer}
+.crown-cert:hover{background:rgba(201,168,106,.2)}
 @media(max-width:520px){
   .crown-call-grid{grid-template-columns:1fr}
   .crown-offer{padding:10px 12px}
@@ -350,6 +354,7 @@
 
 <footer class="footer">The True GOAT — pay to rank. <a href="/rules">Rules</a> · <a href="/wallet">Wallet</a> · <a href="/fans">Fans</a></footer>
 
+<script src="js/certificate.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/checkout.js"></script>
 <script src="js/profile.js"></script>
@@ -829,7 +834,7 @@
         <span class="crown-offer-sub">${sub}</span>
         <span class="crown-offer-price">$${need.toLocaleString('en-US')}</span>
         <span class="crown-offer-note">${held ? 'to extend your lead' : 'takes the crown'}</span>
-      </button>`;
+      </button>${held ? `<button class="crown-cert" data-cert="${p.id}">🏆 Get your certificate</button>` : ''}`;
   }
 
   function duelHtml(cat, catPeople, opts={}){
@@ -1230,6 +1235,23 @@
           // That bid may have taken the crown, so re-read the fans and redraw.
           loadGfoat().then(applyFilters);
         }
+      });
+      return;
+    }
+
+    const cert = e.target.closest('[data-cert]');
+    if(cert){
+      e.preventDefault(); e.stopPropagation();
+      const pid = cert.dataset.cert;
+      const f = GFOAT.get(pid), person = people.find(x => x.id === pid);
+      if(!f || !person || !window.GoatCertificate) return;
+      window.GoatCertificate.open({
+        fanName: f.name,
+        fanPhotoUrl: f.photo ? (window.GOAT?.getAvatarUrl?.(f.photo) || f.photo) : null,
+        contenderName: person.name,
+        contenderPhotoUrl: person.photo_path ? (window.GOAT?.getPhotoUrl?.(person.photo_path) || person.photo_path) : null,
+        amountCents: f.cents,
+        slug: person.slug
       });
       return;
     }
