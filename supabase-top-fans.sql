@@ -4,6 +4,19 @@
 --
 -- The Greatest Fan of All Time for a set of contenders, in one round trip.
 --
+-- ── This file is not optional ───────────────────────────────────────────────
+--
+-- Without it the badge on a contender's frame can never show a face, however
+-- much money is on the board. fan_totals is public, so the browser can see that
+-- a contender has a fan — but users carries "users self read", so it cannot see
+-- who that fan is. The embedded read is refused and the badge falls back to the
+-- unclaimed crown on every frame.
+--
+-- No page code gets past a row policy. This function is SECURITY DEFINER, so it
+-- answers the one question the badge asks — who leads this contender, what is
+-- their picture, what is their handle — without opening the users table to
+-- anyone. Email and balance stay exactly as private as they are now.
+--
 -- The homepage shows around a hundred duels, two contenders each. Asking for
 -- each one's top fan separately is two hundred queries before the page settles,
 -- which is what a crown on every card would otherwise cost. This answers all of

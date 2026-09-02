@@ -1054,8 +1054,20 @@
       if(error){
         // Nothing was learned, so nothing is concluded. Leaving the slots
         // unmarked means the next pass tries again rather than freezing every
-        // badge on a crown because one request failed.
-        console.warn('[gfoat] could not read fan_totals:', error.message);
+        // badge because one request failed.
+        //
+        // This is the expected outcome on a project without top_fans installed:
+        // fan_totals is public, but users carries a "self read" policy, so the
+        // browser can see that a fan exists and cannot see who they are. The
+        // embed is refused and the whole read fails with it. No amount of page
+        // code gets around a row policy — top_fans is SECURITY DEFINER and
+        // exists precisely to answer this without opening the users table.
+        console.error(
+          '[gfoat] Cannot read who the fans are: ' + error.message +
+          '\n  fan_totals is public but users is not (policy "users self read"),' +
+          '\n  so the fan behind a contender cannot be named from the browser.' +
+          '\n  Fix: run supabase-top-fans.sql once. It is SECURITY DEFINER and' +
+          '\n  returns only the name, picture and handle — nothing else opens up.');
         return;
       }
       const best = new Map();
