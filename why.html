@@ -47,6 +47,7 @@
 
 <div class="box"><div id="summary">Loading…</div></div>
 <div class="box" id="tablebox" hidden><table id="tbl"></table></div>
+<div class="box"><b>The homepage itself</b><div id="home" style="margin-top:6px" class="k">opening it in the background — this part takes about 20 seconds…</div></div>
 <p><button id="copy">Copy all of this as text</button></p>
 <div class="box" id="outbox" hidden><div id="out"></div></div>
 
@@ -191,6 +192,58 @@ $('host').textContent = location.host;
          'backer:' + (r.apiSaid?.display_name || r.u?.display_name || (r.lead ? r.lead.user_id.slice(0, 8) : '-')),
          r.verdict].join(' | '));
   }
+  // ── What the homepage actually does with all this ─────────────────────────
+  //
+  // Everything above is the database. This is the page. It loads the homepage
+  // in a hidden frame — same origin, so its DOM can be read — waits for the
+  // badges to fill, and reports what they say. That closes the last gap: the
+  // data can be perfect and the badge still empty, and only the page itself can
+  // say which. It also reads the homepage's own build stamp, so a browser
+  // serving a cached copy of it is visible rather than mistaken for a bug.
+  try {
+    const frame = document.createElement('iframe');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:absolute;left:-99999px;top:0;width:1280px;height:1000px;border:0';
+    frame.src = '/?why=1';
+    const loaded = new Promise(res => { frame.onload = res; frame.onerror = res; });
+    document.body.appendChild(frame);
+    await Promise.race([loaded, new Promise(r => setTimeout(r, 12000))]);
+    await new Promise(r => setTimeout(r, 8000));    // let the badge passes run
+
+    const d = frame.contentDocument;
+    if(!d) throw new Error('the homepage did not open');
+    const homeBuild = d.querySelector('meta[name=build]')?.content || '(no build stamp — this is an old cached copy)';
+    const badges = [...d.querySelectorAll('.face-fan[data-face-fan]')];
+    const filled = badges.filter(el => !/\bnone\b/.test(el.className));
+    const wanted = rows.filter(r => r.lead);
+    const onPage = wanted.map(r => {
+      const el = badges.find(b => b.dataset.faceFan === r.p.id);
+      return { name: r.p.name, present: !!el,
+               state: el ? (/\bnone\b/.test(el.className) ? 'still the empty crown' : 'showing the fan')
+                         : 'not on the homepage at all',
+               tries: el?.dataset.gfoatTries || '0' };
+    });
+    frame.remove();
+
+    $('home').innerHTML =
+      '<div><span class="k">homepage built:</span> <b>' + esc(homeBuild) + '</b>' +
+        (homeBuild === '__BUILD_STAMP__' ? ' <span class="ok">(same as this page — current)</span>'
+                                         : ' <span class="bad">(DIFFERENT from this page — you are being served a cached homepage)</span>') + '</div>' +
+      '<div><span class="k">badges on it:</span> <b>' + badges.length + '</b>, ' +
+        '<b class="' + (filled.length ? 'ok' : 'bad') + '">' + filled.length + '</b> showing a fan</div>' +
+      '<table style="margin-top:8px"><tr><th>Contender with a fan</th><th>On the homepage?</th><th class="n">passes</th></tr>' +
+      onPage.map(o => '<tr><td>' + esc(o.name) + '</td><td class="' +
+        (o.state === 'showing the fan' ? 'ok' : 'bad') + '">' + esc(o.state) + '</td>' +
+        '<td class="n">' + esc(o.tries) + '</td></tr>').join('') + '</table>';
+
+    say('HOMEPAGE built: ' + homeBuild + ' (this page: __BUILD_STAMP__)');
+    say('HOMEPAGE badges: ' + badges.length + ', showing a fan: ' + filled.length);
+    for(const o of onPage) say('  ' + o.name + ' -> ' + o.state + ' (passes ' + o.tries + ')');
+  } catch(e){
+    $('home').innerHTML = '<span class="bad">could not read the homepage: ' + esc(e.message) + '</span>';
+    say('HOMEPAGE: could not read it — ' + e.message);
+  }
+
   $('out').textContent = lines.join('\n');
   $('copy').onclick = () => {
     $('outbox').hidden = false;
