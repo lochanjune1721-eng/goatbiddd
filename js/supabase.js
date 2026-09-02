@@ -97,6 +97,22 @@ window.GOAT = {
     const cleanPath = trimmed.replace(/^\/+/, '');
     return `${SUPABASE_URL}/storage/v1/object/public/people/${cleanPath}`;
   },
+  // A fan's face, which is not a contender's portrait and does not live in the
+  // same bucket. getPhotoUrl resolves a bare path against 'people', so an
+  // avatar stored as a path — anything written before uploads started keeping
+  // the full URL, and everything in the seeded data — resolved to a contender
+  // portrait that does not exist, 404'd, and fell back to initials. That is the
+  // crown showing where a face should be.
+  //
+  // Absolute URLs pass straight through either way, which is what Google
+  // avatars and new uploads are.
+  getAvatarUrl: (path) => {
+    if(!path || typeof path !== 'string') return null;
+    const trimmed = path.trim();
+    if(!trimmed) return null;
+    if(trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
+    return `${SUPABASE_URL}/storage/v1/object/public/avatars/${trimmed.replace(/^\/+/, '')}`;
+  },
   getVideoUrl: (path) => {
     if(!path || typeof path !== 'string') return null;
     const trimmed = path.trim();

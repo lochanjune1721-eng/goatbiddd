@@ -1094,7 +1094,7 @@
 
       const name = f.display_name || 'Anonymous';
       const down = '$' + Math.floor((f.total_cents||0)/100).toLocaleString('en-US');
-      const url = f.photo_path ? (window.GOAT?.getPhotoUrl?.(f.photo_path) || f.photo_path) : null;
+      const url = f.photo_path ? (window.GOAT?.getAvatarUrl?.(f.photo_path) || f.photo_path) : null;
       const initialsHtml = cls => `<span class="${cls}">${esc(initialsOf(name))}</span>`;
       const img = cls => url
         ? `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:${JSON.stringify(cls)},textContent:${JSON.stringify(initialsOf(name))}}))">`
@@ -1238,8 +1238,8 @@
       function fanAvatar(b, px){
         const u = b.users || {};
         const name = fanName(b);
-        const url = (!u.is_anonymous && u.photo_path && window.GOAT.getPhotoUrl)
-          ? window.GOAT.getPhotoUrl(u.photo_path) : null;
+        const url = (!u.is_anonymous && u.photo_path && window.GOAT.getAvatarUrl)
+          ? window.GOAT.getAvatarUrl(u.photo_path) : null;
         const box = `width:${px}px;height:${px}px;border-radius:50%;flex:0 0 auto;overflow:hidden;border:1px solid var(--border)`;
         if(url) return `<img src="${esc(url)}" alt="" loading="lazy" style="${box};object-fit:cover">`;
         return `<span style="${box};background:var(--surface-3);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif;font-size:${Math.round(px*0.42)}px">${esc(window.GOAT.initials(name))}</span>`;
@@ -1298,7 +1298,7 @@
           }
           leadingFansEl.innerHTML = topFans.map((u, i) => {
             const name = u.is_anonymous ? 'Anonymous' : (u.display_name || 'Supporter');
-            const photoUrl = (!u.is_anonymous && u.photo_path) ? (window.GOAT.getPhotoUrl(u.photo_path)||u.photo_path) : null;
+            const photoUrl = (!u.is_anonymous && u.photo_path) ? (window.GOAT.getAvatarUrl(u.photo_path)||u.photo_path) : null;
             const face = photoUrl
               ? `<img src="${esc(photoUrl)}" alt="" loading="lazy">`
               : `<span class="fan-face-initials">${esc(window.GOAT.initials(name))}</span>`;

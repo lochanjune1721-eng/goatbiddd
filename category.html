@@ -208,7 +208,13 @@
         const u=topFan.users||{};
         const fanName = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
         const handle = u.social_handle ? `<a href="https://${u.social_platform==='x'?'x.com': u.social_platform+'.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,'') )}" target="_blank" rel="noopener">${u.social_handle.startsWith('@')?u.social_handle:'@'+u.social_handle} ${platformIcon(u.social_platform)}</a>` : '';
-        const fanPhoto = u.photo_path ? window.OptimizedImage.render({ photoPath: u.photo_path, name: fanName, size: 90 }) : `<div class="fan-initials">${window.GOAT.initials(fanName)}</div>`;
+        // A fan's face is in the avatars bucket, not the contender bucket that
+        // OptimizedImage resolves against — routing it through there 404'd every
+        // uploaded avatar and fell back to initials.
+        const fanUrl = window.GOAT.getAvatarUrl(u.photo_path);
+        const fanPhoto = fanUrl
+          ? `<img src="${fanUrl}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'fan-initials',textContent:${JSON.stringify(window.GOAT.initials(fanName))}}))">`
+          : `<div class="fan-initials">${window.GOAT.initials(fanName)}</div>`;
         const fanVotes = fmtVotes(topFan.total_cents);
         const fanGap = nextFan ? `$${Math.floor((topFan.total_cents - nextFan.total_cents)/100).toLocaleString('en-US')} ahead of the next fan` : 'Only fan so far';
         fanHtml = `

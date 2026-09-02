@@ -133,7 +133,7 @@
       const name = u.is_anonymous ? 'Anonymous' : (u.display_name||'Unknown');
       const handle = u.social_handle ? `<a href="https://${u.social_platform==='instagram'?'instagram.com':'x.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,''))}" target="_blank" rel="noopener" style="color:var(--gold);font-size:11px">@${u.social_handle.replace(/^@/,'')}</a>` : '';
       const initials = window.GOAT.initials(name);
-      const photoUrl = u.photo_path ? (window.GOAT.getPhotoUrl(u.photo_path)||u.photo_path) : null;
+      const photoUrl = u.photo_path ? (window.GOAT.getAvatarUrl(u.photo_path)||u.photo_path) : null;
       const photo = photoUrl ? `<img src="${photoUrl}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">` : `<div style="width:44px;height:44px;border-radius:50%;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif">${initials}</div>`;
       const crown = i===0 ? '👑 ' : '';
       const count = window.GOAT.money(f.total_cents);
