@@ -1041,45 +1041,52 @@
       else rows = data;
     } catch(e){ console.warn('[gfoat] top_fans threw, reading fan_totals instead:', e?.message || e); }
 
-    // An empty answer is not the same as an answer. top_fans returning zero rows
-    // — because the function is an older shape, or its join dropped a fan whose
-    // users row it could not see — is indistinguishable from "nobody has backed
-    // anyone", and the page drew a crown either way. Anything short of rows
-    // falls through to reading fan_totals directly, which is public and needs no
-    // function at all.
+    // An empty answer is not the same as an answer. top_fans returning zero
+    // rows — because the function is an older shape, or PostgREST has not picked
+    // it up yet — is indistinguishable from "nobody has backed anyone", and the
+    // page drew a crown either way. Anything short of rows falls through.
     if(!rows || !rows.length){
-      const { data, error } = await sb.from('fan_totals')
-        .select('person_id,total_cents,users(display_name,is_anonymous,photo_path,social_handle,social_platform)')
+      // Two reads rather than one embed. fan_totals is public, so who leads a
+      // contender comes back fine; the fan's NAME does not, because users
+      // carries "users self read" and an embedded users(...) is refused outright
+      // — taking the whole read down with it and leaving every badge blank.
+      //
+      // public_profiles (supabase-public-profiles.sql) is a view of the four
+      // columns a fan's identity actually consists of, readable by anyone.
+      // Email and balance are not in it and stay private.
+      const { data: totals, error: tErr } = await sb.from('fan_totals')
+        .select('person_id,user_id,total_cents')
         .in('person_id', ids).order('total_cents', { ascending:false }).limit(5000);
-      if(error){
-        // Nothing was learned, so nothing is concluded. Leaving the slots
-        // unmarked means the next pass tries again rather than freezing every
-        // badge because one request failed.
-        //
-        // This is the expected outcome on a project without top_fans installed:
-        // fan_totals is public, but users carries a "self read" policy, so the
-        // browser can see that a fan exists and cannot see who they are. The
-        // embed is refused and the whole read fails with it. No amount of page
-        // code gets around a row policy — top_fans is SECURITY DEFINER and
-        // exists precisely to answer this without opening the users table.
-        console.error(
-          '[gfoat] Cannot read who the fans are: ' + error.message +
-          '\n  fan_totals is public but users is not (policy "users self read"),' +
-          '\n  so the fan behind a contender cannot be named from the browser.' +
-          '\n  Fix: run supabase-top-fans.sql once. It is SECURITY DEFINER and' +
-          '\n  returns only the name, picture and handle — nothing else opens up.');
-        return;
+      if(tErr){ console.error('[gfoat] cannot read fan_totals:', tErr.message); return; }
+
+      const top = new Map();
+      for(const r of (totals||[])) if(!top.has(r.person_id)) top.set(r.person_id, r);
+      const userIds = [...new Set([...top.values()].map(r => r.user_id).filter(Boolean))];
+
+      let profiles = new Map();
+      if(userIds.length){
+        const { data: profs, error: pErr } = await sb.from('public_profiles')
+          .select('id,display_name,photo_path,social_handle,social_platform').in('id', userIds);
+        if(pErr){
+          console.error(
+            '[gfoat] cannot read public_profiles: ' + pErr.message +
+            '\n  fan_totals says who leads each contender, but naming them needs' +
+            '\n  public_profiles — a view of display_name, photo_path and handle.' +
+            '\n  Fix: run supabase-public-profiles.sql once. It exposes those four' +
+            '\n  columns and nothing else; email and balance stay private.');
+          // The money is still known, so show the crown with what it costs
+          // rather than nothing at all.
+        } else {
+          profiles = new Map((profs||[]).map(u => [u.id, u]));
+        }
       }
-      const best = new Map();
-      for(const r of (data||[])){
-        if(best.has(r.person_id)) continue;
-        best.set(r.person_id, { person_id:r.person_id, total_cents:r.total_cents,
-          display_name:    r.users?.display_name,
-          photo_path:      r.users?.photo_path,
-          social_handle:   r.users?.social_handle,
-          social_platform: r.users?.social_platform });
-      }
-      rows = [...best.values()];
+
+      rows = [...top.values()].map(r => {
+        const u = profiles.get(r.user_id) || {};
+        return { person_id:r.person_id, user_id:r.user_id, total_cents:r.total_cents,
+                 display_name: u.display_name, photo_path: u.photo_path,
+                 social_handle: u.social_handle, social_platform: u.social_platform };
+      });
     }
 
     // What the viewer already has down on each of them, so the crown is priced
@@ -1281,7 +1288,7 @@
       const today = new Date(); today.setHours(0,0,0,0);
       const [todayBidsRes, activityBidsRes, fansRes] = await Promise.all([
         sb.from('bids').select('amount_cents').gte('created_at', today.toISOString()),
-        sb.from('bids').select('amount_cents,created_at,people(name,slug),users(display_name,is_anonymous,photo_path)').order('created_at',{ascending:false}).limit(12),
+        sb.from('bids').select('amount_cents,created_at,user_id,people(name,slug)').order('created_at',{ascending:false}).limit(12),
         fetch('/api/fans?t='+Date.now()).then(r => r.json()).catch(()=>({fans:[]}))
       ]);
 
@@ -1290,7 +1297,11 @@
       const backedEl = document.getElementById('backed-today');
       if(backedEl) window.tickMoney(backedEl, backedToday);
 
-      const bids = activityBidsRes.data || [];
+      // The backer's name is not embeddable — users is self-read only — so it
+      // is looked up through public_profiles and attached here.
+      const rawBids = activityBidsRes.data || [];
+      const actWho = await (window.GOAT.profiles?.(rawBids.map(b => b.user_id)) || new Map());
+      const bids = rawBids.map(b => Object.assign({}, b, { users: actWho.get(b.user_id) || {} }));
 
       // The feed is only alive if you can see WHO is backing WHOM. A backer who
       // ticked "stay anonymous" is shown as Anonymous; everyone else gets their

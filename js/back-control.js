@@ -32,19 +32,22 @@
     const out = { topTotal:0, secondTotal:0, myTotal:0, need:1, topName:null, isTop:false, fans:0 };
     if(!client || !personId) return out;
 
+    // No users(...) embed: that table is self-read only, so embedding it has the
+    // whole query refused. The names come from public_profiles instead.
     const { data, error } = await client
       .from('fan_totals')
-      .select('user_id,total_cents,users(display_name)')
+      .select('user_id,total_cents')
       .eq('person_id', personId)
       .order('total_cents', { ascending:false })
       .limit(50);
     if(error || !data) return out;
+    const who = await (window.GOAT?.profiles?.(data.map(f => f.user_id)) || new Map());
 
     out.fans = data.length;
     const top = data[0];
     out.topTotal = top ? (top.total_cents||0) : 0;
     out.secondTotal = data[1] ? (data[1].total_cents||0) : 0;
-    out.topName = top ? (top.users?.display_name || 'a fan') : null;
+    out.topName = top ? (who.get(top.user_id)?.display_name || 'a fan') : null;
 
     let me = null;
     try { const { data:{ user } } = await client.auth.getUser(); if(user) me = user.id; } catch(e){}

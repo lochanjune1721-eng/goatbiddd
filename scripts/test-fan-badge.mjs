@@ -32,13 +32,21 @@ await p.addInitScript(({MESSI,RONALDO,CAT,PHILIP,FACE}) => {
     people: [
       { id:MESSI,   slug:'lionel-messi', category_id:CAT, name:'Lionel Messi',      total_cents:9800, first_backed_at:'2026-01-01', photo_path:null, blurb:'' },
       { id:RONALDO, slug:'cristiano-ronaldo', category_id:CAT, name:'Cristiano Ronaldo', total_cents:5000, first_backed_at:'2026-01-02', photo_path:null, blurb:'' }],
-    fan_totals: [
-      { person_id:MESSI, user_id:PHILIP, total_cents:9800,
-        users:{ display_name:'Philip', is_anonymous:false, photo_path:FACE, social_handle:'philip', social_platform:'x' } }],
+    // Shaped as the database really answers: fan_totals is public and carries
+    // no names, and the identity comes from public_profiles.
+    fan_totals: [{ person_id:MESSI, user_id:PHILIP, total_cents:9800 }],
+    public_profiles: [{ id:PHILIP, display_name:'Philip', photo_path:FACE,
+                        social_handle:'philip', social_platform:'x' }],
     bids: [], site_stats: [{ visitor_count: 1 }]
   };
   const res = data => Promise.resolve({ data, error:null });
   function table(name){
+    // users is self-read only on the real database: any read of it is refused.
+    // The page must never depend on one.
+    if(name === 'users') return { select(){ return this; }, eq(){ return this; },
+      in(){ return this; }, order(){ return this; }, limit(){ return this; },
+      maybeSingle: () => Promise.resolve({ data:null, error:{ message:'permission denied for table users' } }),
+      then: (ok) => ok({ data:null, error:{ message:'permission denied for table users' } }) };
     const api = { _rows: rows[name] || [] };
     for (const m of ['select','eq','in','order','limit','gte','lt','gt','neq','maybeSingle','single','not','filter','range','contains'])
       api[m] = () => api;

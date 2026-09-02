@@ -73,3 +73,8 @@ end $$;
 
 -- Should return one row per contender that has a backer.
 -- select * from top_fans(array(select id from people limit 5));
+
+-- PostgREST caches which functions it exposes, so a brand-new one can answer 404
+-- for a while — indistinguishable from never having run this file. This makes it
+-- visible immediately.
+notify pgrst, 'reload schema';

@@ -113,6 +113,27 @@ window.GOAT = {
     if(trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
     return `${SUPABASE_URL}/storage/v1/object/public/avatars/${trimmed.replace(/^\/+/, '')}`;
   },
+  // A fan's public identity, for any list that shows one.
+  //
+  // users carries "users self read", so an embedded users(...) in a fan query is
+  // refused and takes the whole read down with it — which is why fan names and
+  // faces were blank everywhere in the browser while /api/fans, which runs with
+  // the service key on the server, showed them fine.
+  //
+  // public_profiles (supabase-public-profiles.sql) is a view of the four columns
+  // a public identity consists of. Email and balance are not in it.
+  profiles: async (ids) => {
+    const want = [...new Set((ids||[]).filter(Boolean))];
+    if(!want.length || !window.supabaseClient) return new Map();
+    const { data, error } = await window.supabaseClient.from('public_profiles')
+      .select('id,display_name,photo_path,social_handle,social_platform').in('id', want);
+    if(error){
+      console.error('[GOAT] cannot read public_profiles: ' + error.message +
+        '\n  Fan names and faces need it — run supabase-public-profiles.sql once.');
+      return new Map();
+    }
+    return new Map((data||[]).map(u => [u.id, u]));
+  },
   getVideoUrl: (path) => {
     if(!path || typeof path !== 'string') return null;
     const trimmed = path.trim();

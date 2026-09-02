@@ -102,7 +102,7 @@
     try {
       const [catPeopleRes, fansRes] = await Promise.all([
         person.category_id ? sb.from('people').select('id,total_cents,first_backed_at,seed_rank').eq('category_id', person.category_id).order('total_cents',{ascending:false}).order('first_backed_at',{ascending:true,nullsFirst:false}).order('seed_rank',{ascending:true,nullsFirst:false}) : Promise.resolve({data:[]}),
-        sb.from('fan_totals').select('total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform,photo_status)').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100)
+        sb.from('fan_totals').select('user_id,total_cents').eq('person_id', person.id).order('total_cents',{ascending:false}).limit(100)
       ]);
 
       const catPeople = catPeopleRes?.data || [];
@@ -114,7 +114,11 @@
         document.getElementById('wiki').innerHTML = `<a href="${person.wikipedia_url}" target="_blank" rel="noopener" style="text-decoration:underline">Wikipedia</a> ${person.photo_credit? '· '+person.photo_credit:''}`;
       }
 
+      // users is self-read only, so the fan's name cannot be embedded in that
+      // query — it comes from the public_profiles view instead.
       fans = fansRes?.data || [];
+      const who = await (window.GOAT.profiles?.(fans.map(f => f.user_id)) || new Map());
+      fans = fans.map(f => Object.assign({}, f, { users: who.get(f.user_id) || {} }));
       renderFans(fans);
       if(backControl) backControl.refresh();
     } catch(e) {

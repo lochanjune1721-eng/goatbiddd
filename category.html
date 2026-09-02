@@ -125,7 +125,11 @@
   async function fetchFansDetailed(personIds){
     if(previewOnly || !personIds.length) return {};
     // fetch top 2 per person to compute gap
-    const {data}=await sb.from('fan_totals').select('person_id,total_cents,users(id,display_name,is_anonymous,photo_path,social_handle,social_platform,photo_status)').in('person_id', personIds).order('total_cents',{ascending:false});
+    // No users(...) embed — that table is self-read only and embedding it has the
+    // whole read refused. Names and faces come from the public_profiles view.
+    const {data:rawFans}=await sb.from('fan_totals').select('person_id,user_id,total_cents').in('person_id', personIds).order('total_cents',{ascending:false});
+    const who = await (window.GOAT.profiles?.((rawFans||[]).map(f=>f.user_id)) || new Map());
+    const data = (rawFans||[]).map(f => Object.assign({}, f, { users: who.get(f.user_id) || {} }));
     const map={};
     (data||[]).forEach(r=>{
       if(!map[r.person_id]) map[r.person_id]=[];
