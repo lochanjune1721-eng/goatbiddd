@@ -14,7 +14,11 @@ const REQUIRED = ['SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_PASSWORD', 'PAYPAL_CLIENT_
 const OPTIONAL = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SITE_URL', 'PAYPAL_ENV', 'RESOLVER_SECRET',
   'UROPAY_API_KEY', 'UROPAY_API_SECRET', 'UROPAY_WEBHOOK_SECRET',
   'INR_PER_VOTE', 'UROPAY_INR_PER_VOTE',
-  'UROPAY_VPA', 'UPI_VPA', 'UPI_PAYEE_NAME'];
+  'UROPAY_VPA', 'UPI_VPA', 'UPI_PAYEE_NAME',
+  // Listed so "did the secret actually land on the Worker" is answerable from
+  // this page. A secret set on the wrong project, or saved as a plaintext
+  // Variable and then wiped by the next deploy, both read as false here.
+  'DODO_API_KEY', 'DODO_WEBHOOK_SECRET', 'DODO_PRODUCT_ID', 'DODO_MODE'];
 
 // Which rails to draw, and what backs each one.
 //
