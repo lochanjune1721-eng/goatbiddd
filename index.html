@@ -711,7 +711,7 @@
     const side = (p, cls) => `
         <div class="duel-side ${cls} ${(cls==='a'?v1>v2:v2>v1) ? 'leader' : ''}">
           <div class="photo">${cls==='a'?p1Photo:p2Photo}${
-            p ? `<a class="face-fan" data-face-fan="${p.id}" data-slug="${esc(p.slug)}"></a>` : ''}</div>
+            p ? `<a class="face-fan in" data-face-fan="${p.id}" data-slug="${esc(p.slug)}" href="/person?slug=${esc(p.slug)}#fans" title="Greatest Fan of All Time"><span class="face-fan-initials">👑</span></a>` : ''}</div>
         </div>`;
 
     // Each contender's tile: who, what share, how much, who leads their fans,
@@ -1083,9 +1083,8 @@
         if(face){
           el.classList.add('none');
           el.href = '/person?slug=' + encodeURIComponent(el.dataset.slug || '') + '#fans';
-          el.innerHTML = '<span class="face-fan-empty">👑</span>';
+          el.innerHTML = '<span class="face-fan-initials">👑</span>';
           el.title = 'No Greatest Fan yet — $1 claims the crown';
-          requestAnimationFrame(()=> el.classList.add('in'));
         } else {
           el.innerHTML = '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
         }
@@ -1117,7 +1116,7 @@
         el.classList.toggle('has-social', !!social);
         el.innerHTML = `${img('face-fan-initials')}<span class="face-fan-crown">👑</span>`
           + `<span class="face-fan-sum">${esc(down)}</span>`;
-        requestAnimationFrame(()=> el.classList.add('in'));
+        el.classList.remove('none');
       } else {
         el.innerHTML = `${img('poll-gfoat-initials')}<span class="poll-gfoat-copy">
             <span class="poll-gfoat-label">GOAT fan · ${esc(down)}</span>
@@ -1140,6 +1139,12 @@
   // filter change. Rather than calling this from each of them and missing one,
   // watch for the slots arriving. paintGfoat only touches slots it has not
   // already filled, so firing it often costs nothing.
+  // Belt as well as braces. The observer catches every later render; this
+  // catches the first one, and any render that somehow slips past it. The
+  // function only touches slots it has not already filled, so extra calls are
+  // free.
+  window.addEventListener('load', () => { setTimeout(paintGfoat, 400); setTimeout(paintGfoat, 1800); });
+
   (function watchForTiles(){
     let queued = null;
     const run = () => { queued = null; paintGfoat(); };

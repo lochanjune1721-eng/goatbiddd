@@ -838,44 +838,50 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 
 /* ── The crown, on the face it was won on ───────────────────────────────────
    Bottom-right of every contender's frame: the face of whoever has put the
-   most behind THAT contender. A face at a size you can actually recognise —
-   it was a text pill with the name in 11px type, which is a caption, not a
-   portrait. The name is in the tooltip; the picture is the point.
+   most behind THAT contender, at a size you can actually recognise a person at.
+   Clicking it goes to their social account.
 
-   Clicking it goes to that person's social account. Being the Greatest Fan of
-   All Time is worth something only if it points somewhere. */
-.face-fan{position:absolute;right:9px;bottom:9px;z-index:3;display:block;
-  width:60px;height:60px;border-radius:50%;text-decoration:none;
-  opacity:0;transform:scale(.9);transition:opacity .28s ease,transform .28s ease}
-.face-fan.in{opacity:1;transform:none}
-.face-fan:empty{display:none}
-.face-fan:hover{transform:scale(1.06)}
+   It is drawn with a crown in it from the first paint and filled in with the
+   real face when the answer arrives. The previous version shipped empty and
+   relied on :empty { display:none } plus opacity:0 until JavaScript filled it —
+   so any failure anywhere in that path showed nothing at all, which is
+   indistinguishable from the feature not existing. */
+.face-fan{position:absolute;right:10px;bottom:10px;z-index:4;display:block;
+  width:84px;height:84px;border-radius:50%;text-decoration:none;
+  transition:transform .18s ease}
+.face-fan:hover{transform:scale(1.05)}
+.face-fan:active{transform:scale(.99)}
 
-.face-fan img,.face-fan .face-fan-initials{width:60px;height:60px;border-radius:50%;object-fit:cover;
+.face-fan img,.face-fan .face-fan-initials{width:84px;height:84px;border-radius:50%;object-fit:cover;
   display:grid;place-items:center;background:var(--surface-3);
-  border:2.5px solid var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.6),0 0 0 3px rgba(8,8,10,.55);
-  font-family:'Anton',sans-serif;font-size:21px;color:var(--gold)}
+  border:3px solid var(--gold);
+  box-shadow:0 6px 22px rgba(0,0,0,.7),0 0 0 4px rgba(8,8,10,.6);
+  font-family:'Anton',sans-serif;font-size:28px;color:var(--gold)}
 
-/* The crown rides the rim so the badge reads as a title rather than an avatar. */
-.face-fan-crown{position:absolute;top:-6px;left:-4px;font-size:19px;line-height:1;
-  filter:drop-shadow(0 2px 3px rgba(0,0,0,.75));pointer-events:none}
+/* The crown rides the rim, so the badge reads as a title rather than an avatar. */
+.face-fan-crown{position:absolute;top:-8px;left:-6px;font-size:26px;line-height:1;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.8));pointer-events:none}
 
-/* What they have down, on the rim under the face. */
-.face-fan-sum{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
-  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--bg);
-  background:var(--gold);border-radius:999px;padding:1px 7px;white-space:nowrap;
-  box-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none}
+/* What they have down, on a chip across the bottom of the rim. */
+.face-fan-sum{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--bg);
+  background:var(--gold);border-radius:999px;padding:2px 9px;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.55);pointer-events:none}
 
-/* An unclaimed crown is an invitation, so it stays visible and stays dashed. */
-.face-fan.none{display:grid;place-items:center;background:rgba(8,8,10,.62);
-  border:2px dashed var(--border-2);backdrop-filter:blur(4px)}
-.face-fan.none .face-fan-empty{font-size:22px;opacity:.85}
-.face-fan.none:hover{border-color:var(--gold)}
+/* An unclaimed crown is an invitation, so it stays and stays dashed. */
+.face-fan.none .face-fan-initials{border-style:dashed;border-color:var(--border-2);
+  background:rgba(8,8,10,.6);backdrop-filter:blur(4px)}
+.face-fan.none:hover .face-fan-initials{border-color:var(--gold)}
 
+@media(max-width:900px){
+  .face-fan,.face-fan img,.face-fan .face-fan-initials{width:66px;height:66px}
+  .face-fan img,.face-fan .face-fan-initials{font-size:22px;border-width:2.5px}
+  .face-fan-crown{font-size:21px;top:-7px;left:-5px}
+}
 @media(max-width:640px){
-  .face-fan,.face-fan img,.face-fan .face-fan-initials{width:46px;height:46px}
-  .face-fan{right:7px;bottom:7px}
-  .face-fan img,.face-fan .face-fan-initials{font-size:16px;border-width:2px}
-  .face-fan-crown{font-size:15px;top:-5px;left:-3px}
-  .face-fan-sum{font-size:9px;padding:1px 6px;bottom:-6px}
+  .face-fan{right:6px;bottom:6px}
+  .face-fan,.face-fan img,.face-fan .face-fan-initials{width:50px;height:50px}
+  .face-fan img,.face-fan .face-fan-initials{font-size:17px;border-width:2px}
+  .face-fan-crown{font-size:16px;top:-5px;left:-4px}
+  .face-fan-sum{font-size:9px;padding:1px 7px;bottom:-6px}
 }
