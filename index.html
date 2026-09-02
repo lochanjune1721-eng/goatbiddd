@@ -49,7 +49,7 @@
   gap:16px;align-items:center;justify-content:center;padding:14px}
 .duel-body.crazy{gap:18px;padding:16px}
 .duel-side{min-width:0;display:flex;flex-direction:column;align-items:center}
-.duel-side .photo{--frame-h:clamp(230px,25vw,360px);
+.duel-side .photo{--frame-h:clamp(270px,30vw,430px);
   height:var(--frame-h);aspect-ratio:9/16;width:auto;flex:0 0 auto;
   border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--border);
   position:relative;transition:border-color .2s,box-shadow .2s}
@@ -60,7 +60,11 @@
    losing the sides, which is the trade asked for. The black behind it is the
    frame's own background, so a clip that does not fill it still looks placed
    rather than broken. */
-.photo .goat-clip{object-fit:contain;object-position:center center;transform:none}
+.photo .goat-clip{object-fit:contain;object-position:center center;transform:none;
+  /* Fitting a clip whole leaves space at two edges, and the portrait it is
+     playing over sat in that space — a still showing through behind a video.
+     The clip paints its own black there, so the frame reads as one thing. */
+  background:#000}
 
 /* Stills still fill the frame. A portrait cropped to 9:16 is a portrait; a
    portrait letterboxed inside it is a stamp in the middle of a black card. */
@@ -69,11 +73,11 @@
 @media(max-width:700px){
   .duel-body{grid-template-columns:auto auto;justify-content:center;gap:10px;padding:12px}
   .duel-poll{grid-column:1 / -1;order:3;width:100%}
-  .duel-side .photo{--frame-h:clamp(200px,52vw,300px)}
+  .duel-side .photo{--frame-h:clamp(230px,58vw,340px)}
 }
 @media(max-width:480px){
   .duel-body{gap:8px;padding:9px}
-  .duel-side .photo{border-radius:10px;--frame-h:min(46vw,260px)}
+  .duel-side .photo{border-radius:10px;--frame-h:min(52vw,300px)}
 }
 
 .duel-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
