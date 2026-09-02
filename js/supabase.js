@@ -364,8 +364,24 @@ async function refreshBalance(){
   // else on screen — the vote count lives on the wallet page, where it belongs.
   const credit=window.GOAT.money(bal);
 
-  pill.innerHTML=`<span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted)"><b style="color:var(--gold)">${credit}</b></span> <a href="/wallet" style="margin-left:6px;background:var(--gold);color:var(--bg);padding:5px 11px;border-radius:999px;font-weight:700;font-size:11px">+ Add</a> <button id="signout-btn" title="Sign out" style="margin-left:5px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:999px;cursor:pointer;font-size:11px">Out</button>`;
-  
+  // The face doubles as the way in to the profile. A backer's name and picture
+  // are shown on every board they lead, so the place to change them is wherever
+  // they are looking at themselves — not buried on a settings page.
+  const face = (data && data.photo_path && window.GOAT.getPhotoUrl(data.photo_path))
+    ? `<img src="${data.photo_path.replace(/"/g,'&quot;')}" alt="" style="width:100%;height:100%;object-fit:cover">`
+    : `<span style="font-family:Anton,sans-serif;font-size:11px;color:var(--gold)">${
+        (data?.display_name || user.email || '?').trim().slice(0,2).toUpperCase()}</span>`;
+
+  pill.innerHTML=`<button id="profile-btn" title="Your profile" style="margin-right:8px;width:26px;height:26px;border-radius:50%;overflow:hidden;border:1px solid var(--border);background:var(--surface-3);padding:0;cursor:pointer;display:inline-grid;place-items:center;vertical-align:middle">${face}</button><span style="font-family:JetBrains Mono,monospace;font-size:12px;color:var(--muted)"><b style="color:var(--gold)">${credit}</b></span> <a href="/wallet" style="margin-left:6px;background:var(--gold);color:var(--bg);padding:5px 11px;border-radius:999px;font-weight:700;font-size:11px">+ Add</a> <button id="signout-btn" title="Sign out" style="margin-left:5px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:999px;cursor:pointer;font-size:11px">Out</button>`;
+
+  const prof=document.getElementById('profile-btn');
+  // Only wired where the editor is loaded; elsewhere it goes to the wallet,
+  // which is the one page that has always shown a fan their own details.
+  if(prof) prof.addEventListener('click', ()=>{
+    if(window.GoatProfile) window.GoatProfile.edit();
+    else location.href='/wallet';
+  });
+
   const out=document.getElementById('signout-btn');
   if(out) out.addEventListener('click', async()=>{ await window.supabaseClient.auth.signOut(); location.reload(); });
 }

@@ -28,7 +28,7 @@
     if(!user) { cached = null; return null; }
 
     let { data } = await client.from('users')
-      .select('id,email,display_name,photo_path').eq('id', user.id).maybeSingle();
+      .select('id,email,display_name,photo_path,country,social_handle,social_platform,is_anonymous').eq('id', user.id).maybeSingle();
 
     // Google hands us a name and a picture. Taking them here means a Google
     // signer never sees this form at all, which is the whole point of asking
@@ -72,47 +72,76 @@
     return data?.publicUrl || null;
   }
 
-  function openModal(profile, resolve){
+  // Two shapes of the same form. 'gate' is what stands between a backer and
+  // their first vote: name and email, nothing else, because anything more is a
+  // toll booth. 'edit' is the profile they came to change on purpose, so it
+  // carries everything the site knows about them.
+  function openModal(profile, resolve, mode){
     document.getElementById('profile-modal')?.remove();
     const p = profile || {};
+    const full = mode === 'edit';
     const photo = p.photo_path ? window.GOAT?.getPhotoUrl?.(p.photo_path) || p.photo_path : null;
+    const initials = (p.display_name || '?').trim().slice(0,2).toUpperCase();
 
     const modal = document.createElement('div');
     modal.id = 'profile-modal';
     modal.className = 'inline-topup';
     modal.innerHTML = `
-      <div class="inline-topup-card" style="max-width:380px;text-align:left;position:relative">
+      <div class="inline-topup-card" style="max-width:400px;text-align:left;position:relative;max-height:88vh;overflow-y:auto">
         <button id="pf-close" style="position:absolute;right:14px;top:14px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
-        <h2 class="display" style="font-size:22px;margin-bottom:6px">One step before you back</h2>
-        <p class="mono" style="font-size:12px;color:var(--muted);margin-bottom:16px">Your name goes on the board when you lead a contender, so it cannot be blank.</p>
+        <h2 class="display" style="font-size:22px;margin-bottom:6px">${full ? 'Your profile' : 'One step before you back'}</h2>
+        <p class="mono" style="font-size:12px;color:var(--muted);margin-bottom:16px">
+          ${full ? 'This is what other fans see when you lead a contender.'
+                 : 'Your name goes on the board when you lead a contender, so it cannot be blank.'}</p>
 
         <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
           <div id="pf-preview" style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex:0 0 auto;background:var(--surface-3);border:1px solid var(--border);display:grid;place-items:center;color:var(--gold);font-family:Anton,sans-serif;font-size:20px">
-            ${photo ? `<img src="${esc(photo)}" style="width:100%;height:100%;object-fit:cover">` : esc((p.display_name||'?').slice(0,2).toUpperCase())}
+            ${photo ? `<img src="${esc(photo)}" style="width:100%;height:100%;object-fit:cover">` : esc(initials)}
           </div>
           <div style="flex:1;min-width:0">
-            <label for="pf-photo" style="font-size:11px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Photo <span style="text-transform:none;font-size:11px">— optional</span></label>
+            <label for="pf-photo" style="font-size:11px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Photo <span style="text-transform:none">— optional</span></label>
             <input id="pf-photo" type="file" accept="image/*" style="font-size:12px;color:var(--muted);max-width:100%">
           </div>
         </div>
 
+        ${field('pf-name', 'Name', esc(p.display_name||''), 'e.g. Alex')}
+        ${field('pf-email', 'Email', esc(p.email||p.authEmail||''), 'you@example.com', 'email')}
+        ${full ? `
         <div class="field" style="margin-bottom:10px">
-          <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Name</label>
-          <input id="pf-name" value="${esc(p.display_name||'')}" placeholder="e.g. Alex" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px">
+          <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Country <span style="text-transform:none">— decides how you pay</span></label>
+          <select id="pf-country" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px"></select>
         </div>
-        <div class="field" style="margin-bottom:10px">
-          <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Email</label>
-          <input id="pf-email" type="email" value="${esc(p.email||p.authEmail||'')}" placeholder="you@example.com" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div class="field" style="flex:0 0 118px">
+            <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Social</label>
+            <select id="pf-platform" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 10px;font-size:13px">
+              ${['x','instagram','tiktok','youtube','other'].map(v =>
+                `<option value="${v}"${p.social_platform===v?' selected':''}>${v === 'x' ? 'X' : v[0].toUpperCase()+v.slice(1)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field" style="flex:1;min-width:0">
+            <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">Handle</label>
+            <input id="pf-handle" value="${esc(p.social_handle||'')}" placeholder="@you" style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px">
+          </div>
         </div>
+        <label style="display:flex;gap:9px;align-items:flex-start;margin:12px 0 4px;cursor:pointer">
+          <input id="pf-anon" type="checkbox"${p.is_anonymous?' checked':''} style="margin-top:2px">
+          <span style="font-size:12px;color:var(--muted);line-height:1.35">Back anonymously — your money still counts and still wins the crown, but your name and face are not shown.</span>
+        </label>` : ''}
 
-        <button id="pf-save" class="btn-primary" style="width:100%;margin-top:6px">Save and continue →</button>
+        <button id="pf-save" class="btn-primary" style="width:100%;margin-top:8px">${full ? 'Save' : 'Save and continue →'}</button>
         <div id="pf-msg" style="display:none;margin-top:10px;font-size:12px;text-align:center" class="mono"></div>
       </div>`;
     document.body.appendChild(modal);
 
+    if(full){
+      const sel = modal.querySelector('#pf-country');
+      if(sel && window.countryOptions) sel.innerHTML = window.countryOptions(p.country || null);
+    }
+
     const msg = modal.querySelector('#pf-msg');
     function say(text, colour){ msg.style.display='block'; msg.style.color=colour; msg.textContent=text; }
-    function close(ok){ modal.remove(); resolve(ok); }
+    function close(ok){ modal.remove(); if(typeof resolve === 'function') resolve(ok); }
 
     modal.addEventListener('click', e => { if(e.target === modal) close(false); });
     modal.querySelector('#pf-close').addEventListener('click', () => close(false));
@@ -121,8 +150,8 @@
     modal.querySelector('#pf-photo').addEventListener('change', e => {
       pickedFile = e.target.files?.[0] || null;
       if(!pickedFile) return;
-      const url = URL.createObjectURL(pickedFile);
-      modal.querySelector('#pf-preview').innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
+      modal.querySelector('#pf-preview').innerHTML =
+        `<img src="${URL.createObjectURL(pickedFile)}" style="width:100%;height:100%;object-fit:cover">`;
     });
 
     modal.querySelector('#pf-save').addEventListener('click', async () => {
@@ -138,8 +167,16 @@
         if(!user) throw new Error('Signed out — sign in again.');
 
         const patch = { display_name: name, email };
-        // A photo is a bonus, never a blocker: if the upload fails the name and
-        // email still save and the backer still gets to back.
+        if(full){
+          const c = modal.querySelector('#pf-country')?.value || '';
+          if(/^[A-Z]{2}$/.test(c)) patch.country = c;
+          const handle = modal.querySelector('#pf-handle').value.trim().replace(/^@+/, '');
+          patch.social_handle = handle || null;
+          patch.social_platform = handle ? (modal.querySelector('#pf-platform').value || 'x') : null;
+          patch.is_anonymous = !!modal.querySelector('#pf-anon').checked;
+        }
+        // A photo is a bonus, never a blocker: a failed upload still saves the
+        // rest rather than losing the whole form.
         if(pickedFile){
           try { const url = await uploadAvatar(pickedFile, user.id); if(url) patch.photo_path = url; }
           catch(e){ console.warn('[profile] avatar upload failed:', e?.message || e); }
@@ -148,6 +185,7 @@
         const { error } = await sb().from('users').upsert(Object.assign({ id: user.id }, patch));
         if(error) throw error;
         await load(true);
+        if(window.refreshBalance) window.refreshBalance();
         close(true);
       }catch(e){
         btn.disabled = false;
@@ -158,6 +196,14 @@
     setTimeout(() => modal.querySelector('#pf-name')?.focus(), 50);
   }
 
+  function field(id, label, value, placeholder, type){
+    return `<div class="field" style="margin-bottom:10px">
+      <label style="font-size:11px;text-transform:uppercase;color:var(--muted)">${label}</label>
+      <input id="${id}" ${type?`type="${type}"`:''} value="${value}" placeholder="${placeholder}"
+        style="width:100%;height:38px;border-radius:999px;border:1px solid var(--border);background:var(--bg);color:var(--ink);padding:0 12px;font-size:13px">
+    </div>`;
+  }
+
   window.GoatProfile = {
     get: load,
     isReady: ready,
@@ -165,19 +211,28 @@
     // The one call the backing control makes. Resolves true when the account is
     // allowed to back — either it already was, or the form was just completed.
     // Resolves false if they closed it, in which case nothing should be spent.
+    // Opened from the avatar in the topbar: the whole profile, on purpose.
+    async edit(){
+      const client = sb(); if(!client) return false;
+      const { data:{ user } } = await client.auth.getUser();
+      if(!user){ window.Auth?.openAuthModal?.(); return false; }
+      const profile = await load(true);
+      return new Promise(resolve => openModal(profile || { authEmail: user.email }, resolve, 'edit'));
+    },
+
     async require(){
       const client = sb(); if(!client) return false;
       const { data:{ user } } = await client.auth.getUser();
       if(!user){ window.Auth?.openAuthModal?.(); return false; }
       const profile = await load(true);
       if(ready(profile)) return true;
-      return new Promise(resolve => openModal(profile || { authEmail: user.email }, resolve));
+      return new Promise(resolve => openModal(profile || { authEmail: user.email }, resolve, 'gate'));
     },
 
     // Called when the database refuses a vote for a profile the page thought was
     // complete — a row changed under us, or the page was open a long time.
     async repair(){ cached = null; return this.require(); },
 
-    open(){ return this.require(); }
+    open(){ return this.edit(); }
   };
 })();
