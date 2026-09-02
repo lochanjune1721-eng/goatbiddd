@@ -34,52 +34,46 @@
 .duel-head{padding:7px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--surface-2)}
 .duel-head strong{font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ── The duel: face, board, face ─────────────────────────────────────────────
-   Three columns, and all three the same height. The portraits fill their column
-   top to bottom rather than sitting as a fixed square in the middle of it.
+   The frames are 9:16 — the shape a reel is shot in — so a vertical clip fills
+   one edge to edge with nothing left over. That is what the clips in downloads/
+   are, and forcing them into a square or a 16:9 box is where the black bands
+   came from: the picture was never the shape of the frame it was being put in.
 
-   The clip used to shrink the frame to 16:9 when it played, which left a short
-   letterbox floating in a tall empty column against a full-height square on the
-   other side — small, lopsided, and the worst version of the thing it was
-   trying to show off. The frame no longer changes shape at all: the clip fills
-   the same box the portrait did, so playing one makes the video BIGGER, not
-   shorter, and the card never reflows around it.
+   Both frames are always identical. Nothing resizes when a clip plays: a
+   head-to-head that grows one side is saying one contender counts for more,
+   at exactly the moment the two are being compared.
 
-   Both media are cropped high (object-position keeps faces in frame) because a
-   16:9 frame cropped to a tall box loses the top and bottom, and the top is
-   where the head is. */
-.duel-body{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.34fr) minmax(0,1.3fr);
-  gap:14px;align-items:stretch;padding:14px}
-.duel-body.crazy{gap:16px;padding:16px}
-.duel-side{min-width:0;display:flex;flex-direction:column;align-items:stretch}
-.duel-side .photo{width:100%;flex:1 1 auto;min-height:170px;border-radius:14px;overflow:hidden;
-  background:var(--surface-3);border:1px solid var(--border);position:relative;
-  transition:border-color .2s,box-shadow .2s}
+   Height leads and width follows from the ratio, so the row is as tall as the
+   board beside it and the columns take only the width a reel needs. */
+.duel-body{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+  gap:16px;align-items:center;justify-content:center;padding:14px}
+.duel-body.crazy{gap:18px;padding:16px}
+.duel-side{min-width:0;display:flex;flex-direction:column;align-items:center}
+.duel-side .photo{--frame-h:clamp(230px,25vw,360px);
+  height:var(--frame-h);aspect-ratio:9/16;width:auto;flex:0 0 auto;
+  border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--border);
+  position:relative;transition:border-color .2s,box-shadow .2s}
 .duel-body.crazy .duel-side .photo{border-radius:16px}
 
-/* A clip plays inside the frame the portrait was in, at the same size. The two
-   sides never change size relative to each other — not when one is playing, not
-   when both are, not when neither is. Everything that made one side grow and the
-   other shrink is gone: it read as one contender mattering more than the other,
-   which is the one thing a head-to-head must not say.
+/* A clip is shown whole — centred, scaled down to fit, never cropped. A reel in
+   a reel-shaped frame fits exactly; anything shot wider gets bars rather than
+   losing the sides, which is the trade asked for. The black behind it is the
+   frame's own background, so a clip that does not fill it still looks placed
+   rather than broken. */
+.photo .goat-clip{object-fit:contain;object-position:center center;transform:none}
 
-   The clip is scaled slightly past the frame because several of the source MP4s
-   in downloads/ carry black letterbox bands baked into the picture. Cropping
-   past them costs a little real image at the edges and is worth it; re-exporting
-   the files without the bands is the actual fix, and then this can go. */
-.photo .goat-clip{transform:scale(1.12)}
+/* Stills still fill the frame. A portrait cropped to 9:16 is a portrait; a
+   portrait letterboxed inside it is a stamp in the middle of a black card. */
+.photo img,.photo .fallback img.goat-photo{object-fit:cover;object-position:center 20%}
 
 @media(max-width:700px){
-  /* The wrap is 760px, so three columns hold on any viewport that can show it
-     in full. Below that the card drops under the two faces. The photos go back
-     to a square there, because side by side on a phone they have no card
-     height to match. */
-  .duel-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:12px;align-items:start}
-  .duel-poll{grid-column:1 / -1;order:3}
-  .duel-side .photo{aspect-ratio:1/1;flex:0 0 auto;min-height:0}
+  .duel-body{grid-template-columns:auto auto;justify-content:center;gap:10px;padding:12px}
+  .duel-poll{grid-column:1 / -1;order:3;width:100%}
+  .duel-side .photo{--frame-h:clamp(200px,52vw,300px)}
 }
 @media(max-width:480px){
-  .duel-body{gap:9px;padding:10px}
-  .duel-side .photo{border-radius:10px}
+  .duel-body{gap:8px;padding:9px}
+  .duel-side .photo{border-radius:10px;--frame-h:min(46vw,260px)}
 }
 
 .duel-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--muted);background:var(--surface-2)}
@@ -731,7 +725,7 @@
     };
 
     return `
-      <div class="duel-head"><strong>${esc(catTitle)}</strong><a href="/category?slug=${cat.slug}" style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase">View Board →</a></div>
+      <div class="duel-head"><strong>${esc(catTitle)}</strong><a href="/category?slug=${cat.slug}" style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase;white-space:nowrap;flex:0 0 auto">View Board →</a></div>
       <div class="duel-body ${isCrazy?'crazy':''}">
         ${side(p1, 'a')}
         <div class="duel-poll">
