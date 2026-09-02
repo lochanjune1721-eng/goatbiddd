@@ -13,13 +13,19 @@
 -- descending, the first row per person is that person's biggest backer. Ties go
 -- to whoever got there first, which is the same tiebreak the boards use.
 
+-- The return type changed (social handle and platform added), and CREATE OR
+-- REPLACE cannot change one — the old shape is dropped first.
+drop function if exists top_fans(uuid[]);
+
 create or replace function top_fans(p_person_ids uuid[])
 returns table (
-  person_id    uuid,
-  user_id      uuid,
-  display_name text,
-  photo_path   text,
-  total_cents  int
+  person_id       uuid,
+  user_id         uuid,
+  display_name    text,
+  photo_path      text,
+  social_handle   text,
+  social_platform text,
+  total_cents     int
 )
 language sql
 stable
@@ -33,6 +39,10 @@ as $$
          -- counts and still wins the crown; their face and name do not appear.
          case when u.is_anonymous then 'Anonymous' else u.display_name end,
          case when u.is_anonymous then null        else u.photo_path   end,
+         -- Where the face goes when it is clicked. Anonymous keeps the crown
+         -- and the money and gives up the link along with the name.
+         case when u.is_anonymous then null        else u.social_handle   end,
+         case when u.is_anonymous then null        else u.social_platform end,
          f.total_cents
     from fan_totals f
     join users u on u.id = f.user_id

@@ -711,20 +711,19 @@
     const side = (p, cls) => `
         <div class="duel-side ${cls} ${(cls==='a'?v1>v2:v2>v1) ? 'leader' : ''}">
           <div class="photo">${cls==='a'?p1Photo:p2Photo}${
-            p ? `<a class="face-fan" data-face-fan="${p.id}" href="/person?slug=${esc(p.slug)}#fans"></a>` : ''}</div>
+            p ? `<a class="face-fan" data-face-fan="${p.id}" data-slug="${esc(p.slug)}"></a>` : ''}</div>
         </div>`;
 
     // Each contender's tile: who, what share, how much, who leads their fans,
     // and the two ways to add to it. Everything that used to be stacked under
     // the portraits now sits here, which is most of the height that went.
-    const tile = (p, votes, pct, cls) => {
+    const tile = (p, votes, cls) => {
       if(!p) return `<div class="poll-tile ${cls} empty"><div class="poll-team">Team</div><div class="poll-name">—</div></div>`;
       return `
         <div class="poll-tile ${cls}">
           <div class="poll-team">Team</div>
           <div class="poll-name">${esc(firstName(p.name))}</div>
-          <div class="poll-pct">${pct}%</div>
-          <div class="poll-money mono">$${votes.toLocaleString('en-US')}</div>
+          <div class="poll-money display">$${votes.toLocaleString('en-US')}</div>
           <div class="poll-gfoat" data-gfoat="${p.id}"></div>
         </div>`;
     };
@@ -739,8 +738,8 @@
             <span class="poll-head-total mono">${totalMoney} on the fight</span>
           </div>
           <div class="poll-tiles">
-            ${tile(p1, v1, p1Pct, 'a')}
-            ${tile(p2, v2, p2Pct, 'b')}
+            ${tile(p1, v1, 'a')}
+            ${tile(p2, v2, 'b')}
           </div>
           <div class="poll-bar">
             <span class="poll-bar-fill a" style="width:${p1Pct}%"></span>
@@ -1046,14 +1045,16 @@
     // the browser. Slower and heavier, which is why it is the fallback.
     if(!rows){
       const { data } = await sb.from('fan_totals')
-        .select('person_id,total_cents,users(display_name,is_anonymous,photo_path)')
+        .select('person_id,total_cents,users(display_name,is_anonymous,photo_path,social_handle,social_platform)')
         .in('person_id', ids).order('total_cents', { ascending:false }).limit(2000);
       const best = new Map();
       for(const r of (data||[])){
         if(best.has(r.person_id)) continue;
         best.set(r.person_id, { person_id:r.person_id, total_cents:r.total_cents,
           display_name: r.users?.is_anonymous ? 'Anonymous' : r.users?.display_name,
-          photo_path:   r.users?.is_anonymous ? null       : r.users?.photo_path });
+          photo_path:   r.users?.is_anonymous ? null       : r.users?.photo_path,
+          social_handle:   r.users?.is_anonymous ? null : r.users?.social_handle,
+          social_platform: r.users?.is_anonymous ? null : r.users?.social_platform });
       }
       rows = [...best.values()];
     }
@@ -1081,7 +1082,9 @@
       if(!f){
         if(face){
           el.classList.add('none');
-          el.innerHTML = '<span class="face-fan-name">👑 No fan yet — $1 claims it</span>';
+          el.href = '/person?slug=' + encodeURIComponent(el.dataset.slug || '') + '#fans';
+          el.innerHTML = '<span class="face-fan-empty">👑</span>';
+          el.title = 'No Greatest Fan yet — $1 claims the crown';
           requestAnimationFrame(()=> el.classList.add('in'));
         } else {
           el.innerHTML = '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
@@ -1105,10 +1108,15 @@
 
       el.title = `${name} — ${down} on this contender · $${need.toLocaleString('en-US')} takes the crown`;
       if(face){
-        el.innerHTML = `${img('face-fan-initials')}<span class="face-fan-copy">
-            <span class="face-fan-name">👑 ${esc(name)}</span>
-            <span class="face-fan-sum">${esc(down)} · $${need.toLocaleString('en-US')} to take it</span>
-          </span>`;
+        // The face IS the badge. Clicking it goes where that person actually
+        // is; with no handle it falls back to the contender's fan list, which
+        // is the next most useful place rather than a dead link.
+        const social = socialUrl(f.social_platform, f.social_handle);
+        el.href = social || ('/person?slug=' + encodeURIComponent(el.dataset.slug || '') + '#fans');
+        if(social){ el.target = '_blank'; el.rel = 'noopener'; }
+        el.classList.toggle('has-social', !!social);
+        el.innerHTML = `${img('face-fan-initials')}<span class="face-fan-crown">👑</span>`
+          + `<span class="face-fan-sum">${esc(down)}</span>`;
         requestAnimationFrame(()=> el.classList.add('in'));
       } else {
         el.innerHTML = `${img('poll-gfoat-initials')}<span class="poll-gfoat-copy">
@@ -1147,6 +1155,19 @@
       }
     }).observe(document.body, { childList:true, subtree:true });
   })();
+
+  // A handle is stored without its host. Anonymous backers arrive with nothing
+  // here, and so do fans who never filled it in — both get no link rather than
+  // a guess at one.
+  function socialUrl(platform, handle){
+    const h = String(handle||'').trim().replace(/^@+/, '');
+    if(!h) return null;
+    const host = { x:'x.com', instagram:'instagram.com', tiktok:'tiktok.com',
+                   youtube:'youtube.com' }[String(platform||'x').toLowerCase()];
+    if(!host) return null;
+    const at = (host === 'tiktok.com' || host === 'youtube.com') ? '@' : '';
+    return `https://${host}/${at}${encodeURIComponent(h)}`;
+  }
 
   function initialsOf(name){
     const parts = String(name||'').trim().split(/\s+/).filter(Boolean);

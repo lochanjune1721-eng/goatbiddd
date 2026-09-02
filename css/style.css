@@ -776,9 +776,11 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 .poll-team{font-size:9.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;opacity:.8}
 .poll-name{font-family:'Anton',sans-serif;font-size:clamp(14px,1.9vw,19px);line-height:1.05;
   letter-spacing:.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.poll-pct{font-family:'Anton',sans-serif;font-size:clamp(18px,2.6vw,26px);line-height:1.02;
-  font-variant-numeric:tabular-nums;letter-spacing:-.01em;margin-top:1px}
-.poll-money{font-size:11px;opacity:.85;font-variant-numeric:tabular-nums}
+/* The dollars were a footnote under a percentage. The percentage is gone —
+   a share of two numbers is the same fact told worse — so the money is the
+   number the tile is built around. */
+.poll-money{font-family:'Anton',sans-serif;font-size:clamp(19px,2.8vw,28px);line-height:1.05;
+  margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 
 /* The Greatest Fan of All Time, on the tile of the contender they lead. The
    face is the point — a name alone reads as a caption, a face reads as a
@@ -836,29 +838,44 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
 
 /* ── The crown, on the face it was won on ───────────────────────────────────
    Bottom-right of every contender's frame: the face of whoever has put the
-   most behind THAT contender. Not the site's biggest backer — this one's. It
-   sits on the picture because that is what it is about; a name in a list a
-   column away is a different fact. */
-.face-fan{position:absolute;right:7px;bottom:7px;z-index:3;display:flex;align-items:center;gap:6px;
-  max-width:calc(100% - 14px);padding:4px 9px 4px 4px;border-radius:999px;
-  background:rgba(8,8,10,.82);backdrop-filter:blur(6px);
-  border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);
-  text-decoration:none;color:var(--ink);opacity:0;transform:translateY(4px);
-  transition:opacity .25s ease,transform .25s ease}
+   most behind THAT contender. A face at a size you can actually recognise —
+   it was a text pill with the name in 11px type, which is a caption, not a
+   portrait. The name is in the tooltip; the picture is the point.
+
+   Clicking it goes to that person's social account. Being the Greatest Fan of
+   All Time is worth something only if it points somewhere. */
+.face-fan{position:absolute;right:9px;bottom:9px;z-index:3;display:block;
+  width:60px;height:60px;border-radius:50%;text-decoration:none;
+  opacity:0;transform:scale(.9);transition:opacity .28s ease,transform .28s ease}
 .face-fan.in{opacity:1;transform:none}
 .face-fan:empty{display:none}
-.face-fan img,.face-fan .face-fan-initials{width:26px;height:26px;border-radius:50%;object-fit:cover;
-  flex:0 0 auto;display:grid;place-items:center;background:var(--surface-3);
-  border:1.5px solid var(--gold);font-family:'Anton',sans-serif;font-size:10px;color:var(--gold)}
-.face-fan-copy{display:flex;flex-direction:column;min-width:0;line-height:1.12}
-.face-fan-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.face-fan-sum{font-size:9px;color:var(--gold);font-family:'JetBrains Mono',monospace;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.face-fan.none{padding:4px 10px;border-style:dashed;border-color:var(--border-2)}
-.face-fan.none .face-fan-name{font-size:10px;color:var(--muted);font-weight:600}
-@media(max-width:480px){
-  .face-fan{right:5px;bottom:5px;gap:4px;padding:3px 7px 3px 3px}
-  .face-fan img,.face-fan .face-fan-initials{width:20px;height:20px;font-size:8px}
-  .face-fan-name{font-size:9.5px}
-  .face-fan-sum{font-size:8px}
+.face-fan:hover{transform:scale(1.06)}
+
+.face-fan img,.face-fan .face-fan-initials{width:60px;height:60px;border-radius:50%;object-fit:cover;
+  display:grid;place-items:center;background:var(--surface-3);
+  border:2.5px solid var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.6),0 0 0 3px rgba(8,8,10,.55);
+  font-family:'Anton',sans-serif;font-size:21px;color:var(--gold)}
+
+/* The crown rides the rim so the badge reads as a title rather than an avatar. */
+.face-fan-crown{position:absolute;top:-6px;left:-4px;font-size:19px;line-height:1;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.75));pointer-events:none}
+
+/* What they have down, on the rim under the face. */
+.face-fan-sum{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--bg);
+  background:var(--gold);border-radius:999px;padding:1px 7px;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none}
+
+/* An unclaimed crown is an invitation, so it stays visible and stays dashed. */
+.face-fan.none{display:grid;place-items:center;background:rgba(8,8,10,.62);
+  border:2px dashed var(--border-2);backdrop-filter:blur(4px)}
+.face-fan.none .face-fan-empty{font-size:22px;opacity:.85}
+.face-fan.none:hover{border-color:var(--gold)}
+
+@media(max-width:640px){
+  .face-fan,.face-fan img,.face-fan .face-fan-initials{width:46px;height:46px}
+  .face-fan{right:7px;bottom:7px}
+  .face-fan img,.face-fan .face-fan-initials{font-size:16px;border-width:2px}
+  .face-fan-crown{font-size:15px;top:-5px;left:-3px}
+  .face-fan-sum{font-size:9px;padding:1px 6px;bottom:-6px}
 }
