@@ -212,7 +212,12 @@
       if(topFan){
         const u=topFan.users||{};
         const fanName = u.display_name || 'A backer';
-        const handle = u.social_handle ? `<a href="https://${u.social_platform==='x'?'x.com': u.social_platform+'.com'}/${encodeURIComponent(u.social_handle.replace(/^@/,'') )}" target="_blank" rel="noopener">${u.social_handle.startsWith('@')?u.social_handle:'@'+u.social_handle} ${platformIcon(u.social_platform)}</a>` : '';
+        // A handle is often a pasted profile URL. Show the name, link the URL.
+        const fanHref = window.GOAT.socialUrl(u.social_platform, u.social_handle);
+        const fanNick = window.GOAT.handleText(u.social_handle);
+        const handle = fanNick
+          ? `<a href="${fanHref}" target="_blank" rel="noopener">@${fanNick} ${platformIcon(u.social_platform)}</a>`
+          : '';
         // A fan's face is in the avatars bucket, not the contender bucket that
         // OptimizedImage resolves against — routing it through there 404'd every
         // uploaded avatar and fell back to initials.

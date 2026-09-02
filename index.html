@@ -182,7 +182,7 @@
 .skel-duel{height:340px;border-radius:16px;margin-bottom:20px}
 
 /* Ticker & Shell */
-.topbar{top:32px}
+.topbar{top:0}
 .filter-bar{top:85px}
 .goat-ticker{position:sticky;top:0;z-index:50;height:32px;background:var(--surface);border-bottom:1px solid var(--border);overflow:hidden;display:flex;align-items:center}
 .goat-ticker-label{position:absolute;left:0;top:0;bottom:0;z-index:3;display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--gold);color:var(--bg);font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
@@ -240,10 +240,6 @@
 </style>
 </head>
 <body>
-<div class="goat-ticker" id="goat-ticker" aria-label="Live updates">
-  <span class="goat-ticker-label"><span class="dot"></span>Live</span>
-  <div class="goat-ticker-track" id="goat-ticker-track"></div>
-</div>
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand"><a href="/">The True<span> GOAT</span></a></div>
@@ -1201,14 +1197,10 @@
   // A handle is stored without its host. Anonymous backers arrive with nothing
   // here, and so do fans who never filled it in — both get no link rather than
   // a guess at one.
+  // Shared with the fan rail and the boards: a handle that is really a pasted
+  // profile URL still resolves to the right platform and the right name.
   function socialUrl(platform, handle){
-    const h = String(handle||'').trim().replace(/^@+/, '');
-    if(!h) return null;
-    const host = { x:'x.com', instagram:'instagram.com', tiktok:'tiktok.com',
-                   youtube:'youtube.com' }[String(platform||'x').toLowerCase()];
-    if(!host) return null;
-    const at = (host === 'tiktok.com' || host === 'youtube.com') ? '@' : '';
-    return `https://${host}/${at}${encodeURIComponent(h)}`;
+    return window.GOAT?.socialUrl ? window.GOAT.socialUrl(platform, handle) : null;
   }
 
   function initialsOf(name){
@@ -1329,15 +1321,6 @@
           // where they actually are; and the contender they have put the most
           // behind sits on the right, because "who is backing whom" is the whole
           // story a leaderboard of fans is trying to tell.
-          const SOCIAL = { x:'https://x.com/', instagram:'https://instagram.com/',
-            tiktok:'https://www.tiktok.com/@', youtube:'https://www.youtube.com/@' };
-          function socialUrl(u){
-            const h = String(u.social_handle||'').trim().replace(/^@/,'');
-            if(!h) return null;
-            if(/^https?:\/\//i.test(h)) return h;
-            const base = SOCIAL[u.social_platform];
-            return base ? base + encodeURIComponent(h) : null;
-          }
           leadingFansEl.innerHTML = topFans.map((u, i) => {
             const name = u.display_name || 'Supporter';
             const photoUrl = u.photo_path ? (window.GOAT.getAvatarUrl(u.photo_path)||u.photo_path) : null;
@@ -1345,18 +1328,27 @@
               ? `<img src="${esc(photoUrl)}" alt="" loading="lazy">`
               : `<span class="fan-face-initials">${esc(window.GOAT.initials(name))}</span>`;
             const spent = window.GOAT.money(u.total_spent_cents||0);
-            const href = socialUrl(u);
-            const handle = (u.social_handle)
-              ? '@' + esc(String(u.social_handle).replace(/^@/,'')) : null;
+            const href = window.GOAT.socialUrl(u.social_platform, u.social_handle);
+            const nick = window.GOAT.handleText(u.social_handle);
+            const handle = nick ? '@' + esc(nick) : null;
 
+            // Most contenders have no photo_path — their portrait is resolved the
+            // same way the boards resolve it. Reading photo_path alone is why
+            // this tile showed "CR" beside a Ronaldo the rest of the page had a
+            // picture of.
             const b = u.backing;
-            const backPhoto = b?.photo_path ? (window.GOAT.getPhotoUrl(b.photo_path)||b.photo_path) : null;
+            const backFace = b
+              ? (window.PortraitFallback
+                  ? window.PortraitFallback.photoHtml({ name:b.name, slug:b.slug, photo_path:b.photo_path }, 96, {})
+                  : (b.photo_path
+                      ? `<img src="${esc(window.GOAT.getPhotoUrl(b.photo_path) || b.photo_path)}" alt="" loading="lazy">`
+                      : `<span class="fan-backing-initials">${esc(window.GOAT.initials(b.name))}</span>`))
+              : '';
             const backing = b ? `
                 <a class="fan-backing" href="/person?slug=${esc(b.slug)}">
                   <span class="fan-backing-label">Backing</span>
                   <span class="fan-backing-who">
-                    ${backPhoto ? `<img src="${esc(backPhoto)}" alt="" loading="lazy">`
-                                : `<span class="fan-backing-initials">${esc(window.GOAT.initials(b.name))}</span>`}
+                    <span class="fan-backing-photo">${backFace}</span>
                     <span class="fan-backing-name">${esc(b.name)}</span>
                   </span>
                   <span class="fan-backing-votes mono">$${b.votes.toLocaleString('en-US')} behind them</span>
@@ -1378,6 +1370,9 @@
               ${backing}
             </div>`;
           }).join('');
+          // The backing tiles are portrait placeholders until this resolves
+          // them, the same as every other contender picture on the page.
+          schedulePortraits();
         } else {
           leadingFansEl.innerHTML = '<div class="mono" style="color:var(--muted);font-size:12px;padding:16px;text-align:center">No backers yet. Put $1 behind a contender to take #1!</div>';
         }

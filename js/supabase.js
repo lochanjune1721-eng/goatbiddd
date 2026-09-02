@@ -144,6 +144,38 @@ window.GOAT = {
     }
     return out;
   },
+  // ── Social handles ────────────────────────────────────────────────────────
+  //
+  // The handle field holds whatever somebody pasted, and people paste the whole
+  // profile URL. That rendered as "@https://www.instagram.com/anujeeeet/" across
+  // a card and ran off the side of it, and the link it built was x.com with the
+  // escaped URL bolted on the end.
+  //
+  // So read the name out of either shape, and take the platform from the URL
+  // when it carries one — a handle pasted from Instagram is an Instagram handle
+  // whatever the dropdown was left on.
+  handleText: (handle) => {
+    let h = String(handle || '').trim();
+    if(!h) return '';
+    if(/^https?:\/\//i.test(h) || /^(www\.)?(x|twitter|instagram|tiktok|youtube)\.com\//i.test(h)){
+      const path = h.replace(/^https?:\/\//i, '').split('?')[0].split('#')[0];
+      const segs = path.split('/').filter(Boolean);
+      h = segs.length > 1 ? segs[segs.length - 1] : '';
+    }
+    return h.replace(/^@+/, '').replace(/[^A-Za-z0-9._-]/g, '');
+  },
+  socialUrl: (platform, handle) => {
+    const raw = String(handle || '').trim();
+    const name = window.GOAT.handleText(raw);
+    if(!name) return null;
+    const found = raw.match(/(x|twitter|instagram|tiktok|youtube)\.com/i);
+    const plat = (found ? (found[1].toLowerCase() === 'twitter' ? 'x' : found[1].toLowerCase())
+                        : String(platform || 'x').toLowerCase());
+    const host = { x:'x.com', instagram:'instagram.com', tiktok:'tiktok.com', youtube:'youtube.com' }[plat];
+    if(!host) return null;
+    const at = (host === 'tiktok.com' || host === 'youtube.com') ? '@' : '';
+    return `https://${host}/${at}${encodeURIComponent(name)}`;
+  },
   getVideoUrl: (path) => {
     if(!path || typeof path !== 'string') return null;
     const trimmed = path.trim();

@@ -26,21 +26,41 @@ export default withHandler(async function handler(req, res){
   const ids = (users || []).map(u => u.id);
   const backing = new Map();
   if (ids.length) {
+    // Two plain reads rather than an embedded people(...). An embed returns null
+    // for a row it cannot resolve and the fan then looks like they back nobody,
+    // which is how a leaderboard ended up showing three fans with money down and
+    // no contender beside them. Read the ids, then read the people.
     const { data: totals } = await supa
       .from('fan_totals')
-      .select('user_id,total_cents,people(name,slug,photo_path)')
+      .select('user_id,person_id,total_cents')
       .in('user_id', ids)
-      .order('total_cents', { ascending: false });
+      .gt('total_cents', 0)
+      .order('total_cents', { ascending: false })
+      .limit(5000);
 
     // Ordered by size, so the first row seen for a fan is their biggest bet.
+    const best = new Map();
     for (const row of totals || []) {
-      if (!row?.people || backing.has(row.user_id)) continue;
-      backing.set(row.user_id, {
-        name: row.people.name,
-        slug: row.people.slug,
-        photo_path: row.people.photo_path,
-        votes: Math.floor((row.total_cents || 0) / 100)
-      });
+      if (row?.person_id && !best.has(row.user_id)) best.set(row.user_id, row);
+    }
+
+    if (best.size) {
+      const { data: people } = await supa
+        .from('people')
+        .select('id,name,slug,photo_path')
+        .in('id', [...new Set([...best.values()].map(r => r.person_id))]);
+      const byId = new Map((people || []).map(p => [p.id, p]));
+
+      for (const [userId, row] of best) {
+        const person = byId.get(row.person_id);
+        if (!person) continue;
+        backing.set(userId, {
+          name: person.name,
+          slug: person.slug,
+          photo_path: person.photo_path,
+          votes: Math.floor((row.total_cents || 0) / 100)
+        });
+      }
     }
   }
 
