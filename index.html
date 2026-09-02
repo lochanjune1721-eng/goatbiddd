@@ -711,7 +711,7 @@
     const side = (p, cls) => `
         <div class="duel-side ${cls} ${(cls==='a'?v1>v2:v2>v1) ? 'leader' : ''}">
           <div class="photo">${cls==='a'?p1Photo:p2Photo}${
-            p ? `<a class="face-fan in" data-face-fan="${p.id}" data-slug="${esc(p.slug)}" href="/person?slug=${esc(p.slug)}#fans" title="Greatest Fan of All Time"><span class="face-fan-initials">👑</span></a>` : ''}</div>
+            p ? `<a class="face-fan in none" data-face-fan="${p.id}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" title="Greatest Fan of All Time — $1 claims it"><span class="face-fan-initials">👑</span><span class="face-fan-sum">$1 · be first</span></a>` : ''}</div>
         </div>`;
 
     // Each contender's tile: who, what share, how much, who leads their fans,
@@ -1105,14 +1105,28 @@
 
       if(!f){
         if(face){
-          // Not a link to the contender. The badge is about the fan, so with no
-          // fan there is nowhere of theirs to go — sending someone to Ronaldo's
-          // page from a crown that means "no fan yet" answers a question nobody
-          // asked.
-          el.classList.add('none', 'no-link');
+          // Nobody has backed this one. That is true of almost every contender
+          // on a fresh board, so this state is what the page mostly looks like —
+          // and a crown that does nothing, two hundred times down a page, reads
+          // as a broken image rather than an unclaimed title.
+          //
+          // So it is the offer instead: the crown, the price, and a click that
+          // opens the backing sheet on this contender. Anyone can be first for a
+          // dollar, and that is the most interesting thing the badge can say
+          // when there is no face to show.
+          el.classList.add('none');
+          el.classList.remove('no-link');
           el.removeAttribute('href'); el.removeAttribute('target');
-          el.innerHTML = '<span class="face-fan-initials">👑</span>';
+          el.innerHTML = '<span class="face-fan-initials">👑</span>'
+                       + '<span class="face-fan-sum">$1 · be first</span>';
           el.title = 'No Greatest Fan of All Time yet — $1 claims the crown';
+          el.onclick = (ev) => {
+            ev.preventDefault();
+            const card = el.closest('.duel-body');
+            const btn = card && card.querySelector(`[data-back-more="${CSS.escape(pid)}"]`);
+            if(btn) btn.click();
+            else if(window.GoatBack) window.GoatBack.sheet(pid, { personName: el.dataset.name || '' });
+          };
         } else {
           el.innerHTML = '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
         }
@@ -1141,6 +1155,7 @@
         // clicking the Greatest Fan of All Time opened Ronaldo — the wrong
         // person entirely, and the one place the badge is not about.
         const social = socialUrl(f.social_platform, f.social_handle);
+        el.onclick = null;
         if(social){
           el.href = social; el.target = '_blank'; el.rel = 'noopener';
           el.classList.remove('no-link');

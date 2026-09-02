@@ -876,10 +876,17 @@ a.fan-backing:hover .fan-backing-name{color:var(--gold)}
   background:var(--gold);border-radius:999px;padding:2px 9px;white-space:nowrap;
   box-shadow:0 2px 8px rgba(0,0,0,.55);pointer-events:none}
 
-/* An unclaimed crown is an invitation, so it stays and stays dashed. */
-.face-fan.none .face-fan-initials{border-style:dashed;border-color:var(--border-2);
-  background:rgba(8,8,10,.6);backdrop-filter:blur(4px)}
-.face-fan.none:hover .face-fan-initials{border-color:var(--gold)}
+/* An unclaimed crown is the offer, not an empty slot: dashed while nobody holds
+   it, priced on the chip, and clickable — one dollar takes it. This is what most
+   of the page looks like on a board nobody has backed yet, so it has to read as
+   something to do rather than as a picture that failed. */
+.face-fan.none{cursor:pointer}
+.face-fan.none .face-fan-initials{border-style:dashed;border-color:var(--gold);
+  background:radial-gradient(120% 120% at 50% 28%, rgba(201,168,106,.16) 0%, rgba(8,8,10,.72) 70%);
+  backdrop-filter:blur(4px)}
+.face-fan.none:hover .face-fan-initials{border-style:solid;background:radial-gradient(120% 120% at 50% 28%, rgba(201,168,106,.3) 0%, rgba(8,8,10,.7) 70%)}
+.face-fan.none .face-fan-sum{background:var(--gold);color:var(--bg);font-size:9.5px;padding:2px 8px}
+@media(max-width:640px){ .face-fan.none .face-fan-sum{font-size:8px;padding:1px 6px} }
 
 @media(max-width:900px){
   .face-fan,.face-fan img,.face-fan .face-fan-initials{width:66px;height:66px}
