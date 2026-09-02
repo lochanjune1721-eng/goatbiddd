@@ -468,6 +468,55 @@
     people = [...(p0?.data||[]), ...(p1?.data||[]), ...(p2?.data||[]), ...(p3?.data||[]), ...(p4?.data||[])];
   } catch(e) { console.warn('DB fetch error:', e); }
 
+  // ── The Greatest Fan of All Time ─────────────────────────────────────────
+  //
+  // fan_totals holds one row per person who has backed a contender, so on this
+  // site it is a handful of rows. The whole table comes back in one request with
+  // no filter, before anything renders, and the badge is then drawn into the
+  // card the first time it appears.
+  //
+  // What was here before did the opposite: it rendered an empty crown, then
+  // walked every badge on the page asking the server who each contender's fan
+  // was — ids in the query string, retries, a MutationObserver, done-flags and a
+  // give-up counter to manage the timing. On a page carrying a thousand
+  // contenders that had a dozen ways to end up showing a crown, and it did.
+  // None of it is needed to display ten rows.
+  let GFOAT = new Map();
+  async function loadGfoat(){
+    const next = new Map();
+    try {
+      const { data: totals, error } = await sb.from('fan_totals')
+        .select('person_id,user_id,total_cents')
+        .gt('total_cents', 0)
+        .order('total_cents', { ascending: false })
+        .limit(5000);
+      if(error) throw error;
+
+      // Biggest first, so the first row seen for a contender is their leader.
+      const lead = new Map();
+      for(const r of (totals || [])) if(r.user_id && !lead.has(r.person_id)) lead.set(r.person_id, r);
+
+      const who = lead.size
+        ? await (window.GOAT?.profiles?.([...new Set([...lead.values()].map(r => r.user_id))]) || new Map())
+        : new Map();
+
+      for(const [pid, r] of lead){
+        const u = who.get(r.user_id) || {};
+        next.set(pid, {
+          cents:    r.total_cents,
+          name:     u.display_name || 'A backer',
+          photo:    u.photo_path || null,
+          handle:   u.social_handle || null,
+          platform: u.social_platform || null
+        });
+      }
+    } catch(e){
+      console.warn('[gfoat] could not load the fans:', e?.message || e);
+    }
+    GFOAT = next;
+  }
+  await loadGfoat();
+
   function buildIndices(){
     peopleByCat = {};
     // The five paged fetches above overlap at their boundaries if a row shifts
@@ -667,6 +716,53 @@
     return surname.length > 14 ? parts[0] : surname;
   }
 
+  // What it costs to overtake the current holder, from nothing.
+  function crownPrice(p){
+    const f = p && GFOAT.get(p.id);
+    return f ? Math.max(1, Math.floor(f.cents / 100) + 1) : 1;
+  }
+
+  // The badge in the corner of the frame: the fan's own picture, or their
+  // initials when they have not set one, linking to their own account. An
+  // unclaimed crown is the offer instead — clicking it opens the backing sheet,
+  // because one dollar takes it.
+  function fanBadge(p){
+    if(!p) return '';
+    const f = GFOAT.get(p.id);
+    if(!f){
+      return `<a class="face-fan in none" data-back-more="${p.id}" data-name="${esc(p.name)}"
+        title="No Greatest Fan of All Time yet — $1 claims the crown"
+        ><span class="face-fan-initials">👑</span><span class="face-fan-sum">$1 · be first</span></a>`;
+    }
+    const down   = '$' + Math.floor(f.cents / 100).toLocaleString('en-US');
+    const social = socialUrl(f.platform, f.handle);
+    const url    = f.photo ? (window.GOAT?.getAvatarUrl?.(f.photo) || f.photo) : null;
+    const initials = initialsOf(f.name);
+    // A picture that fails to load becomes the initials rather than a hole.
+    const inner = url
+      ? `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'face-fan-initials',textContent:${JSON.stringify(initials)}}))">`
+      : `<span class="face-fan-initials">${esc(initials)}</span>`;
+    return `<a class="face-fan in ${social ? 'has-social' : 'no-link'}"${
+        social ? ` href="${esc(social)}" target="_blank" rel="noopener"` : ''
+      } title="Greatest Fan of All Time: ${esc(f.name)} — ${down} down · $${crownPrice(p).toLocaleString('en-US')} takes the crown"
+      >${inner}<span class="face-fan-crown">👑</span><span class="face-fan-sum">${esc(down)}</span></a>`;
+  }
+
+  // The same fan, named, on the scoreboard tile beside the frame.
+  function fanLine(p){
+    const f = p && GFOAT.get(p.id);
+    if(!f) return '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
+    const down = '$' + Math.floor(f.cents / 100).toLocaleString('en-US');
+    const url  = f.photo ? (window.GOAT?.getAvatarUrl?.(f.photo) || f.photo) : null;
+    const inner = url
+      ? `<img src="${esc(url)}" alt="" loading="lazy">`
+      : `<span class="poll-gfoat-initials">${esc(initialsOf(f.name))}</span>`;
+    return `${inner}<span class="poll-gfoat-copy">
+        <span class="poll-gfoat-label">GOAT fan · ${esc(down)}</span>
+        <span class="poll-gfoat-name">${esc(f.name)}</span>
+      </span>`;
+  }
+
   function duelHtml(cat, catPeople, opts={}){
     const p1 = catPeople[0], p2 = catPeople[1];
     const c1 = p1 ? (p1.total_cents||0) : 0;
@@ -711,7 +807,7 @@
     const side = (p, cls) => `
         <div class="duel-side ${cls} ${(cls==='a'?v1>v2:v2>v1) ? 'leader' : ''}">
           <div class="photo">${cls==='a'?p1Photo:p2Photo}${
-            p ? `<a class="face-fan in none" data-face-fan="${p.id}" data-cents="${p.total_cents||0}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" title="Greatest Fan of All Time — $1 claims it"><span class="face-fan-initials">👑</span><span class="face-fan-sum">$1 · be first</span></a>` : ''}</div>
+            fanBadge(p)}</div>
         </div>`;
 
     // Each contender's tile: who, what share, how much, who leads their fans,
@@ -724,7 +820,7 @@
           <div class="poll-team">Team</div>
           <div class="poll-name">${esc(firstName(p.name))}</div>
           <div class="poll-money display">$${votes.toLocaleString('en-US')}</div>
-          <div class="poll-gfoat" data-gfoat="${p.id}"></div>
+          <div class="poll-gfoat">${fanLine(p)}</div>
         </div>`;
     };
 
@@ -748,7 +844,7 @@
           <div class="poll-acts">
             ${[p1,p2].map((p,i)=> p ? `<div class="poll-act ${i?'b':'a'}">
               <button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back · $1</button>
-              <button class="duel-more" data-back-more="${p.id}" data-name="${esc(p.name)}">👑 Any amount</button>
+              <button class="duel-more" data-back-more="${p.id}" data-name="${esc(p.name)}">👑 $${crownPrice(p).toLocaleString('en-US')} to take the crown</button>
             </div>` : '<div class="poll-act"></div>').join('')}
           </div>
           <div class="poll-foot">${esc(gapText)}</div>
@@ -991,6 +1087,9 @@
       // second place with the wrong number beside them until a reload.
       applyFilters();
 
+      // A dollar can also take the crown, so re-read the fans and redraw.
+      loadGfoat().then(applyFilters);
+
       // Say what the dollar did, not that a click registered. The rival is the
       // best-placed other contender on the same board — the one the gap is
       // measured against.
@@ -1022,282 +1121,6 @@
       btn.textContent = orig;
     }
   }
-
-  // ── Greatest Fan of All Time, on every tile ───────────────────────────────
-  //
-  // One query for the whole page. top_fans() takes every contender id on screen
-  // and returns one row each — asking per tile would be two hundred round trips
-  // on a homepage of a hundred duels. Filled in after the duels paint, so a slow
-  // answer delays a face and nothing else.
-  // ── Ask in batches, never in one enormous URL ─────────────────────────────
-  //
-  // Every lookup here identifies contenders by id in the query string, and the
-  // homepage carries hundreds of boards. Asking for all of them at once built a
-  // 31,000-character URL, and Cloudflare refuses a request line that long — so
-  // on the homepage every fan lookup failed, while the same code inside a single
-  // board, with a handful of ids and a short URL, worked perfectly. That is
-  // exactly the shape of the bug: the face showed on a board and never on the
-  // front page.
-  //
-  // Sixty ids is about 2.3 KB, comfortably inside every limit, and the requests
-  // go out together so the page is no slower for it.
-  const ID_BATCH = 60;
-  function batches(list){
-    const out = [];
-    for(let i = 0; i < list.length; i += ID_BATCH) out.push(list.slice(i, i + ID_BATCH));
-    return out;
-  }
-
-  async function paintGfoat(){
-    const slots = [...document.querySelectorAll('.poll-gfoat[data-gfoat]:not([data-gfoat-done]), .face-fan[data-face-fan]:not([data-gfoat-done])')];
-    if(!slots.length) return;
-
-    // Only contenders with money on them are worth asking about: every dollar on
-    // a contender is somebody's bid, so nobody backed means nobody to show, and
-    // the unclaimed crown those badges already carry is the right answer. On a
-    // site where seven contenders out of thousands have been backed, that turns
-    // the whole page into one small request instead of a thousand ids nobody
-    // needed to look up.
-    const ids = [...new Set(slots
-      .filter(el => Number(el.dataset.cents || 0) > 0)
-      .map(el => el.dataset.gfoat || el.dataset.faceFan))];
-
-    // ── Where the fan comes from ─────────────────────────────────────────────
-    //
-    // /api/top-fans runs on the server with the service key, the same way
-    // /api/fans already does. That matters because the browser cannot answer
-    // this question at all: fan_totals is public, so a page can see THAT a
-    // contender has a fan, but users is self-read-only, so it cannot see WHO.
-    // Every browser-side route needed something installed first — a SECURITY
-    // DEFINER function, a public view — and until it was, every frame showed an
-    // unclaimed crown however much money was on the board.
-    //
-    // This needs nothing installed. The two paths below stay as fallbacks for a
-    // deployment without the endpoint yet.
-    let rows = ids.length ? null : [];
-    if(ids.length) try {
-      const parts = await Promise.all(batches(ids).map(async part => {
-        const r = await fetch('/api/top-fans?ids=' + encodeURIComponent(part.join(',')));
-        if(!r.ok) throw new Error('/api/top-fans answered ' + r.status);
-        const j = await r.json();
-        return Object.entries(j?.fans || {}).map(([person_id, f]) => Object.assign({ person_id }, f));
-      }));
-      rows = parts.flat();
-    } catch(e){
-      rows = null;
-      console.warn('[gfoat] ' + (e?.message || e) + ' — trying the database directly');
-    }
-
-    if(!rows){
-      try {
-        const { data, error } = await sb.rpc('top_fans', { p_person_ids: ids });
-        if(error) console.warn('[gfoat] top_fans unavailable:', error.message);
-        else rows = data;
-      } catch(e){ console.warn('[gfoat] top_fans threw:', e?.message || e); }
-    }
-
-    if(!rows || !rows.length){
-      // Last resort, and the one that needs supabase-public-profiles.sql: two
-      // reads rather than an embed, because an embedded users(...) is refused
-      // outright and takes the whole query down with it.
-      const totals = [];
-      for(const part of batches(ids)){
-        const { data, error } = await sb.from('fan_totals')
-          .select('person_id,user_id,total_cents')
-          .in('person_id', part).order('total_cents', { ascending:false }).limit(5000);
-        if(error){ console.error('[gfoat] cannot read fan_totals:', error.message); return; }
-        totals.push(...(data || []));
-      }
-
-      const top = new Map();
-      for(const r of totals) if(!top.has(r.person_id)) top.set(r.person_id, r);
-
-      // fan_totals is a cache of bids, and the two come apart — anything that
-      // writes bids or recomputes totals outside place_bid leaves it behind, and
-      // data/demo-backing-remove.sql does exactly that. bids is the record and
-      // it is public, so ask it about whoever the cache cannot answer for. This
-      // is why a contender could show $135 and still wear an unclaimed crown.
-      const missing = ids.filter(id => !top.has(id));
-      if(missing.length){
-        const raw = [];
-        for(const part of batches(missing)){
-          const { data, error } = await sb.from('bids')
-            .select('person_id,user_id,amount_cents').in('person_id', part).limit(20000);
-          if(error){ console.warn('[gfoat] cannot read bids:', error.message); break; }
-          raw.push(...(data || []));
-        }
-        const sums = new Map();
-        for(const b of raw){
-          if(!b.user_id) continue;
-          const k = b.person_id + '|' + b.user_id;
-          sums.set(k, (sums.get(k)||0) + (b.amount_cents||0));
-        }
-        for(const [k, cents] of sums){
-          const cut = k.indexOf('|');
-          const pid = k.slice(0, cut), uid = k.slice(cut + 1);
-          const cur = top.get(pid);
-          if(cents > 0 && (!cur || cents > cur.total_cents)){
-            top.set(pid, { person_id: pid, user_id: uid, total_cents: cents });
-          }
-        }
-      }
-
-      const who = await (window.GOAT?.profiles?.([...top.values()].map(r => r.user_id)) || new Map());
-
-      rows = [...top.values()].map(r => {
-        const u = who.get(r.user_id) || {};
-        return { person_id:r.person_id, user_id:r.user_id, total_cents:r.total_cents,
-                 display_name: u.display_name, photo_path: u.photo_path,
-                 social_handle: u.social_handle, social_platform: u.social_platform };
-      });
-    }
-
-    // What the viewer already has down on each of them, so the crown is priced
-    // against their own position rather than from zero. One query for the page.
-    const mine = new Map();
-    try {
-      const { data:{ user } } = await sb.auth.getUser();
-      if(user){
-        for(const part of batches(ids)){
-          const { data } = await sb.from('fan_totals')
-            .select('person_id,total_cents').eq('user_id', user.id).in('person_id', part);
-          for(const r of (data||[])) mine.set(r.person_id, r.total_cents||0);
-        }
-      }
-    } catch(e){}
-
-    const byPerson = new Map((rows||[]).map(r => [r.person_id, r]));
-
-    for(const el of slots){
-      const pid = el.dataset.gfoat || el.dataset.faceFan;
-      const f = byPerson.get(pid);
-      const face = el.classList.contains('face-fan');
-
-      // Only finished once there is an answer. This used to be marked done
-      // before the lookup was even read, so the first pass — which can run
-      // before the data is there, or return nothing because a request failed —
-      // stamped every badge as handled and every later pass skipped it. A
-      // contender with a well-known fan then showed a crown for the whole
-      // session, which is exactly what was happening to Messi and Ronaldo.
-      //
-      // A contender genuinely without a fan would otherwise be re-queried
-      // forever, so give up after a few passes and leave the crown, which is
-      // the truthful answer for them anyway.
-      const tries = Number(el.dataset.gfoatTries || 0) + 1;
-      el.dataset.gfoatTries = String(tries);
-      if(f || tries >= 4) el.dataset.gfoatDone = '1';
-
-      if(!f){
-        if(face){
-          // Nobody has backed this one. That is true of almost every contender
-          // on a fresh board, so this state is what the page mostly looks like —
-          // and a crown that does nothing, two hundred times down a page, reads
-          // as a broken image rather than an unclaimed title.
-          //
-          // So it is the offer instead: the crown, the price, and a click that
-          // opens the backing sheet on this contender. Anyone can be first for a
-          // dollar, and that is the most interesting thing the badge can say
-          // when there is no face to show.
-          el.classList.add('none');
-          el.classList.remove('no-link');
-          el.removeAttribute('href'); el.removeAttribute('target');
-          el.innerHTML = '<span class="face-fan-initials">👑</span>'
-                       + '<span class="face-fan-sum">$1 · be first</span>';
-          el.title = 'No Greatest Fan of All Time yet — $1 claims the crown';
-          el.onclick = (ev) => {
-            ev.preventDefault();
-            const card = el.closest('.duel-body');
-            const btn = card && card.querySelector(`[data-back-more="${CSS.escape(pid)}"]`);
-            if(btn) btn.click();
-            else if(window.GoatBack) window.GoatBack.sheet(pid, { personName: el.dataset.name || '' });
-          };
-        } else {
-          el.innerHTML = '<span class="poll-gfoat-empty">No #1 fan yet — $1 claims it</span>';
-        }
-        priceCrown(pid, 1);
-        continue;
-      }
-
-      const name = f.display_name || 'A backer';
-      const down = '$' + Math.floor((f.total_cents||0)/100).toLocaleString('en-US');
-      const url = f.photo_path ? (window.GOAT?.getAvatarUrl?.(f.photo_path) || f.photo_path) : null;
-      const initialsHtml = cls => `<span class="${cls}">${esc(initialsOf(name))}</span>`;
-      const img = cls => url
-        ? `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:${JSON.stringify(cls)},textContent:${JSON.stringify(initialsOf(name))}}))">`
-        : initialsHtml(cls);
-
-      // Beating them costs the gap plus a dollar, from wherever the viewer
-      // already stands.
-      const need = Math.max(1, Math.floor(((f.total_cents||0) - (mine.get(pid)||0)) / 100) + 1);
-      priceCrown(pid, need);
-
-      el.title = `Greatest Fan of All Time: ${name} — ${down} down · $${need.toLocaleString('en-US')} takes the crown`
-              + (socialUrl(f.social_platform, f.social_handle) ? '' : ' · no social account linked');
-      if(face){
-        // The face IS the badge, and it goes to that person's own account or it
-        // goes nowhere. It used to fall back to the contender's fan list, so
-        // clicking the Greatest Fan of All Time opened Ronaldo — the wrong
-        // person entirely, and the one place the badge is not about.
-        const social = socialUrl(f.social_platform, f.social_handle);
-        el.onclick = null;
-        if(social){
-          el.href = social; el.target = '_blank'; el.rel = 'noopener';
-          el.classList.remove('no-link');
-        } else {
-          el.removeAttribute('href'); el.removeAttribute('target');
-          el.classList.add('no-link');
-        }
-        el.classList.toggle('has-social', !!social);
-        el.innerHTML = `${img('face-fan-initials')}<span class="face-fan-crown">👑</span>`
-          + `<span class="face-fan-sum">${esc(down)}</span>`;
-        el.classList.remove('none');
-      } else {
-        el.innerHTML = `${img('poll-gfoat-initials')}<span class="poll-gfoat-copy">
-            <span class="poll-gfoat-label">GOAT fan · ${esc(down)}</span>
-            <span class="poll-gfoat-name">${esc(name)}</span>
-          </span>`;
-      }
-    }
-  }
-
-  // The crown button stops saying "any amount" and starts saying the number.
-  function priceCrown(personId, need){
-    for(const b of document.querySelectorAll(`[data-back-more="${CSS.escape(personId)}"]`)){
-      b.textContent = `👑 $${need.toLocaleString('en-US')} to take the crown`;
-      b.dataset.crownPrice = String(need);
-    }
-  }
-
-  // Duels are painted from four places — the hero, the featured strip, the
-  // groups and the filtered list — and re-painted on every vote and every
-  // filter change. Rather than calling this from each of them and missing one,
-  // watch for the slots arriving. paintGfoat only touches slots it has not
-  // already filled, so firing it often costs nothing.
-  // Belt as well as braces. The observer catches every later render; this
-  // catches the first one, and any render that somehow slips past it. The
-  // function only touches slots it has not already filled, so extra calls are
-  // free.
-  // Several passes, spread out: fan data can arrive after the cards do, and a
-  // pass that finds nothing no longer poisons the ones after it.
-  window.addEventListener('load', () => {
-    [300, 1200, 3000, 6000].forEach(ms => setTimeout(paintGfoat, ms));
-  });
-
-  (function watchForTiles(){
-    let queued = null;
-    const run = () => { queued = null; paintGfoat(); };
-    new MutationObserver(muts => {
-      if(queued) return;
-      for(const m of muts){
-        for(const n of m.addedNodes){
-          if(n.nodeType === 1 && (n.matches?.('.poll-gfoat, .face-fan') || n.querySelector?.('.poll-gfoat, .face-fan'))){
-            queued = setTimeout(run, 60);
-            return;
-          }
-        }
-      }
-    }).observe(document.body, { childList:true, subtree:true });
-  })();
 
   // A handle is stored without its host. Anonymous backers arrive with nothing
   // here, and so do fans who never filled it in — both get no link rather than
@@ -1336,6 +1159,8 @@
           if(p && data && typeof data.new_total === 'number') p.total_cents = data.new_total;
           applyFilters();
           refreshActivity();
+          // That bid may have taken the crown, so re-read the fans and redraw.
+          loadGfoat().then(applyFilters);
         }
       });
       return;

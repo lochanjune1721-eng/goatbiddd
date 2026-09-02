@@ -1,58 +1,61 @@
 // scripts/test-homepage-scale.mjs — the badge at homepage scale.
 //
 //   node server.mjs &
-//   node scripts/test-homepage-scale.mjs
+//   BOARDS=400 node scripts/test-homepage-scale.mjs
 //
-// scripts/test-fan-badge.mjs renders two contenders in one category and passes.
-// The live homepage renders a hundred boards at once, and there the same badge
-// stayed empty on contenders that /why proved have a nameable fan. So this
-// builds the homepage as it really is: many boards, almost all of them on $0
-// with no fan, and a handful carrying real money — the same shape the live
-// database has.
+// The two-contender test passes whatever the page does at scale, and that is
+// how the homepage kept its empty crowns while every test was green. This
+// builds the homepage as it really is — hundreds of boards, a thousand badges,
+// and a handful of contenders carrying any money at all, which is the shape of
+// the live data.
+//
+// What it pins down is that the cost does not grow with the page. The fans are
+// read once, unfiltered, before anything renders. The previous design asked
+// about every contender on the page by id and built a query string tens of
+// thousands of characters long, and that is the class of bug this catches.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const BOARDS = Number(process.env.BOARDS || 60);   // boards on the page
+const BOARDS = Number(process.env.BOARDS || 200);
 const uuid = (a, b) => `${String(a).padStart(8,'0')}-aaaa-4aaa-8aaa-${String(b).padStart(12,'0')}`;
+const FAN = uuid(9, 900);
 
-const cats = [], people = [], fanTotals = [], apiFans = {};
+const cats = [], people = [], fanTotals = [];
 for(let i = 0; i < BOARDS; i++){
   const cid = uuid(i + 1, 1);
   cats.push({ id: cid, slug: 'board-' + i, name: 'Board ' + i, group_name: 'Group ' + (i % 6), sort_order: i });
   for(let j = 0; j < 2; j++){
     const pid = uuid(i + 1, 100 + j);
-    // Only the first board carries money — exactly like the live data, where
-    // seven contenders out of thousands have anything on them.
+    // Only the first board carries money, as on the live site.
     const cents = i === 0 ? (j === 0 ? 13500 : 6900) : 0;
     people.push({ id: pid, slug: `p-${i}-${j}`, category_id: cid, name: `Person ${i}-${j}`,
                   total_cents: cents, first_backed_at: cents ? '2026-01-01' : null, photo_path: null, blurb: '' });
-    if(cents){
-      const uid = uuid(9, 900 + j);
-      fanTotals.push({ person_id: pid, user_id: uid, total_cents: cents });
-      apiFans[pid] = { user_id: uid, total_cents: cents, display_name: j === 0 ? 'Alex' : 'Philip',
-                       photo_path: null, social_handle: j === 0 ? 'alex' : 'philip', social_platform: 'x' };
-    }
+    if(cents) fanTotals.push({ person_id: pid, user_id: FAN, total_cents: cents });
   }
 }
 const BACKED = people.filter(p => p.total_cents > 0).map(p => p.id);
 
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-const logs = [];
-page.on('console', m => logs.push(m.type() + ': ' + m.text()));
 
-await page.addInitScript(({cats, people, fanTotals}) => {
+await page.addInitScript(({cats, people, fanTotals, FAN}) => {
+  window.__reads = { fan_totals: 0, public_profiles: 0 };
+  window.__idsAsked = 0;           // how many ids any query carried
   const rows = { categories: cats, people, fan_totals: fanTotals, bids: [],
-                 public_profiles: [], site_stats: [{ visitor_count: 1 }] };
-  const res = data => Promise.resolve({ data, error: null });
+                 public_profiles: [{ id: FAN, display_name: 'Alex', photo_path: null,
+                                     social_handle: 'alex', social_platform: 'x' }],
+                 site_stats: [{ visitor_count: 1 }] };
+  const res = d => Promise.resolve({ data: d, error: null });
   function table(name){
+    if(window.__reads[name] != null) window.__reads[name]++;
     if(name === 'users') return { select(){return this}, eq(){return this}, in(){return this},
       order(){return this}, limit(){return this},
       maybeSingle: () => Promise.resolve({ data:null, error:{ message:'permission denied for table users' } }),
       then: ok => ok({ data:null, error:{ message:'permission denied for table users' } }) };
     const api = { _rows: rows[name] || [] };
-    for(const m of ['select','eq','in','order','limit','gte','lt','gt','neq','maybeSingle','single','not','filter','range','contains'])
+    for(const m of ['select','eq','order','limit','gte','lt','gt','neq','maybeSingle','single','not','filter','range','contains'])
       api[m] = () => api;
+    api.in = (col, vals) => { window.__idsAsked = Math.max(window.__idsAsked, (vals||[]).length); return api; };
     api.then = ok => ok({ data: api._rows, error: null });
     api.maybeSingle = () => res((rows[name] || [])[0] || null);
     return api;
@@ -64,69 +67,42 @@ await page.addInitScript(({cats, people, fanTotals}) => {
             onAuthStateChange: () => ({ data:{ subscription:{ unsubscribe(){} } } }),
             signOut: () => Promise.resolve({}) },
     channel: () => ({ on(){return this}, subscribe(){return this} }), removeChannel(){} }) };
-}, {cats, people, fanTotals});
+}, {cats, people, fanTotals, FAN});
 
-// Record what the page actually asks the endpoint for — how many ids, how long
-// the URL is, how many times it asks. That is where scale bites.
-const calls = [];
-await page.route('**/api/**',    r => r.fulfill({ json:{ ok:true } }));
-await page.route('**/api/fans*', r => r.fulfill({ json:{ ok:true, fans:[] } }));
-await page.route('**/api/top-fans*', r => {
-  const u = new URL(r.request().url());
-  const asked = (u.searchParams.get('ids') || '').split(',').filter(Boolean);
-  calls.push({ urlLength: u.href.length, asked: asked.length });
-  const fans = {};
-  for(const id of asked) if(apiFans[id]) fans[id] = apiFans[id];
-  r.fulfill({ json: { ok: true, fans } });
-});
-
+await page.route('**/api/**', r => r.fulfill({ json: { ok: true } }));
 await page.goto('http://127.0.0.1:3000/index.html', { waitUntil: 'domcontentloaded' });
-await page.waitForTimeout(9000);
+await page.waitForTimeout(6000);
 
 const out = await page.evaluate(BACKED => {
-  const all = [...document.querySelectorAll('.face-fan[data-face-fan]')];
-  const read = el => ({
-    person: el.dataset.faceFan,
-    empty: /\bnone\b/.test(el.className),
-    sum: el.querySelector('.face-fan-sum')?.textContent || null,
-    initials: el.querySelector('.face-fan-initials')?.textContent || null,
-    tries: el.dataset.gfoatTries || null,
-    done: el.dataset.gfoatDone || null
+  const all = [...document.querySelectorAll('.face-fan')];
+  const backed = all.filter(el => {
+    const t = el.getAttribute('title') || '';
+    return /Greatest Fan of All Time:/.test(t);
   });
   return {
     duels: document.querySelectorAll('.duel-body').length,
     badges: all.length,
-    backedOnPage: all.filter(el => BACKED.includes(el.dataset.faceFan)).map(read)
+    filled: backed.length,
+    sums: backed.map(el => el.querySelector('.face-fan-sum')?.textContent),
+    reads: window.__reads,
+    idsAsked: window.__idsAsked
   };
 }, BACKED);
 
-console.log('duels on page:', out.duels, '| badges:', out.badges);
-console.log('calls to /api/top-fans:', calls.length,
-  calls.map(c => `${c.asked} ids / ${c.urlLength} chars`).join('  ·  ') || '(none)');
-console.log('badges for the contenders that HAVE a fan:');
-for(const b of out.backedOnPage) console.log('  ', JSON.stringify(b));
-
-const noise = logs.filter(l => /gfoat/i.test(l));
-if(noise.length){ console.log('--- badge log ---'); noise.slice(0, 8).forEach(l => console.log('  ' + l)); }
-
+console.log(`${BOARDS} boards · ${out.duels} duels · ${out.badges} badges`);
+console.log('fan_totals read', out.reads.fan_totals, 'time(s); largest id list in any query:', out.idsAsked);
+console.log('badges showing a fan:', out.filled, out.sums.join(' '));
 await browser.close();
 
-// The bug this test was written for. Ids travel in the query string, and asking
-// about every contender at once built a 31,000-character URL — which Cloudflare
-// refuses, so every fan lookup on the homepage failed while the same code inside
-// one board, asking about a handful, worked. A stub happily answers a URL that
-// long, so only this assertion catches it.
-assert.ok(calls.length > 0, 'the page never asked for any fans');
-for(const c of calls){
-  assert.ok(c.urlLength < 4096,
-    `a request URL of ${c.urlLength} chars (${c.asked} ids) — real infrastructure refuses this; ask in batches`);
-}
+assert.ok(out.badges > 100, `expected a badge on every contender, saw ${out.badges}`);
+assert.ok(out.filled >= 2, `the two backed contenders should show a fan; ${out.filled} did`);
+assert.ok(out.sums.includes('$135') && out.sums.includes('$69'), `wrong amounts: ${out.sums.join(', ')}`);
 
-assert.ok(out.badges > 50, `expected a badge on every contender, saw ${out.badges}`);
-assert.ok(out.backedOnPage.length, 'the backed contenders never rendered on the homepage');
-for(const b of out.backedOnPage){
-  assert.equal(b.empty, false,
-    `contender ${b.person} has a fan but the badge still shows the unclaimed crown (tries=${b.tries}, done=${b.done})`);
-  assert.notEqual(b.sum, '$1 · be first');
-}
-console.log('PASS — at homepage scale, every contender with a fan shows one');
+// The cost must not grow with the page. One read of the whole fan table, and no
+// query carrying an id list anywhere near the size of the page — that list in
+// the query string is what produced a 31,000-character URL before.
+assert.equal(out.reads.fan_totals, 1, `fan_totals read ${out.reads.fan_totals} times — it should be read once`);
+assert.ok(out.idsAsked < 100,
+  `a query carried ${out.idsAsked} ids; ids travel in the query string, so this grows into a URL no server will accept`);
+
+console.log('PASS — at homepage scale the fans cost one request, and the faces are there');
