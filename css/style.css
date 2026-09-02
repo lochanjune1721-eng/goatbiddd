@@ -231,9 +231,9 @@ a{color:inherit;text-decoration:none}
 .board-row .row-left .meta .total{font-family:'JetBrains Mono',monospace;color:var(--gold);font-weight:700;letter-spacing:-.02em;margin-top:4px}
 .board-row .row-left .meta .gap{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px}
 .board-row .row-right{display:flex;gap:10px;align-items:center;min-width:0}
-.board-row .row-right .fan-photo{flex:0 0 auto;border-radius:50%;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);aspect-ratio:1/1;position:relative}
+.board-row .row-right .fan-photo{flex:0 0 auto;border-radius:10px;overflow:hidden;background:var(--surface-3);border:1px solid var(--border);aspect-ratio:1/1;position:relative}
 .board-row .row-right .fan-photo img{width:100%;height:100%;object-fit:cover;display:block}
-.board-row .row-right .fan-initials{width:100%;height:100%;display:grid;place-items:center;background:var(--surface-3);color:var(--gold);font-family:'Anton',sans-serif;font-weight:700}
+.board-row .row-right .fan-initials{width:100%;height:100%;display:grid;place-items:center;background:radial-gradient(120% 120% at 50% 28%, #33291d 0%, #14110d 68%);color:var(--gold);font-family:'Anton',sans-serif;font-weight:700;font-size:clamp(22px,18%,64px)}
 .board-row .row-right .fan-meta{flex:1;min-width:0}
 .board-row .row-right .fan-meta .fan-name{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .board-row .row-right .fan-meta .fan-handle{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -248,27 +248,27 @@ a{color:inherit;text-decoration:none}
 
 /* rank scaling per spec */
 .board-row.rank-1 .person-photo{width:220px;height:220px}
-.board-row.rank-1 .fan-photo{width:90px;height:90px}
+.board-row.rank-1 .fan-photo{width:220px;height:220px}
 .board-row.rank-1 .name{font-size:40px}
 .board-row.rank-1 .total{font-size:38px}
 .board-row.rank-1 .fan-initials{font-size:28px}
 .board-row.rank-2 .person-photo{width:160px;height:160px}
-.board-row.rank-2 .fan-photo{width:70px;height:70px}
+.board-row.rank-2 .fan-photo{width:160px;height:160px}
 .board-row.rank-2 .name{font-size:32px}
 .board-row.rank-2 .total{font-size:30px}
 .board-row.rank-2 .fan-initials{font-size:22px}
 .board-row.rank-3 .person-photo{width:130px;height:130px}
-.board-row.rank-3 .fan-photo{width:60px;height:60px}
+.board-row.rank-3 .fan-photo{width:130px;height:130px}
 .board-row.rank-3 .name{font-size:27px}
 .board-row.rank-3 .total{font-size:26px}
 .board-row.rank-3 .fan-initials{font-size:18px}
 .board-row.rank-4-10 .person-photo{width:90px;height:90px}
-.board-row.rank-4-10 .fan-photo{width:44px;height:44px}
+.board-row.rank-4-10 .fan-photo{width:90px;height:90px}
 .board-row.rank-4-10 .name{font-size:21px}
 .board-row.rank-4-10 .total{font-size:20px}
 .board-row.rank-4-10 .fan-initials{font-size:14px}
 .board-row.rank-11-plus .person-photo{width:60px;height:60px}
-.board-row.rank-11-plus .fan-photo{width:32px;height:32px}
+.board-row.rank-11-plus .fan-photo{width:60px;height:60px}
 .board-row.rank-11-plus .name{font-size:18px}
 .board-row.rank-11-plus .total{font-size:17px}
 .board-row.rank-11-plus .fan-initials{font-size:11px}
@@ -280,13 +280,13 @@ a{color:inherit;text-decoration:none}
   .board-row .row-left{padding:12px}
   .board-row .row-right{padding:10px 12px;border-top:1px solid var(--border);background:rgba(0,0,0,.12)}
   .board-row.rank-1 .person-photo{width:38vw;max-width:140px;height:auto;aspect-ratio:1/1}
-  .board-row.rank-1 .fan-photo{width:20vw;max-width:80px}
+  .board-row.rank-1 .fan-photo{width:38vw;max-width:140px;height:auto;aspect-ratio:1/1}
   .board-row.rank-1 .name{font-size:28px}
   .board-row.rank-1 .total{font-size:24px}
   .board-row.rank-2 .person-photo{width:32vw;max-width:120px}
   .board-row.rank-2 .name{font-size:22px}
   .board-row.rank-2 .total{font-size:20px}
-  .board-row.rank-2 .fan-photo{width:17vw;max-width:68px}
+  .board-row.rank-2 .fan-photo{width:32vw;max-width:120px}
   .board-row.rank-3 .person-photo{width:26vw;max-width:100px}
   .board-row.rank-3 .name{font-size:18px}
   .board-row.rank-3 .total{font-size:17px}

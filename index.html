@@ -93,6 +93,34 @@
   font-family:'JetBrains Mono',monospace;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .duel-more:hover{background:var(--gold-lo)}
 @media(max-width:480px){.duel-more{font-size:10px;padding:6px 8px;margin-top:5px}}
+
+/* ── The crown offer ────────────────────────────────────────────────────────
+   The widest thing under the scoreboard, because it is the only thing on the
+   card that asks for more than a dollar. Two halves, one per contender, each
+   naming the rival and the price. */
+.crown-call{margin-top:10px;border:1px solid var(--gold);border-radius:14px;overflow:hidden;
+  background:linear-gradient(180deg, rgba(201,168,106,.13), rgba(201,168,106,.04))}
+.crown-call-title{display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:7px 10px;font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  color:#12100b;background:var(--gold)}
+.crown-call-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:rgba(201,168,106,.3)}
+.crown-offer{display:grid;gap:1px;padding:11px 13px;border:0;cursor:pointer;text-align:left;
+  background:var(--surface);color:var(--ink);font:inherit;transition:background .15s}
+.crown-offer:hover{background:rgba(201,168,106,.11)}
+.crown-offer:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.crown-offer.empty{background:var(--surface);cursor:default}
+.crown-offer-who{font-family:'Anton',sans-serif;font-size:clamp(16px,2.5vw,22px);line-height:1.05;
+  letter-spacing:.01em;color:var(--ink)}
+.crown-offer-sub{font-size:11px;color:var(--muted);line-height:1.3;margin-top:1px}
+.crown-offer-price{font-family:'Anton',sans-serif;font-size:clamp(26px,4.4vw,38px);line-height:1;
+  color:var(--gold);margin-top:5px;letter-spacing:-.01em}
+.crown-offer-note{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted)}
+@media(max-width:520px){
+  .crown-call-grid{grid-template-columns:1fr}
+  .crown-offer{padding:10px 12px}
+  .crown-offer.empty{display:none}
+}
 .btn-vote{height:40px;padding:0 18px;border-radius:999px;border:1px solid var(--border-2);background:transparent;color:var(--ink);font-weight:700;font-size:13px;letter-spacing:.01em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,border-color .15s,color .15s,transform .1s}
 .btn-vote .btn-vote-plus{font-family:var(--mono,ui-monospace,monospace);font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--surface-3);color:var(--muted);transition:background .15s,color .15s}
 .btn-vote:hover{border-color:var(--gold);color:var(--gold);background:rgba(212,175,110,.07)}
@@ -483,6 +511,11 @@
   // contenders that had a dozen ways to end up showing a crown, and it did.
   // None of it is needed to display ten rows.
   let GFOAT = new Map();
+  // What the viewer already has behind each contender, so the crown is priced
+  // from where they stand rather than from zero. One query, their own rows only.
+  // Without it the card asks a backer who is $69 in for the full $102 instead of
+  // the $33 they actually need, which is the opposite of an invitation.
+  let MINE = new Map();
   async function loadGfoat(){
     const next = new Map();
     try {
@@ -515,6 +548,17 @@
       console.warn('[gfoat] could not load the fans:', e?.message || e);
     }
     GFOAT = next;
+
+    const mine = new Map();
+    try {
+      const { data:{ user } } = await sb.auth.getUser();
+      if(user){
+        const { data } = await sb.from('fan_totals')
+          .select('person_id,total_cents').eq('user_id', user.id).limit(5000);
+        for(const r of (data || [])) mine.set(r.person_id, r.total_cents || 0);
+      }
+    } catch(e){}
+    MINE = mine;
   }
   await loadGfoat();
 
@@ -719,8 +763,10 @@
 
   // What it costs to overtake the current holder, from nothing.
   function crownPrice(p){
-    const f = p && GFOAT.get(p.id);
-    return f ? Math.max(1, Math.floor(f.cents / 100) + 1) : 1;
+    if(!p) return 1;
+    const f = GFOAT.get(p.id);
+    if(!f) return 1;
+    return Math.max(1, Math.floor((f.cents - (MINE.get(p.id) || 0)) / 100) + 1);
   }
 
   // The badge in the corner of the frame: the fan's own picture, or their
@@ -762,6 +808,32 @@
         <span class="poll-gfoat-label">GOAT fan · ${esc(down)}</span>
         <span class="poll-gfoat-name">${esc(f.name)}</span>
       </span>`;
+  }
+
+  // The crown, sold properly. This used to be a 9.5px outline button reading
+  // "👑 Any amount" tucked under the vote — the most valuable thing on the card
+  // advertised as a footnote. It now says who holds it, what they paid, and what
+  // it costs to take it off them, with the price set in the same face as the
+  // scoreboard. A named rival and a real number is the whole reason somebody
+  // bids past a dollar.
+  function crownOffer(p, cls){
+    if(!p) return '<span class="crown-offer empty"></span>';
+    const f    = GFOAT.get(p.id);
+    const need = crownPrice(p);
+    const them = firstName(p.name);
+    const held = (MINE.get(p.id) || 0) >= f?.cents && f;
+    const who  = !f ? 'Claim it first' : held ? 'You hold it' : `Beat ${esc(givenName(f.name) || f.name)}`;
+    const sub  = !f
+      ? `Nobody has backed ${esc(them)} yet`
+      : held
+        ? `Nobody is close on ${esc(them)}`
+        : `${esc(f.name)} holds ${esc(them)} with $${Math.floor(f.cents / 100).toLocaleString('en-US')}`;
+    return `<button class="crown-offer ${cls}" data-back-more="${p.id}" data-name="${esc(p.name)}">
+        <span class="crown-offer-who">${who}</span>
+        <span class="crown-offer-sub">${sub}</span>
+        <span class="crown-offer-price">$${need.toLocaleString('en-US')}</span>
+        <span class="crown-offer-note">${held ? 'to extend your lead' : 'takes the crown'}</span>
+      </button>`;
   }
 
   function duelHtml(cat, catPeople, opts={}){
@@ -845,8 +917,11 @@
           <div class="poll-acts">
             ${[p1,p2].map((p,i)=> p ? `<div class="poll-act ${i?'b':'a'}">
               <button class="btn-vote" data-vote="${p.id}" data-name="${esc(p.name)}">Back · $1</button>
-              <button class="duel-more" data-back-more="${p.id}" data-name="${esc(p.name)}">👑 $${crownPrice(p).toLocaleString('en-US')} to take the crown</button>
             </div>` : '<div class="poll-act"></div>').join('')}
+          </div>
+          <div class="crown-call">
+            <div class="crown-call-title">👑 Become the Greatest Fan of All Time</div>
+            <div class="crown-call-grid">${crownOffer(p1,'a')}${crownOffer(p2,'b')}</div>
           </div>
           <div class="poll-foot">${esc(gapText)}</div>
         </div>

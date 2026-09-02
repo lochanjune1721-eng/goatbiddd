@@ -83,7 +83,11 @@ async function badges({ fanTotals, publicProfiles }){
         return [tile?.classList.contains('a') ? 'left' : 'right', read(el)];
       })),
       first: read(all[0]),
-      crownButtons: [...document.querySelectorAll('[data-back-more]')].map(b => b.textContent.trim()).filter(t => t.startsWith('👑')),
+      crown: [...document.querySelectorAll('.crown-offer')].map(b => ({
+        who:   b.querySelector('.crown-offer-who')?.textContent.trim(),
+        sub:   b.querySelector('.crown-offer-sub')?.textContent.trim(),
+        price: b.querySelector('.crown-offer-price')?.textContent.trim()
+      })),
       reads: window.__reads
     };
   });
@@ -104,7 +108,13 @@ async function badges({ fanTotals, publicProfiles }){
   assert.match(b.title, /Greatest Fan of All Time: Philip/);
   assert.equal(b.sum, '$98');
   assert.ok(!/\bnone\b/.test(b.classes), 'a contender with a fan must not show the unclaimed crown');
-  assert.ok(out.crownButtons.some(t => t.includes('$99')), `the crown should be priced at $99; buttons said ${JSON.stringify(out.crownButtons)}`);
+  // The offer has to name the rival and the price, or nobody bids past a dollar.
+  const beat = out.crown.find(c => c.who === 'Beat Philip');
+  assert.ok(beat, `the offer should name the holder; saw ${JSON.stringify(out.crown)}`);
+  assert.equal(beat.price, '$99', 'one dollar more than the $98 they hold');
+  assert.match(beat.sub, /Philip holds Messi with \$98/);
+  const first = out.crown.find(c => c.who === 'Claim it first');
+  assert.ok(first && first.price === '$1', 'an unbacked contender is a dollar to claim');
   assert.equal(out.reads.fan_totals, 1, 'the whole table is read once, not per contender');
   console.log('PASS 1/3 — the fan\'s picture is in the frame, linking to their account');
 }
