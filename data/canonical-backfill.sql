@@ -2964,6 +2964,42 @@ insert into canon_top20 (cat_slugs, rank, name) values
 (ARRAY['greatest-f1-car','f1-cars','cars','f1-car'],19,'Red Bull RB7'),
 (ARRAY['greatest-f1-car','f1-cars','cars','f1-car'],20,'Mercedes W196');
 
+-- ============ SLUGS THAT MORE THAN ONE BOARD CLAIMS ============
+--
+-- Each canonical board lists its own slug plus a few aliases, and some of those
+-- aliases are generic: 'players' is claimed by eight boards, 'brands' by five,
+-- 'cars' by three. Matching on one of those puts every claimant's contenders on
+-- the same board — which is why Apple, Samsung and Google turned up on boards
+-- about anything at all, alongside tennis players and F1 cars.
+--
+-- Computed from the list rather than hand-written, so it stays right if the
+-- list changes. A slug only one board claims is a safe alias and still matches.
+drop table if exists canon_ambiguous;
+create table canon_ambiguous as
+select slug from (
+  select cat_slugs[1] as board, unnest(cat_slugs) as slug from canon_top20
+) s
+ group by slug
+having count(distinct board) > 1;
+
+-- ============ UNDO THE MIX-UP ============
+--
+-- Rows a previous run of this file put on the wrong board. Identified precisely:
+-- the slug is one this file generates (name, dashed, then the board slug), the
+-- contender is not on that board's canonical list, and nobody has put a penny on
+-- them. Anything a person added by hand, or anything backed, is left alone.
+delete from people p
+ using categories c
+ where c.id = p.category_id
+   and p.slug = lower(regexp_replace(p.name, '[^a-zA-Z0-9]+', '-', 'g')) || '-' || c.slug
+   and exists (select 1 from canon_top20 k where c.slug = any(k.cat_slugs))
+   and not exists (
+     select 1 from canon_top20 k
+      where c.slug = any(k.cat_slugs) and lower(k.name) = lower(p.name)
+        and not (c.slug in (select slug from canon_ambiguous)))
+   and coalesce(p.total_cents, 0) = 0
+   and not exists (select 1 from bids b where b.person_id = p.id);
+
 -- ============ BACKFILL ============
 --
 -- Only inserts. Nothing is updated and nothing is deleted, and a contender
@@ -2981,9 +3017,10 @@ select lower(regexp_replace(k.name, '[^a-zA-Z0-9]+', '-', 'g')) || '-' || c.slug
        0
   from canon_top20 k
   join categories c on c.slug = any(k.cat_slugs)
- where not exists (
-   select 1 from people p
-    where p.category_id = c.id and lower(p.name) = lower(k.name))
+ where c.slug not in (select slug from canon_ambiguous)
+   and not exists (
+     select 1 from people p
+      where p.category_id = c.id and lower(p.name) = lower(k.name))
    on conflict (slug) do nothing;
 
 -- ============ WHAT IS STILL MISSING ============
@@ -2996,8 +3033,16 @@ select c.slug,
   from canon_top20 k
   join categories c on c.slug = any(k.cat_slugs)
   left join people p on p.category_id = c.id and lower(p.name) = lower(k.name)
+ where c.slug not in (select slug from canon_ambiguous)
  group by c.slug
 having count(*) filter (where p.id is null) > 0
  order by still_missing desc;
 
+-- Boards whose slug more than one canonical list claims. They are skipped on
+-- purpose: there is no way to tell which list they wanted. Rename the board's
+-- slug to the specific one — 'greatest-tech-brand' rather than 'brands' — and
+-- run this again.
+select slug as board_skipped_ambiguous_slug from canon_ambiguous order by slug;
+
 drop table canon_top20;
+drop table canon_ambiguous;
