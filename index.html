@@ -1037,16 +1037,24 @@
     let rows = null;
     try {
       const { data, error } = await sb.rpc('top_fans', { p_person_ids: ids });
-      if(!error) rows = data;
-    } catch(e){ /* falls through to the read below */ }
+      if(error) console.warn('[gfoat] top_fans unavailable, reading fan_totals instead:', error.message);
+      else rows = data;
+    } catch(e){ console.warn('[gfoat] top_fans threw, reading fan_totals instead:', e?.message || e); }
 
     // A project that has not run supabase-top-fans.sql yet still gets the
     // faces: fan_totals is public read, so the same answer can be assembled in
     // the browser. Slower and heavier, which is why it is the fallback.
     if(!rows){
-      const { data } = await sb.from('fan_totals')
+      const { data, error } = await sb.from('fan_totals')
         .select('person_id,total_cents,users(display_name,is_anonymous,photo_path,social_handle,social_platform)')
-        .in('person_id', ids).order('total_cents', { ascending:false }).limit(2000);
+        .in('person_id', ids).order('total_cents', { ascending:false }).limit(5000);
+      if(error){
+        // Nothing was learned, so nothing is concluded. Leaving the slots
+        // unmarked means the next pass tries again rather than freezing every
+        // badge on a crown because one request failed.
+        console.warn('[gfoat] could not read fan_totals:', error.message);
+        return;
+      }
       const best = new Map();
       for(const r of (data||[])){
         if(best.has(r.person_id)) continue;
@@ -1074,10 +1082,23 @@
     const byPerson = new Map((rows||[]).map(r => [r.person_id, r]));
 
     for(const el of slots){
-      el.dataset.gfoatDone = '1';
       const pid = el.dataset.gfoat || el.dataset.faceFan;
       const f = byPerson.get(pid);
       const face = el.classList.contains('face-fan');
+
+      // Only finished once there is an answer. This used to be marked done
+      // before the lookup was even read, so the first pass — which can run
+      // before the data is there, or return nothing because a request failed —
+      // stamped every badge as handled and every later pass skipped it. A
+      // contender with a well-known fan then showed a crown for the whole
+      // session, which is exactly what was happening to Messi and Ronaldo.
+      //
+      // A contender genuinely without a fan would otherwise be re-queried
+      // forever, so give up after a few passes and leave the crown, which is
+      // the truthful answer for them anyway.
+      const tries = Number(el.dataset.gfoatTries || 0) + 1;
+      el.dataset.gfoatTries = String(tries);
+      if(f || tries >= 4) el.dataset.gfoatDone = '1';
 
       if(!f){
         if(face){
@@ -1154,7 +1175,11 @@
   // catches the first one, and any render that somehow slips past it. The
   // function only touches slots it has not already filled, so extra calls are
   // free.
-  window.addEventListener('load', () => { setTimeout(paintGfoat, 400); setTimeout(paintGfoat, 1800); });
+  // Several passes, spread out: fan data can arrive after the cards do, and a
+  // pass that finds nothing no longer poisons the ones after it.
+  window.addEventListener('load', () => {
+    [300, 1200, 3000, 6000].forEach(ms => setTimeout(paintGfoat, ms));
+  });
 
   (function watchForTiles(){
     let queued = null;
