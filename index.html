@@ -1041,10 +1041,13 @@
       else rows = data;
     } catch(e){ console.warn('[gfoat] top_fans threw, reading fan_totals instead:', e?.message || e); }
 
-    // A project that has not run supabase-top-fans.sql yet still gets the
-    // faces: fan_totals is public read, so the same answer can be assembled in
-    // the browser. Slower and heavier, which is why it is the fallback.
-    if(!rows){
+    // An empty answer is not the same as an answer. top_fans returning zero rows
+    // — because the function is an older shape, or its join dropped a fan whose
+    // users row it could not see — is indistinguishable from "nobody has backed
+    // anyone", and the page drew a crown either way. Anything short of rows
+    // falls through to reading fan_totals directly, which is public and needs no
+    // function at all.
+    if(!rows || !rows.length){
       const { data, error } = await sb.from('fan_totals')
         .select('person_id,total_cents,users(display_name,is_anonymous,photo_path,social_handle,social_platform)')
         .in('person_id', ids).order('total_cents', { ascending:false }).limit(5000);
