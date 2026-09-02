@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-core';
 
-const BOARDS = 60;                       // boards on the page
+const BOARDS = Number(process.env.BOARDS || 60);   // boards on the page
 const uuid = (a, b) => `${String(a).padStart(8,'0')}-aaaa-4aaa-8aaa-${String(b).padStart(12,'0')}`;
 
 const cats = [], people = [], fanTotals = [], apiFans = {};
@@ -110,6 +110,17 @@ const noise = logs.filter(l => /gfoat/i.test(l));
 if(noise.length){ console.log('--- badge log ---'); noise.slice(0, 8).forEach(l => console.log('  ' + l)); }
 
 await browser.close();
+
+// The bug this test was written for. Ids travel in the query string, and asking
+// about every contender at once built a 31,000-character URL — which Cloudflare
+// refuses, so every fan lookup on the homepage failed while the same code inside
+// one board, asking about a handful, worked. A stub happily answers a URL that
+// long, so only this assertion catches it.
+assert.ok(calls.length > 0, 'the page never asked for any fans');
+for(const c of calls){
+  assert.ok(c.urlLength < 4096,
+    `a request URL of ${c.urlLength} chars (${c.asked} ids) — real infrastructure refuses this; ask in batches`);
+}
 
 assert.ok(out.badges > 50, `expected a badge on every contender, saw ${out.badges}`);
 assert.ok(out.backedOnPage.length, 'the backed contenders never rendered on the homepage');

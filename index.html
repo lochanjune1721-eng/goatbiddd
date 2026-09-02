@@ -711,7 +711,7 @@
     const side = (p, cls) => `
         <div class="duel-side ${cls} ${(cls==='a'?v1>v2:v2>v1) ? 'leader' : ''}">
           <div class="photo">${cls==='a'?p1Photo:p2Photo}${
-            p ? `<a class="face-fan in none" data-face-fan="${p.id}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" title="Greatest Fan of All Time — $1 claims it"><span class="face-fan-initials">👑</span><span class="face-fan-sum">$1 · be first</span></a>` : ''}</div>
+            p ? `<a class="face-fan in none" data-face-fan="${p.id}" data-cents="${p.total_cents||0}" data-slug="${esc(p.slug)}" data-name="${esc(p.name)}" title="Greatest Fan of All Time — $1 claims it"><span class="face-fan-initials">👑</span><span class="face-fan-sum">$1 · be first</span></a>` : ''}</div>
         </div>`;
 
     // Each contender's tile: who, what share, how much, who leads their fans,
@@ -1029,10 +1029,38 @@
   // and returns one row each — asking per tile would be two hundred round trips
   // on a homepage of a hundred duels. Filled in after the duels paint, so a slow
   // answer delays a face and nothing else.
+  // ── Ask in batches, never in one enormous URL ─────────────────────────────
+  //
+  // Every lookup here identifies contenders by id in the query string, and the
+  // homepage carries hundreds of boards. Asking for all of them at once built a
+  // 31,000-character URL, and Cloudflare refuses a request line that long — so
+  // on the homepage every fan lookup failed, while the same code inside a single
+  // board, with a handful of ids and a short URL, worked perfectly. That is
+  // exactly the shape of the bug: the face showed on a board and never on the
+  // front page.
+  //
+  // Sixty ids is about 2.3 KB, comfortably inside every limit, and the requests
+  // go out together so the page is no slower for it.
+  const ID_BATCH = 60;
+  function batches(list){
+    const out = [];
+    for(let i = 0; i < list.length; i += ID_BATCH) out.push(list.slice(i, i + ID_BATCH));
+    return out;
+  }
+
   async function paintGfoat(){
     const slots = [...document.querySelectorAll('.poll-gfoat[data-gfoat]:not([data-gfoat-done]), .face-fan[data-face-fan]:not([data-gfoat-done])')];
     if(!slots.length) return;
-    const ids = [...new Set(slots.map(el => el.dataset.gfoat || el.dataset.faceFan))];
+
+    // Only contenders with money on them are worth asking about: every dollar on
+    // a contender is somebody's bid, so nobody backed means nobody to show, and
+    // the unclaimed crown those badges already carry is the right answer. On a
+    // site where seven contenders out of thousands have been backed, that turns
+    // the whole page into one small request instead of a thousand ids nobody
+    // needed to look up.
+    const ids = [...new Set(slots
+      .filter(el => Number(el.dataset.cents || 0) > 0)
+      .map(el => el.dataset.gfoat || el.dataset.faceFan))];
 
     // ── Where the fan comes from ─────────────────────────────────────────────
     //
@@ -1046,16 +1074,19 @@
     //
     // This needs nothing installed. The two paths below stay as fallbacks for a
     // deployment without the endpoint yet.
-    let rows = null;
-    try {
-      const r = await fetch('/api/top-fans?ids=' + encodeURIComponent(ids.join(',')));
-      if(r.ok){
+    let rows = ids.length ? null : [];
+    if(ids.length) try {
+      const parts = await Promise.all(batches(ids).map(async part => {
+        const r = await fetch('/api/top-fans?ids=' + encodeURIComponent(part.join(',')));
+        if(!r.ok) throw new Error('/api/top-fans answered ' + r.status);
         const j = await r.json();
-        if(j && j.fans) rows = Object.entries(j.fans).map(([person_id, f]) => Object.assign({ person_id }, f));
-      } else {
-        console.warn('[gfoat] /api/top-fans answered ' + r.status + ' — trying the database directly');
-      }
-    } catch(e){ console.warn('[gfoat] /api/top-fans unreachable:', e?.message || e); }
+        return Object.entries(j?.fans || {}).map(([person_id, f]) => Object.assign({ person_id }, f));
+      }));
+      rows = parts.flat();
+    } catch(e){
+      rows = null;
+      console.warn('[gfoat] ' + (e?.message || e) + ' — trying the database directly');
+    }
 
     if(!rows){
       try {
@@ -1069,13 +1100,17 @@
       // Last resort, and the one that needs supabase-public-profiles.sql: two
       // reads rather than an embed, because an embedded users(...) is refused
       // outright and takes the whole query down with it.
-      const { data: totals, error: tErr } = await sb.from('fan_totals')
-        .select('person_id,user_id,total_cents')
-        .in('person_id', ids).order('total_cents', { ascending:false }).limit(5000);
-      if(tErr){ console.error('[gfoat] cannot read fan_totals:', tErr.message); return; }
+      const totals = [];
+      for(const part of batches(ids)){
+        const { data, error } = await sb.from('fan_totals')
+          .select('person_id,user_id,total_cents')
+          .in('person_id', part).order('total_cents', { ascending:false }).limit(5000);
+        if(error){ console.error('[gfoat] cannot read fan_totals:', error.message); return; }
+        totals.push(...(data || []));
+      }
 
       const top = new Map();
-      for(const r of (totals||[])) if(!top.has(r.person_id)) top.set(r.person_id, r);
+      for(const r of totals) if(!top.has(r.person_id)) top.set(r.person_id, r);
 
       // fan_totals is a cache of bids, and the two come apart — anything that
       // writes bids or recomputes totals outside place_bid leaves it behind, and
@@ -1084,11 +1119,15 @@
       // is why a contender could show $135 and still wear an unclaimed crown.
       const missing = ids.filter(id => !top.has(id));
       if(missing.length){
-        const { data: raw, error: bErr } = await sb.from('bids')
-          .select('person_id,user_id,amount_cents').in('person_id', missing).limit(20000);
-        if(bErr) console.warn('[gfoat] cannot read bids:', bErr.message);
+        const raw = [];
+        for(const part of batches(missing)){
+          const { data, error } = await sb.from('bids')
+            .select('person_id,user_id,amount_cents').in('person_id', part).limit(20000);
+          if(error){ console.warn('[gfoat] cannot read bids:', error.message); break; }
+          raw.push(...(data || []));
+        }
         const sums = new Map();
-        for(const b of (raw||[])){
+        for(const b of raw){
           if(!b.user_id) continue;
           const k = b.person_id + '|' + b.user_id;
           sums.set(k, (sums.get(k)||0) + (b.amount_cents||0));
@@ -1119,9 +1158,11 @@
     try {
       const { data:{ user } } = await sb.auth.getUser();
       if(user){
-        const { data } = await sb.from('fan_totals')
-          .select('person_id,total_cents').eq('user_id', user.id).in('person_id', ids);
-        for(const r of (data||[])) mine.set(r.person_id, r.total_cents||0);
+        for(const part of batches(ids)){
+          const { data } = await sb.from('fan_totals')
+            .select('person_id,total_cents').eq('user_id', user.id).in('person_id', part);
+          for(const r of (data||[])) mine.set(r.person_id, r.total_cents||0);
+        }
       }
     } catch(e){}
 

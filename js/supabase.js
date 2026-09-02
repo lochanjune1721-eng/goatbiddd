@@ -122,17 +122,27 @@ window.GOAT = {
   //
   // public_profiles (supabase-public-profiles.sql) is a view of the four columns
   // a public identity consists of. Email and balance are not in it.
+  //
+  // Asked in batches: ids travel in the query string, and a page that asks about
+  // hundreds at once builds a URL long enough for Cloudflare to refuse the
+  // request outright — which is how the homepage lost every fan face while a
+  // single board, asking about a handful, kept them.
   profiles: async (ids) => {
     const want = [...new Set((ids||[]).filter(Boolean))];
     if(!want.length || !window.supabaseClient) return new Map();
-    const { data, error } = await window.supabaseClient.from('public_profiles')
-      .select('id,display_name,photo_path,social_handle,social_platform').in('id', want);
-    if(error){
-      console.error('[GOAT] cannot read public_profiles: ' + error.message +
-        '\n  Fan names and faces need it — run supabase-public-profiles.sql once.');
-      return new Map();
+    const out = new Map();
+    for(let i = 0; i < want.length; i += 60){
+      const { data, error } = await window.supabaseClient.from('public_profiles')
+        .select('id,display_name,photo_path,social_handle,social_platform')
+        .in('id', want.slice(i, i + 60));
+      if(error){
+        console.error('[GOAT] cannot read public_profiles: ' + error.message +
+          '\n  Fan names and faces need it — run supabase-public-profiles.sql once.');
+        return out;
+      }
+      for(const u of (data||[])) out.set(u.id, u);
     }
-    return new Map((data||[]).map(u => [u.id, u]));
+    return out;
   },
   getVideoUrl: (path) => {
     if(!path || typeof path !== 'string') return null;
