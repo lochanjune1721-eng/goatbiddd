@@ -34,7 +34,36 @@ const UA = 'TheTrueGOATBoardBuilder/1.0 (https://thetruegoat.com)';
 const CACHE = path.resolve('data/wikidata-cache.json');
 const OUT = path.resolve('data/generated-boards.json');
 
+// Three I am sure of. The other 195 are resolved against Wikidata by their ISO
+// 3166-1 alpha-2 code (P297) and cached — writing 198 QIDs from memory would be
+// wrong somewhere, and a wrong country QID does not fail, it quietly fills a
+// board with the wrong nationality and looks fine.
 const COUNTRY_QID = { IN: 'Q668', US: 'Q30', GB: 'Q145' };
+
+async function countryQid(code){
+  if (COUNTRY_QID[code]) return COUNTRY_QID[code];
+  const key = 'country:' + code;
+  if (cache[key]) return cache[key];
+
+  const q = `SELECT ?c WHERE { ?c wdt:P297 "${code}" . ?c wdt:P31/wdt:P279* wd:Q6256 } LIMIT 1`;
+  try {
+    const res = await fetch(ENDPOINT + '?format=json&query=' + encodeURIComponent(q),
+      { headers: { 'User-Agent': UA, Accept: 'application/sparql-results+json' } });
+    if (res.ok) {
+      const row = (await res.json()).results?.bindings?.[0];
+      const qid = row?.c?.value?.split('/').pop() || null;
+      if (qid) {
+        cache[key] = qid;
+        fs.writeFileSync(CACHE, JSON.stringify(cache, null, 0));
+        return qid;
+      }
+    }
+  } catch (e) {}
+
+  // A country with no ISO code in Wikidata (or a disputed one) is reported
+  // rather than silently skipped, so the gap is visible in the run summary.
+  return null;
+}
 
 // A short list of QIDs I am confident about. Everything else is resolved
 // against Wikidata at run time rather than guessed here — a wrong QID silently
@@ -144,8 +173,8 @@ let done = 0, filled = 0, empty = 0, skipped = 0, unmapped = [];
 
 for (const [code, c] of Object.entries(boardsFile)){
   if (ONLY && code !== ONLY) continue;
-  const qid = COUNTRY_QID[code];
-  if (!qid){ console.warn(`no country QID for ${code}, skipping`); continue; }
+  const qid = await countryQid(code);
+  if (!qid){ console.warn(`no country QID for ${code}, skipping`); unmapped.push(code); continue; }
   out[code] ||= { code, country: c.country, boards: [] };
   const have = new Set(out[code].boards.map(b=> b.name.toLowerCase()));
 

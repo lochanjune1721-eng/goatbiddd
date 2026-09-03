@@ -1,0 +1,103 @@
+{
+  "_comment": [
+    "The board taxonomy, composed per country by scripts/plan-country-boards.mjs.",
+    "",
+    "These are role archetypes, not facts about anybody: 'Greatest Footballer of",
+    "All Time' is a question every country can answer. The people who fill them",
+    "are pulled from Wikidata at build time, so no name here comes from memory.",
+    "",
+    "core       — asked everywhere.",
+    "regional   — only where the sport or trade is actually followed. A Greatest",
+    "             Cricketer board in Brazil is an empty board, and an empty board",
+    "             on a paid site is worse than no board.",
+    "extended   — the tail that only the two biggest markets get, on top of core",
+    "             plus their regional blocks, to reach 150."
+  ],
+
+  "core": [
+    "Footballer", "Athlete", "Boxer", "Tennis Player", "Olympian",
+    "Swimmer", "Wrestler", "Basketball Player", "Coach", "Chess Player",
+    "Actor", "Actress", "Film Director", "Comedian", "TV Presenter",
+    "Screenwriter", "Film of All Time", "Singer", "Musician", "Composer",
+    "Band", "Rapper", "Songwriter", "Author", "Poet",
+    "Painter", "Photographer", "Architect", "Fashion Designer", "Chef",
+    "Scientist", "Physicist", "Physician", "Mathematician", "Economist",
+    "Historian", "Philosopher", "Inventor", "Engineer", "Politician",
+    "National Leader", "Activist", "Journalist", "Entrepreneur", "Business Leader",
+    "Philanthropist", "Military Leader", "Explorer", "Dancer", "Sports Team"
+  ],
+
+  "regional": {
+    "cricket": {
+      "countries": ["IN", "PK", "BD", "LK", "AF", "NP", "GB", "AU", "NZ", "ZA", "ZW", "IE", "JM", "TT", "BB", "GY", "AE", "OM", "SC", "NA", "KE", "UG"],
+      "categories": ["Cricketer", "Batsman", "Bowler", "All-Rounder", "Wicketkeeper", "Cricket Captain"]
+    },
+    "baseball": {
+      "countries": ["US", "JP", "KR", "TW", "CU", "DO", "VE", "PR", "MX", "PA", "NI", "CO"],
+      "categories": ["Baseball Player", "Pitcher", "Baseball Manager"]
+    },
+    "ice_hockey": {
+      "countries": ["CA", "US", "RU", "SE", "FI", "CZ", "SK", "NO", "LV", "BY", "CH", "DE"],
+      "categories": ["Ice Hockey Player", "Goaltender"]
+    },
+    "rugby": {
+      "countries": ["NZ", "ZA", "AU", "GB", "IE", "FR", "AR", "WS", "FJ", "TO", "IT", "GE", "JP", "RO", "UY"],
+      "categories": ["Rugby Player", "Rugby Captain"]
+    },
+    "american_football": {
+      "countries": ["US"],
+      "categories": ["American Football Player", "Quarterback", "NFL Coach"]
+    },
+    "motorsport": {
+      "countries": ["GB", "IT", "DE", "FR", "BR", "ES", "FI", "AU", "AT", "NL", "MC", "US", "JP", "MX", "CA", "AR"],
+      "categories": ["Racing Driver", "Motorcycle Racer"]
+    },
+    "cycling": {
+      "countries": ["FR", "BE", "IT", "ES", "NL", "CO", "SI", "DK", "GB", "CH", "LU", "PT", "SK", "NO"],
+      "categories": ["Cyclist"]
+    },
+    "martial_arts": {
+      "countries": ["JP", "KR", "CN", "TH", "BR", "RU", "IR", "MN", "KZ", "GE", "AZ", "UZ", "TR", "CU"],
+      "categories": ["Martial Artist", "Judoka", "Sumo Wrestler", "MMA Fighter"]
+    },
+    "winter_sport": {
+      "countries": ["NO", "SE", "FI", "AT", "CH", "DE", "FR", "IT", "CA", "US", "RU", "JP", "KR", "CN", "SI", "CZ", "PL", "SK", "IS", "EE", "LV", "LT"],
+      "categories": ["Skier", "Figure Skater", "Biathlete"]
+    },
+    "handball": {
+      "countries": ["DK", "FR", "DE", "ES", "NO", "SE", "HR", "HU", "PL", "RS", "SI", "IS", "MK", "ME", "RO", "QA", "EG", "TN"],
+      "categories": ["Handball Player"]
+    },
+    "golf": {
+      "countries": ["US", "GB", "IE", "ZA", "AU", "JP", "KR", "ES", "SE", "CA", "TH", "NZ", "FJ", "AR"],
+      "categories": ["Golfer"]
+    },
+    "table_tennis_badminton": {
+      "countries": ["CN", "JP", "KR", "TW", "ID", "MY", "IN", "TH", "DK", "SE", "DE", "SG", "VN", "HK"],
+      "categories": ["Table Tennis Player", "Badminton Player"]
+    }
+  },
+
+  "extended": [
+    "Sprinter", "Marathon Runner", "Weightlifter", "Gymnast", "Volleyball Player",
+    "Sports Commentator", "Sports Club", "Referee", "Sports Rivalry", "Stadium",
+    "Voice Actor", "Character Actor", "Child Actor", "Stunt Performer", "Cinematographer",
+    "Film Producer", "Casting Director", "Costume Designer", "Film Score", "Documentary",
+    "Animated Film", "TV Drama", "Sitcom", "Reality TV Star", "Talk Show Host",
+    "News Anchor", "Radio Host", "Podcaster", "YouTuber", "Streamer",
+    "Influencer", "Photographer of People", "Cartoonist", "Illustrator", "Graphic Designer",
+    "Sculptor", "Playwright", "Novelist", "Short Story Writer", "Children's Author",
+    "Science Writer", "Literary Critic", "Translator", "Publisher", "Bookshop",
+    "Guitarist", "Drummer", "Pianist", "Violinist", "Jazz Musician",
+    "Classical Musician", "Folk Musician", "Music Producer", "DJ", "Album",
+    "Song", "Music Video", "Live Performer", "Music Festival", "Record Label",
+    "Chemist", "Biologist", "Astronomer", "Geologist", "Neuroscientist",
+    "Computer Scientist", "AI Researcher", "Surgeon", "Psychologist", "Nutritionist",
+    "Architect of Public Buildings", "Urban Planner", "Civil Engineer", "Aerospace Engineer", "Roboticist",
+    "Tech Founder", "Investor", "Banker", "Retailer", "Manufacturer",
+    "Restaurant", "Street Food", "Dish", "Pastry Chef", "Sommelier",
+    "Coffee Roaster", "Brewery", "Winery", "Food Writer", "Farmers Market",
+    "Diplomat", "Judge", "Lawyer", "Civil Servant", "Mayor",
+    "Union Leader", "Human Rights Defender", "Environmentalist", "Educator", "University"
+  ]
+}
